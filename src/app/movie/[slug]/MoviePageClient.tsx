@@ -640,8 +640,7 @@ export default function MoviePageClient({ movie }: MoviePageClientProps) {
               </div>
             ) : (
               <p className="long-text">
-                Список актёров пока не заполнен. Добавь поле cast в movies.ts —
-                и этот блок обновится сам. Магия? Нет, просто нормальная архитектура.
+                Информация об актёрах для этого материала пока готовится.
               </p>
             )}
           </section>

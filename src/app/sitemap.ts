@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 
 import { movies } from "./data/movies";
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://kinoluma.online").replace(/\/$/, "");
+const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://www.kinoluma.online").replace(/\/$/, "");
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();

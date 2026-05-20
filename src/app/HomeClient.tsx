@@ -3381,11 +3381,6 @@ export default function Home() {
                   </ModalIconButton>
                 </div>
               </div>
-
-              <p className="mt-5 text-sm text-neutral-500">
-                Страница фильма создаётся автоматически по slug из общего файла
-                с данными. Добавил фильм в movies.ts — получил новую страницу.
-              </p>
             </div>
           </div>
         </div>
@@ -3478,8 +3473,8 @@ export default function Home() {
 
             <p className="mt-2 text-sm text-neutral-500">
               {authMode === "login"
-                ? "Войди, чтобы сайт запомнил тебя после перезагрузки."
-                : "Создай простой локальный аккаунт для теста интерфейса."}
+                ? "Войди, чтобы открыть свои списки, реакции и персональные подборки."
+                : "Создай аккаунт, чтобы сохранять фильмы, реакции и подборки в профиле."}
             </p>
 
             <form onSubmit={handleAuthSubmit} className="mt-6 space-y-4">
@@ -3562,8 +3557,8 @@ export default function Home() {
             </div>
 
             <p className="mt-4 text-xs leading-relaxed text-neutral-600">
-              Это учебная локальная регистрация. Для настоящего сайта позже
-              лучше подключить сервер, базу данных и безопасное хранение паролей.
+              После входа твои списки, реакции и подборки будут доступны в
+              профиле KinoLuma.
             </p>
           </div>
         </div>

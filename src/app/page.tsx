@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import HomeClient from "./HomeClient";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://kinoluma.online";
+const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://www.kinoluma.online").replace(/\/$/, "");
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -19,12 +19,21 @@ export const metadata: Metadata = {
     siteName: "KinoLuma",
     locale: "ru_RU",
     type: "website",
+    images: [
+      {
+        url: "/kinoluma-icon.png",
+        width: 512,
+        height: 512,
+        alt: "KinoLuma",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "KinoLuma — фильмы, сериалы, аниме и мультфильмы онлайн",
     description:
       "Каталог фильмов, сериалов, аниме и мультфильмов с подборками, трейлерами и страницами просмотра.",
+    images: ["/kinoluma-icon.png"],
   },
   robots: {
     index: true,
