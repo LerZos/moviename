@@ -54,6 +54,25 @@ type CurrentUser = {
   email: string;
 };
 
+const featuredBackdropImages: Record<number, string> = {
+  1: "https://cs14.pikabu.ru/post_img/big/2024/03/04/5/1709537813111668647.png",
+  2: "https://spzh.eu/img/article/757/46_main.jpg",
+  3: "https://www.screentune.com/wp-content/uploads/2019/01/546680.jpg",
+  5: "https://ic.pics.livejournal.com/glukovarenik/6089907/11999257/11999257_1000.jpg",
+  20: "https://i.amediateka.tech/resize/1200x628/_stor_/cms/content-contentasset/d/2b/8b02c572be116cb73b063dfabeed3d2b-299385-9bf9e2b246164962a036601c9cd0b27f.jpg",
+  21: "https://whatisgood.ru/wp-content/uploads/2022/11/oruzhie-propagandyi-matritsa.jpg",
+  23: "https://news.store.rambler.ru/img/373b6470c4287e1e55b596675b4e96da?img-format=auto&img-1-resize=height:400,fit:max&img-2-filter=sharpen",
+  24: "https://image.tmdb.org/t/p/w780/m7ynwXIvSnhxQPR6pOICrC0L2sO.jpg",
+  29: "https://s0.rbk.ru/v6_top_pics/media/img/4/73/756766311519734.webp",
+  30: "https://avatars.mds.yandex.net/get-vthumb/2712510/a88491ea18b5d9d923baa325a2178b94/800x450",
+  32: "https://img.championat.com/s/732x488/news/big/w/i/multfilm-super-mario-galakticheskoe-kino-sobral-370-mln-luchshij-start-2026-goda_1775402372732866804.jpg",
+  33: "https://images.markus.live/mcswebsites.blob.core.windows.net/1013/Event_9643/landscape_fullhd/PHM_EE_Apollo_EHDh_3840x2160.jpg?width=640&height=360&format=jpg&quality=90",
+};
+
+function getFeaturedBackdropImage(item: ContentItem) {
+  return featuredBackdropImages[item.id] ?? item.poster;
+}
+
 function escapeSvgText(text: string) {
   return text
     .replaceAll("&", "&amp;")
@@ -975,6 +994,8 @@ export default function Home() {
     featuredContentPool[featuredIndex % Math.max(featuredContentPool.length, 1)] ??
     content[0];
 
+  const featuredBackdropImage = getFeaturedBackdropImage(featuredContent);
+
   const allGenres = useMemo(() => {
     return getGenresForType(selectedType, content);
   }, [selectedType]);
@@ -1715,6 +1736,59 @@ export default function Home() {
   return (
     <main className="kinoluma-home min-h-screen overflow-x-hidden bg-black pb-[calc(92px+env(safe-area-inset-bottom))] text-white md:pb-0">
       <style>{`
+        /* KinoLuma: широкий фон и затемнение для блока "Популярное сейчас" */
+        .kinoluma-home > section:first-of-type {
+          position: relative;
+          overflow: hidden;
+          isolation: isolate;
+        }
+
+        .kinoluma-home > section:first-of-type .featured-backdrop,
+        .kinoluma-home > section:first-of-type .featured-poster-backdrop,
+        .kinoluma-home > section:first-of-type img[class*="featured-backdrop"],
+        .kinoluma-home > section:first-of-type img[class*="featured-poster-backdrop"] {
+          position: absolute !important;
+          inset: 0 !important;
+          top: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
+          left: 0 !important;
+          width: 100% !important;
+          height: 100% !important;
+          min-width: 100% !important;
+          max-width: none !important;
+          object-fit: cover !important;
+          object-position: center center !important;
+          z-index: 0 !important;
+          opacity: 1 !important;
+        }
+
+        .kinoluma-home > section:first-of-type .featured-backdrop img,
+        .kinoluma-home > section:first-of-type .featured-poster-backdrop img {
+          width: 100% !important;
+          height: 100% !important;
+          min-width: 100% !important;
+          max-width: none !important;
+          object-fit: cover !important;
+          object-position: center center !important;
+        }
+
+        .kinoluma-home > section:first-of-type::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          z-index: 1;
+          pointer-events: none;
+          background:
+            linear-gradient(90deg, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.98) 20%, rgba(0, 0, 0, 0.84) 40%, rgba(0, 0, 0, 0.46) 64%, rgba(0, 0, 0, 0.16) 100%),
+            linear-gradient(180deg, rgba(0, 0, 0, 0.46) 0%, rgba(0, 0, 0, 0.08) 42%, rgba(0, 0, 0, 0.78) 100%);
+        }
+
+        .kinoluma-home > section:first-of-type .featured-copy {
+          position: relative;
+          z-index: 3;
+        }
+
         @keyframes modalOverlayOpen {
           from { opacity: 0; }
           to { opacity: 1; }
@@ -2722,7 +2796,7 @@ export default function Home() {
         <div className="featured-poster-backdrop absolute inset-y-0 right-0 hidden w-1/2 overflow-hidden opacity-25 lg:block">
           <img
             key={`featured-backdrop-${featuredContent.id}`}
-            src={featuredContent.poster}
+            src={featuredBackdropImage}
             alt={featuredContent.title}
             className="featured-backdrop h-full w-full object-cover"
             onError={(event) => {
@@ -2746,7 +2820,7 @@ export default function Home() {
         >
           <img
             key={`mobile-featured-poster-${featuredContent.id}`}
-            src={featuredContent.poster}
+            src={featuredBackdropImage}
             alt={`Обложка: ${featuredContent.title}`}
             loading="eager"
             decoding="async"
