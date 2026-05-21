@@ -9,13 +9,17 @@ const siteUrl = (
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
+
   title: {
     default: "KinoLuma — фильмы, сериалы, аниме и мультфильмы онлайн",
     template: "%s — KinoLuma",
   },
+
   description:
     "KinoLuma — легальный каталог фильмов, сериалов, аниме, мультфильмов и документалок с описаниями, рейтингами, трейлерами и подборками.",
+
   applicationName: "KinoLuma",
+
   keywords: [
     "KinoLuma",
     "фильмы",
@@ -27,16 +31,43 @@ export const metadata: Metadata = {
     "каталог фильмов",
     "фильмы онлайн легально",
   ],
+
   authors: [{ name: "KinoLuma" }],
   creator: "KinoLuma",
   publisher: "KinoLuma",
+
   alternates: {
     canonical: "/",
   },
+
   icons: {
-    icon: "/kinoluma-icon.png",
-    apple: "/kinoluma-icon.png",
+    icon: [
+      {
+        url: "/kinoluma-icon.png",
+        type: "image/png",
+        sizes: "32x32",
+      },
+      {
+        url: "/kinoluma-icon.png",
+        type: "image/png",
+        sizes: "192x192",
+      },
+      {
+        url: "/kinoluma-icon.png",
+        type: "image/png",
+        sizes: "512x512",
+      },
+    ],
+    shortcut: "/kinoluma-icon.png",
+    apple: [
+      {
+        url: "/kinoluma-icon.png",
+        type: "image/png",
+        sizes: "180x180",
+      },
+    ],
   },
+
   openGraph: {
     title: "KinoLuma — каталог фильмов и сериалов",
     description:
@@ -54,13 +85,15 @@ export const metadata: Metadata = {
     locale: "ru_RU",
     type: "website",
   },
+
   twitter: {
-    card: "summary_large_image",
+    card: "summary",
     title: "KinoLuma — фильмы, сериалы, аниме и мультфильмы онлайн",
     description:
       "Каталог фильмов, сериалов, аниме и мультфильмов с подборками, трейлерами и страницами просмотра.",
     images: ["/kinoluma-icon.png"],
   },
+
   robots: {
     index: true,
     follow: true,
