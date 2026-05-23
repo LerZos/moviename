@@ -235,7 +235,7 @@ export const movies: Movie[] = [
       year: "2014",
       rating: 8.7,
       genres: ["Фантастика", "Драма", "Приключения"],
-      poster: "https://avatars.mds.yandex.net/get-kinopoisk-image/1704946/ef2f5aa6-daf6-4b71-acb1-40dd61d9c692/600x900",
+      poster: "https://upload.wikimedia.org/wikipedia/ru/c/c3/Interstellar_2014.jpg",
       description: "Путешествие через космос ради спасения человечества.",
       trailerUrl: "https://www.youtube.com/embed/2LqzF5WauAw",
       longDescription:

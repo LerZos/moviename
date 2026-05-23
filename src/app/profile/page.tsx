@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
 import {
   Activity,
   ArrowLeft,
@@ -21,6 +21,7 @@ import { movies as catalogItems, type Movie } from "../data/movies";
 import { supabase } from "../lib/supabase";
 import {
   clearMovieActions,
+  emptyMovieActionState,
   getCurrentSupabaseUser,
   loadMovieActions,
   mapSupabaseUser,
@@ -44,6 +45,7 @@ type CurrentUser = {
 
 type ProfileTab = "overview" | "watchLater" | "reactions";
 type ProfileSort = "recent" | "rating" | "year" | "title";
+type AuthMode = "login" | "register";
 
 function escapeSvgText(text: string) {
   return text
@@ -145,6 +147,14 @@ function readCurrentUserFromStorage() {
   } catch {
     return null;
   }
+}
+
+function loadLocalActions() {
+  return {
+    watchLaterIds: readNumberArrayFromStorage("kinoluma-watch-later"),
+    likedItemIds: readNumberArrayFromStorage("kinoluma-liked-items"),
+    dislikedItemIds: readNumberArrayFromStorage("kinoluma-disliked-items"),
+  };
 }
 
 function saveNumberArrayToStorage(key: string, ids: number[]) {
@@ -603,17 +613,17 @@ export default function ProfilePage() {
   const [profileSort, setProfileSort] = useState<ProfileSort>("recent");
   const [selectedItem, setSelectedItem] = useState<CatalogItem | null>(null);
   const [isDetailsClosing, setIsDetailsClosing] = useState(false);
+  const [authMode, setAuthMode] = useState<AuthMode>("login");
+  const [authName, setAuthName] = useState("");
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [authError, setAuthError] = useState("");
+  const [authNotice, setAuthNotice] = useState("");
+  const [isAuthSubmitting, setIsAuthSubmitting] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
 
-    function loadLocalActions() {
-      return {
-        watchLaterIds: readNumberArrayFromStorage("kinoluma-watch-later"),
-        likedItemIds: readNumberArrayFromStorage("kinoluma-liked-items"),
-        dislikedItemIds: readNumberArrayFromStorage("kinoluma-disliked-items"),
-      };
-    }
 
     function wait<T>(ms: number, value: T) {
       return new Promise<T>((resolve) => {
@@ -909,6 +919,109 @@ export default function ProfilePage() {
     void clearMovieActions();
   }
 
+  function resetProfileAuthForm() {
+    setAuthName("");
+    setAuthEmail("");
+    setAuthPassword("");
+    setAuthError("");
+    setAuthNotice("");
+  }
+
+  function switchProfileAuthMode(mode: AuthMode) {
+    setAuthMode(mode);
+    setAuthError("");
+    setAuthNotice("");
+  }
+
+  async function applyAuthenticatedProfile(user: Parameters<typeof mapSupabaseUser>[0]) {
+    const mappedUser = mapSupabaseUser(user);
+
+    setCurrentUser(mappedUser);
+    saveCurrentUserToStorage(mappedUser);
+
+    const actions = await loadMovieActions().catch(() => emptyMovieActionState);
+
+    setWatchLaterIds(actions.watchLaterIds);
+    setLikedItemIds(actions.likedItemIds);
+    setDislikedItemIds(actions.dislikedItemIds);
+    resetProfileAuthForm();
+  }
+
+  async function handleProfileAuthSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const cleanName = authName.trim();
+    const cleanEmail = authEmail.trim().toLowerCase();
+    const cleanPassword = authPassword.trim();
+
+    if (!cleanEmail.includes("@") || !cleanEmail.includes(".")) {
+      setAuthError("Введите корректный email.");
+      setAuthNotice("");
+      return;
+    }
+
+    if (cleanPassword.length < 6) {
+      setAuthError("Пароль должен быть минимум 6 символов.");
+      setAuthNotice("");
+      return;
+    }
+
+    if (authMode === "register" && cleanName.length < 2) {
+      setAuthError("Введите имя минимум из 2 символов.");
+      setAuthNotice("");
+      return;
+    }
+
+    setIsAuthSubmitting(true);
+    setAuthError("");
+    setAuthNotice("");
+
+    try {
+      if (authMode === "register") {
+        const { data, error } = await supabase.auth.signUp({
+          email: cleanEmail,
+          password: cleanPassword,
+          options: {
+            data: {
+              name: cleanName,
+            },
+          },
+        });
+
+        if (error) {
+          setAuthError(error.message);
+          return;
+        }
+
+        if (!data.session || !data.user) {
+          setAuthMode("login");
+          setAuthPassword("");
+          setAuthNotice(
+            "Аккаунт создан. Если Supabase просит подтверждение, подтверди email и войди.",
+          );
+          return;
+        }
+
+        await applyAuthenticatedProfile(data.user);
+        return;
+      }
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password: cleanPassword,
+      });
+
+      if (error || !data.user) {
+        setAuthError(error?.message || "Неверный email или пароль.");
+        return;
+      }
+
+      await applyAuthenticatedProfile(data.user);
+    } finally {
+      setIsAuthSubmitting(false);
+    }
+  }
+
   async function logout() {
     await supabase.auth.signOut();
     removeCurrentUserFromStorage();
@@ -942,7 +1055,7 @@ export default function ProfilePage() {
         <div className="ambient-bg" />
 
         <section className="auth-screen">
-          <div className="auth-card">
+          <div className="auth-card auth-card-compact">
             <div className="logo-row">
               <img
                 src="/kinoluma-icon.png"
@@ -955,19 +1068,98 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <p className="eyebrow">Аккаунт</p>
+            <p className="eyebrow auth-eyebrow">Аккаунт KinoLuma</p>
 
-            <h1>Войди, чтобы открыть профиль</h1>
+            <h1 className="auth-title">
+              {authMode === "login" ? "Вход" : "Регистрация"}
+            </h1>
 
-            <p className="auth-text">
-              В профиле будут доступны твои списки, реакции и персональная
-              статистика по выбранным фильмам.
+            <p className="auth-text auth-text-compact">
+              {authMode === "login"
+                ? "Войди, чтобы открыть свои списки, реакции и персональные подборки."
+                : "Создай аккаунт, чтобы сохранять фильмы, реакции и подборки в профиле."}
             </p>
 
-            <a href="/" className="primary-button">
+            <form onSubmit={handleProfileAuthSubmit} className="profile-auth-form">
+              {authMode === "register" && (
+                <label className="profile-auth-field">
+                  <span>Имя</span>
+                  <input
+                    value={authName}
+                    onChange={(event) => setAuthName(event.target.value)}
+                    placeholder="Например: Алекс"
+                    autoComplete="name"
+                  />
+                </label>
+              )}
+
+              <label className="profile-auth-field">
+                <span>Email</span>
+                <input
+                  value={authEmail}
+                  onChange={(event) => setAuthEmail(event.target.value)}
+                  placeholder="you@example.com"
+                  type="email"
+                  autoComplete="email"
+                />
+              </label>
+
+              <label className="profile-auth-field">
+                <span>Пароль</span>
+                <input
+                  value={authPassword}
+                  onChange={(event) => setAuthPassword(event.target.value)}
+                  placeholder="Минимум 6 символов"
+                  type="password"
+                  autoComplete={
+                    authMode === "login" ? "current-password" : "new-password"
+                  }
+                />
+              </label>
+
+              {authError && <div className="auth-message auth-error">{authError}</div>}
+              {authNotice && <div className="auth-message auth-notice">{authNotice}</div>}
+
+              <button
+                type="submit"
+                className="primary-button auth-submit-button"
+                disabled={isAuthSubmitting}
+              >
+                {isAuthSubmitting
+                  ? "Проверяем..."
+                  : authMode === "login"
+                    ? "Войти"
+                    : "Зарегистрироваться"}
+              </button>
+            </form>
+
+            <div className="auth-switch-row">
+              {authMode === "login" ? (
+                <button
+                  type="button"
+                  onClick={() => switchProfileAuthMode("register")}
+                >
+                  Нет аккаунта? Зарегистрироваться
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => switchProfileAuthMode("login")}
+                >
+                  Уже есть аккаунт? Войти
+                </button>
+              )}
+            </div>
+
+            <a href="/" className="secondary-button auth-back-button">
               <ArrowLeft size={18} strokeWidth={2.4} aria-hidden="true" />
               Вернуться на главную
             </a>
+
+            <p className="auth-small-note">
+              После входа твои списки, реакции и подборки будут доступны в
+              профиле KinoLuma.
+            </p>
           </div>
         </section>
         <MobileBottomNav />
@@ -2649,6 +2841,133 @@ const profileStyles = `
     font-weight: 700;
   }
 
+  .auth-card-compact {
+    width: min(540px, 100%);
+  }
+
+  .auth-title {
+    max-width: none;
+  }
+
+  .auth-eyebrow {
+    margin-top: 34px;
+  }
+
+  .auth-text-compact {
+    max-width: 440px;
+  }
+
+  .profile-auth-form {
+    margin-top: 26px;
+    display: grid;
+    gap: 16px;
+  }
+
+  .profile-auth-field {
+    display: grid;
+    gap: 9px;
+  }
+
+  .profile-auth-field span {
+    color: #b8b8b8;
+    font-size: 14px;
+    font-weight: 900;
+  }
+
+  .profile-auth-field input {
+    width: 100%;
+    height: 54px;
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 16px;
+    background: rgba(0,0,0,0.62);
+    color: #ffffff;
+    padding: 0 18px;
+    font: inherit;
+    font-size: 16px;
+    font-weight: 750;
+    outline: none;
+    transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+  }
+
+  .profile-auth-field input::placeholder {
+    color: #555555;
+  }
+
+  .profile-auth-field input:focus {
+    border-color: rgba(255,255,255,0.38);
+    background: #000000;
+    box-shadow: 0 0 0 4px rgba(255,255,255,0.055);
+  }
+
+  .auth-message {
+    border-radius: 16px;
+    padding: 13px 15px;
+    font-size: 13px;
+    line-height: 1.55;
+    font-weight: 850;
+  }
+
+  .auth-error {
+    border: 1px solid rgba(255,255,255,0.14);
+    background: rgba(255,255,255,0.06);
+    color: #ffffff;
+  }
+
+  .auth-notice {
+    border: 1px solid rgba(255,255,255,0.18);
+    background: rgba(255,255,255,0.10);
+    color: #eeeeee;
+  }
+
+  .auth-submit-button {
+    width: 100%;
+    min-height: 56px;
+    border-radius: 16px;
+    font-size: 16px;
+  }
+
+  .auth-submit-button:disabled {
+    cursor: wait;
+    opacity: 0.72;
+    transform: none;
+  }
+
+  .auth-switch-row {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255,255,255,0.10);
+  }
+
+  .auth-switch-row button {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #dddddd;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 1000;
+    text-align: left;
+    cursor: pointer;
+    transition: color 180ms ease;
+  }
+
+  .auth-switch-row button:hover {
+    color: #ffffff;
+  }
+
+  .auth-back-button {
+    width: 100%;
+    margin-top: 16px;
+  }
+
+  .auth-small-note {
+    margin: 18px 0 0;
+    color: #636363;
+    font-size: 13px;
+    line-height: 1.7;
+    font-weight: 700;
+  }
+
   .auth-card .primary-button {
     margin-top: 26px;
   }
@@ -3398,6 +3717,32 @@ const profileStyles = `
       margin-top: 16px;
       font-size: 14px;
       line-height: 1.65;
+    }
+
+
+    .auth-card-compact {
+      padding: 28px;
+    }
+
+    .auth-title {
+      font-size: clamp(34px, 12vw, 48px);
+      line-height: 0.98;
+    }
+
+    .profile-auth-form {
+      margin-top: 22px;
+      gap: 15px;
+    }
+
+    .profile-auth-field input {
+      height: 52px;
+      border-radius: 15px;
+      font-size: 15px;
+    }
+
+    .auth-submit-button {
+      min-height: 54px;
+      font-size: 15px;
     }
   }
 

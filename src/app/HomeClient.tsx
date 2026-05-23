@@ -1167,6 +1167,26 @@ export default function Home() {
     saveCurrentUserToStorage(user);
   }
 
+  function readCurrentUserFromStorage() {
+    try {
+      const savedUser = window.localStorage.getItem("kinoluma-current-user");
+
+      if (!savedUser) {
+        return null;
+      }
+
+      const parsedUser = JSON.parse(savedUser) as CurrentUser;
+
+      if (parsedUser?.id && parsedUser?.name && parsedUser?.email) {
+        return parsedUser;
+      }
+
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
   function resetAuthForm() {
     setAuthName("");
     setAuthEmail("");
@@ -1591,8 +1611,19 @@ export default function Home() {
       };
     }
 
+    function wait<T>(ms: number, value: T) {
+      return new Promise<T>((resolve) => {
+        window.setTimeout(() => resolve(value), ms);
+      });
+    }
+
     async function initializeAuth() {
       const localActions = loadLocalActions();
+      const savedUser = readCurrentUserFromStorage();
+
+      if (savedUser) {
+        setCurrentUser(savedUser);
+      }
 
       try {
         const user = await getCurrentSupabaseUser();
@@ -1614,7 +1645,10 @@ export default function Home() {
         setCurrentUser(mappedUser);
         saveCurrentUser(mappedUser);
 
-        const actions = await loadMovieActions().catch(() => localActions);
+        const actions = await Promise.race([
+          loadMovieActions().catch(() => localActions),
+          wait(5500, localActions),
+        ]);
 
         if (!isMounted) {
           return;
@@ -1630,7 +1664,7 @@ export default function Home() {
           return;
         }
 
-        setCurrentUser(null);
+        setCurrentUser(savedUser);
         setWatchLaterIds(localActions.watchLaterIds);
         setLikedItemIds(localActions.likedItemIds);
         setDislikedItemIds(localActions.dislikedItemIds);
@@ -2331,7 +2365,22 @@ export default function Home() {
           }
         }
 
-        @media (max-width: 768px) {
+        
+          .mobile-logo-image {
+            width: 46px;
+            height: 46px;
+            max-width: 46px;
+            max-height: 46px;
+            min-width: 46px;
+            border-radius: 13px;
+            object-fit: cover;
+            display: block;
+            background: #050505;
+            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: none;
+          }
+
+          @media (max-width: 768px) {
           .kinoluma-home {
             background:
               radial-gradient(circle at 50% 0%, rgba(255,255,255,0.07), transparent 34%),
@@ -2355,6 +2404,17 @@ export default function Home() {
             font-size: 24px;
             letter-spacing: -0.05em;
             white-space: nowrap;
+          }
+
+          .mobile-logo-image {
+            width: 46px;
+            height: 46px;
+            border-radius: 13px;
+            object-fit: cover;
+            display: block;
+            background: #050505;
+            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: none;
           }
 
           .desktop-nav {
@@ -2740,8 +2800,14 @@ export default function Home() {
         }
 
         @media (max-width: 390px) {
-          .mobile-logo-title {
-            font-size: 21px;
+          .mobile-logo-image {
+            width: 42px;
+            height: 42px;
+            max-width: 42px;
+            max-height: 42px;
+            min-width: 42px;
+            border-radius: 12px;
+            box-shadow: none;
           }
 
           .mobile-random-button {
@@ -2768,9 +2834,13 @@ export default function Home() {
 
       <header className="mobile-header fixed left-0 top-0 z-50 flex w-full items-center justify-between border-b border-white/10 bg-black/80 px-8 py-5 backdrop-blur">
         <div className="mobile-brand-wrap flex items-center gap-8">
-          <h1 className="mobile-logo-title text-3xl font-black tracking-tight text-white">
-            KinoLuma
-          </h1>
+          <a href="/" aria-label="KinoLuma" className="shrink-0">
+            <img
+              src="/kinoluma-icon.png"
+              alt="KinoLuma"
+              className="mobile-logo-image"
+            />
+          </a>
 
           <nav className="desktop-nav hidden gap-6 text-sm text-neutral-400 md:flex">
             <a className="hover:text-white" href="#">
