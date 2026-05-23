@@ -44,7 +44,34 @@ export function mapSupabaseUser(user: User): CurrentUser {
   };
 }
 
+export function saveCurrentUserToStorage(user: CurrentUser) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem("kinoluma-current-user", JSON.stringify(user));
+}
+
+export function removeCurrentUserFromStorage() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.removeItem("kinoluma-current-user");
+}
+
 export async function getCurrentSupabaseUser() {
+  const { data: sessionData, error: sessionError } =
+    await supabase.auth.getSession();
+
+  if (sessionData.session?.user) {
+    return sessionData.session.user;
+  }
+
+  if (sessionError) {
+    console.error("Не удалось прочитать сессию Supabase:", sessionError.message);
+  }
+
   const { data, error } = await supabase.auth.getUser();
 
   if (error || !data.user) {

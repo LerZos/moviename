@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useRouter } from "next/navigation";
 
@@ -7,8 +7,11 @@ import { movies as content, type Movie } from "./data/movies";
 import { supabase } from "./lib/supabase";
 import {
   emptyMovieActionState,
+  getCurrentSupabaseUser,
   loadMovieActions,
   mapSupabaseUser,
+  removeCurrentUserFromStorage,
+  saveCurrentUserToStorage,
   syncMovieAction,
 } from "./lib/kinolumaSupabase";
 
@@ -362,7 +365,7 @@ function createGeneratedPoster(
       ${originalText}
 
       <rect x="150" y="642" width="200" height="42" rx="21" fill="#ffffff" fill-opacity="0.94"/>
-      <text x="250" y="668" text-anchor="middle" fill="#000000" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="900">Премьера 2026</text>
+      <text x="250" y="668" text-anchor="middle" fill="#000000" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="900">РџСЂРµРјСЊРµСЂР° 2026</text>
     </svg>
   `;
 
@@ -376,8 +379,8 @@ function getPosterFallback(title: string, originalTitle: string, type: string) {
 function normalizeText(text: string) {
   return text
     .toLowerCase()
-    .replaceAll("ё", "е")
-    .replace(/[^a-zа-я0-9]+/g, " ")
+    .replaceAll("С‘", "Рµ")
+    .replace(/[^a-zР°-СЏ0-9]+/g, " ")
     .trim();
 }
 
@@ -402,7 +405,7 @@ function readNumberArrayFromStorage(key: string) {
 }
 
 
-const types = ["Все", "Фильм", "Сериал", "Аниме", "Мультфильм", "Документальный"];
+const types = ["Р’СЃРµ", "Фильм", "Сериал", "Аниме", "Мультфильм", "Документальный"];
 
 function getSearchText(item: ContentItem) {
   return normalizeText(
@@ -419,12 +422,12 @@ function getSearchText(item: ContentItem) {
 
 function getGenresForType(selectedType: string, items: ContentItem[]) {
   const contentByType =
-    selectedType === "Все"
+    selectedType === "Р’СЃРµ"
       ? items
       : items.filter((item) => item.type === selectedType);
 
   return [
-    "Все",
+    "Р’СЃРµ",
     ...Array.from(new Set(contentByType.flatMap((item) => item.genres))).sort(),
   ];
 }
@@ -656,12 +659,12 @@ function MovieCard({
         </div>
 
         <div className="absolute right-3 top-3 rounded bg-white px-3 py-1 text-[11px] font-black text-black shadow-[0_8px_20px_rgba(0,0,0,0.35)]">
-          ★ {item.rating}
+          в… {item.rating}
         </div>
 
         {isWatchLater && (
           <div className="absolute bottom-3 left-3 rounded bg-black/80 px-3 py-1 text-xs font-bold text-white backdrop-blur">
-            Смотреть позже
+            РЎРјРѕС‚СЂРµС‚СЊ РїРѕР·Р¶Рµ
           </div>
         )}
       </button>
@@ -702,14 +705,14 @@ function MovieCard({
             onClick={() => onOpenTrailer(item)}
             className="movie-card-action-primary"
           >
-            Трейлер
+            РўСЂРµР№Р»РµСЂ
           </button>
 
           <button
             onClick={() => onOpenDetails(item)}
             className="movie-card-action-secondary"
           >
-            Подробнее
+            РџРѕРґСЂРѕР±РЅРµРµ
           </button>
         </div>
       </div>
@@ -898,14 +901,14 @@ function MovieShelf({
           direction="left"
           hidden={!scrollState.canScrollLeft}
           onClick={() => smoothScroll("left")}
-          ariaLabel={`Листать подборку ${title} влево`}
+          ariaLabel={`Р›РёСЃС‚Р°С‚СЊ РїРѕРґР±РѕСЂРєСѓ ${title} РІР»РµРІРѕ`}
         />
 
         <RowArrowButton
           direction="right"
           hidden={!scrollState.canScrollRight}
           onClick={() => smoothScroll("right")}
-          ariaLabel={`Листать подборку ${title} вправо`}
+          ariaLabel={`Р›РёСЃС‚Р°С‚СЊ РїРѕРґР±РѕСЂРєСѓ ${title} РІРїСЂР°РІРѕ`}
         />
 
         <div ref={rowRef} className="horizontal-scroll movie-row-scroll">
@@ -934,8 +937,8 @@ export default function Home() {
 
   const [search, setSearch] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [selectedType, setSelectedType] = useState("Все");
-  const [selectedGenre, setSelectedGenre] = useState("Все");
+  const [selectedType, setSelectedType] = useState("Р’СЃРµ");
+  const [selectedGenre, setSelectedGenre] = useState("Р’СЃРµ");
   const [selectedItem, setSelectedItem] = useState<ContentItem | null>(null);
   const [trailerItem, setTrailerItem] = useState<ContentItem | null>(null);
   const [isDetailsClosing, setIsDetailsClosing] = useState(false);
@@ -1040,10 +1043,10 @@ export default function Home() {
         normalizedSearch === "" ||
         getSearchText(item).includes(normalizedSearch);
 
-      const matchesType = selectedType === "Все" || item.type === selectedType;
+      const matchesType = selectedType === "Р’СЃРµ" || item.type === selectedType;
 
       const matchesGenre =
-        selectedGenre === "Все" || item.genres.includes(selectedGenre);
+        selectedGenre === "Р’СЃРµ" || item.genres.includes(selectedGenre);
 
       return matchesSearch && matchesType && matchesGenre;
     });
@@ -1161,7 +1164,7 @@ export default function Home() {
   }
 
   function saveCurrentUser(user: CurrentUser) {
-    window.localStorage.setItem("kinoluma-current-user", JSON.stringify(user));
+    saveCurrentUserToStorage(user);
   }
 
   function resetAuthForm() {
@@ -1196,12 +1199,12 @@ export default function Home() {
     const cleanPassword = authPassword.trim();
 
     if (!cleanEmail.includes("@") || !cleanEmail.includes(".")) {
-      setAuthError("Введите нормальный email. Роботы тоже любят порядок.");
+      setAuthError("Р’РІРµРґРёС‚Рµ РЅРѕСЂРјР°Р»СЊРЅС‹Р№ email. Р РѕР±РѕС‚С‹ С‚РѕР¶Рµ Р»СЋР±СЏС‚ РїРѕСЂСЏРґРѕРє.");
       return;
     }
 
     if (cleanPassword.length < 6) {
-      setAuthError("Пароль должен быть минимум 6 символов.");
+      setAuthError("РџР°СЂРѕР»СЊ РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ РјРёРЅРёРјСѓРј 6 СЃРёРјРІРѕР»РѕРІ.");
       return;
     }
 
@@ -1209,7 +1212,7 @@ export default function Home() {
 
     if (authMode === "register") {
       if (cleanName.length < 2) {
-        setAuthError("Введите имя минимум из 2 символов.");
+        setAuthError("Р’РІРµРґРёС‚Рµ РёРјСЏ РјРёРЅРёРјСѓРј РёР· 2 СЃРёРјРІРѕР»РѕРІ.");
         return;
       }
 
@@ -1231,13 +1234,16 @@ export default function Home() {
       if (!data.session || !data.user) {
         setAuthMode("login");
         setAuthError(
-          "Аккаунт создан. Если Supabase просит подтверждение, подтверди email и войди.",
+          "РђРєРєР°СѓРЅС‚ СЃРѕР·РґР°РЅ. Р•СЃР»Рё Supabase РїСЂРѕСЃРёС‚ РїРѕРґС‚РІРµСЂР¶РґРµРЅРёРµ, РїРѕРґС‚РІРµСЂРґРё email Рё РІРѕР№РґРё.",
         );
         return;
       }
 
-      setCurrentUser(mapSupabaseUser(data.user));
-      const actions = await loadMovieActions();
+      const mappedUser = mapSupabaseUser(data.user);
+      setCurrentUser(mappedUser);
+      saveCurrentUser(mappedUser);
+
+      const actions = await loadMovieActions().catch(() => emptyMovieActionState);
       setWatchLaterIds(actions.watchLaterIds);
       setLikedItemIds(actions.likedItemIds);
       setDislikedItemIds(actions.dislikedItemIds);
@@ -1251,12 +1257,15 @@ export default function Home() {
     });
 
     if (error || !data.user) {
-      setAuthError(error?.message || "Неверный email или пароль.");
+      setAuthError(error?.message || "РќРµРІРµСЂРЅС‹Р№ email РёР»Рё РїР°СЂРѕР»СЊ.");
       return;
     }
 
-    setCurrentUser(mapSupabaseUser(data.user));
-    const actions = await loadMovieActions();
+    const mappedUser = mapSupabaseUser(data.user);
+    setCurrentUser(mappedUser);
+    saveCurrentUser(mappedUser);
+
+    const actions = await loadMovieActions().catch(() => emptyMovieActionState);
     setWatchLaterIds(actions.watchLaterIds);
     setLikedItemIds(actions.likedItemIds);
     setDislikedItemIds(actions.dislikedItemIds);
@@ -1269,7 +1278,7 @@ export default function Home() {
     setWatchLaterIds([]);
     setLikedItemIds([]);
     setDislikedItemIds([]);
-    window.localStorage.removeItem("kinoluma-current-user");
+    removeCurrentUserFromStorage();
   }
 
   function openProfilePage() {
@@ -1429,7 +1438,7 @@ export default function Home() {
 
   function handleTypeClick(type: string) {
     setSelectedType(type);
-    setSelectedGenre("Все");
+    setSelectedGenre("Р’СЃРµ");
   }
 
   function openDetails(item: ContentItem) {
@@ -1583,16 +1592,29 @@ export default function Home() {
     }
 
     async function initializeAuth() {
-      const { data } = await supabase.auth.getSession();
-      const user = data.session?.user ?? null;
+      const localActions = loadLocalActions();
 
-      if (!isMounted) {
-        return;
-      }
+      try {
+        const user = await getCurrentSupabaseUser();
 
-      if (user) {
-        setCurrentUser(mapSupabaseUser(user));
-        const actions = await loadMovieActions();
+        if (!isMounted) {
+          return;
+        }
+
+        if (!user) {
+          setCurrentUser(null);
+          removeCurrentUserFromStorage();
+          setWatchLaterIds(localActions.watchLaterIds);
+          setLikedItemIds(localActions.likedItemIds);
+          setDislikedItemIds(localActions.dislikedItemIds);
+          return;
+        }
+
+        const mappedUser = mapSupabaseUser(user);
+        setCurrentUser(mappedUser);
+        saveCurrentUser(mappedUser);
+
+        const actions = await loadMovieActions().catch(() => localActions);
 
         if (!isMounted) {
           return;
@@ -1601,33 +1623,52 @@ export default function Home() {
         setWatchLaterIds(actions.watchLaterIds);
         setLikedItemIds(actions.likedItemIds);
         setDislikedItemIds(actions.dislikedItemIds);
-      } else {
-        const localActions = loadLocalActions();
+      } catch (error) {
+        console.error("РќРµ СѓРґР°Р»РѕСЃСЊ РІРѕСЃСЃС‚Р°РЅРѕРІРёС‚СЊ СЃРµСЃСЃРёСЋ Supabase:", error);
+
+        if (!isMounted) {
+          return;
+        }
+
         setCurrentUser(null);
         setWatchLaterIds(localActions.watchLaterIds);
         setLikedItemIds(localActions.likedItemIds);
         setDislikedItemIds(localActions.dislikedItemIds);
+      } finally {
+        if (isMounted) {
+          setIsWatchLaterLoaded(true);
+          setIsReactionsLoaded(true);
+        }
       }
-
-      setIsWatchLaterLoaded(true);
-      setIsReactionsLoaded(true);
     }
 
     void initializeAuth();
 
     const { data: listener } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
         if (!isMounted) {
           return;
         }
 
         if (!session?.user) {
-          setCurrentUser(null);
+          if (event === "SIGNED_OUT") {
+            const localActions = loadLocalActions();
+            setCurrentUser(null);
+            removeCurrentUserFromStorage();
+            setWatchLaterIds(localActions.watchLaterIds);
+            setLikedItemIds(localActions.likedItemIds);
+            setDislikedItemIds(localActions.dislikedItemIds);
+          }
+
           return;
         }
 
-        setCurrentUser(mapSupabaseUser(session.user));
-        const actions = await loadMovieActions();
+        const mappedUser = mapSupabaseUser(session.user);
+        setCurrentUser(mappedUser);
+        saveCurrentUser(mappedUser);
+
+        const localActions = loadLocalActions();
+        const actions = await loadMovieActions().catch(() => localActions);
 
         if (!isMounted) {
           return;
@@ -1636,6 +1677,8 @@ export default function Home() {
         setWatchLaterIds(actions.watchLaterIds);
         setLikedItemIds(actions.likedItemIds);
         setDislikedItemIds(actions.dislikedItemIds);
+        setIsWatchLaterLoaded(true);
+        setIsReactionsLoaded(true);
       },
     );
 
@@ -1736,7 +1779,7 @@ export default function Home() {
   return (
     <main className="kinoluma-home min-h-screen overflow-x-hidden bg-black pb-[calc(92px+env(safe-area-inset-bottom))] text-white md:pb-0">
       <style>{`
-        /* KinoLuma: широкий фон и затемнение для блока "Популярное сейчас" */
+        /* KinoLuma: С€РёСЂРѕРєРёР№ С„РѕРЅ Рё Р·Р°С‚РµРјРЅРµРЅРёРµ РґР»СЏ Р±Р»РѕРєР° "РџРѕРїСѓР»СЏСЂРЅРѕРµ СЃРµР№С‡Р°СЃ" */
         .kinoluma-home > section:first-of-type {
           position: relative;
           overflow: hidden;
@@ -2731,26 +2774,26 @@ export default function Home() {
 
           <nav className="desktop-nav hidden gap-6 text-sm text-neutral-400 md:flex">
             <a className="hover:text-white" href="#">
-              Главная
+              Р“Р»Р°РІРЅР°СЏ
             </a>
             <a className="hover:text-white" href="#">
-              Фильмы
+              ФильмС‹
             </a>
             <a className="hover:text-white" href="#">
-              Сериалы
+              СериалС‹
             </a>
             <a className="hover:text-white" href="#">
               Аниме
             </a>
             <a className="hover:text-white" href="#">
-              Документальные
+              Р”РѕРєСѓРјРµРЅС‚Р°Р»СЊРЅС‹Рµ
             </a>
             <button
               type="button"
               onClick={openRandomPick}
               className="text-left transition duration-200 hover:text-white"
             >
-              Случайные фильмы
+              РЎР»СѓС‡Р°Р№РЅС‹Рµ С„РёР»СЊРјС‹
             </button>
           </nav>
         </div>
@@ -2760,7 +2803,7 @@ export default function Home() {
             <button
               onClick={openProfilePage}
               className="hidden text-right transition duration-200 hover:opacity-70 sm:block"
-              title="Открыть профиль"
+              title="РћС‚РєСЂС‹С‚СЊ РїСЂРѕС„РёР»СЊ"
             >
               <p className="text-sm font-bold text-white">{currentUser.name}</p>
               <p className="text-xs text-neutral-500">{currentUser.email}</p>
@@ -2769,8 +2812,8 @@ export default function Home() {
             <button
               onClick={openProfilePage}
               className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white text-sm font-black text-black transition duration-200 hover:scale-105 hover:shadow-[0_0_18px_rgba(255,255,255,0.25)] active:scale-95"
-              title="Открыть профиль"
-              aria-label="Открыть профиль"
+              title="РћС‚РєСЂС‹С‚СЊ РїСЂРѕС„РёР»СЊ"
+              aria-label="РћС‚РєСЂС‹С‚СЊ РїСЂРѕС„РёР»СЊ"
             >
               {getInitials(currentUser.name)}
             </button>
@@ -2779,7 +2822,7 @@ export default function Home() {
               onClick={handleLogout}
               className="mobile-logout-button rounded border border-white/20 bg-black px-4 py-2 text-sm font-bold text-white transition duration-200 hover:bg-white hover:text-black"
             >
-              Выйти
+              Р’С‹Р№С‚Рё
             </button>
           </div>
         ) : (
@@ -2787,7 +2830,7 @@ export default function Home() {
             onClick={() => openAuthModal("login")}
             className="mobile-login-button rounded border border-white/20 bg-white px-4 py-2 text-sm font-bold text-black transition duration-200 hover:bg-black hover:text-white"
           >
-            Войти
+            Р’РѕР№С‚Рё
           </button>
         )}
       </header>
@@ -2816,12 +2859,12 @@ export default function Home() {
           type="button"
           onClick={() => openDetails(featuredContent)}
           className="mobile-featured-poster-card group relative z-10 overflow-hidden text-left"
-          aria-label={`Открыть информацию: ${featuredContent.title}`}
+          aria-label={`РћС‚РєСЂС‹С‚СЊ РёРЅС„РѕСЂРјР°С†РёСЋ: ${featuredContent.title}`}
         >
           <img
             key={`mobile-featured-poster-${featuredContent.id}`}
             src={featuredBackdropImage}
-            alt={`Обложка: ${featuredContent.title}`}
+            alt={`РћР±Р»РѕР¶РєР°: ${featuredContent.title}`}
             loading="eager"
             decoding="async"
             referrerPolicy="no-referrer"
@@ -2843,12 +2886,12 @@ export default function Home() {
           </div>
 
           <div className="absolute right-3 top-3 rounded-full bg-white px-3 py-1 text-[11px] font-black text-black shadow-[0_12px_30px_rgba(0,0,0,0.45)]">
-            ★ {featuredContent.rating}
+            в… {featuredContent.rating}
           </div>
 
           <div className="absolute inset-x-0 bottom-0 p-4">
             <p className="text-xs font-bold uppercase tracking-[0.28em] text-white/55">
-              Обложка
+              РћР±Р»РѕР¶РєР°
             </p>
             <p className="mt-1 text-lg font-black leading-none text-white">
               {featuredContent.title}
@@ -2862,7 +2905,7 @@ export default function Home() {
         >
           <div className="mb-4 flex flex-wrap items-center gap-3">
             <p className="text-sm font-bold uppercase tracking-[0.4em] text-neutral-400">
-              Популярное сейчас
+              РџРѕРїСѓР»СЏСЂРЅРѕРµ СЃРµР№С‡Р°СЃ
             </p>
 
             <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-neutral-500">
@@ -2880,7 +2923,7 @@ export default function Home() {
 
           <div className="mt-5 flex flex-wrap gap-3">
             <span className="rounded-full bg-white px-4 py-2 text-sm font-black text-black">
-              ★ {featuredContent.rating}
+              в… {featuredContent.rating}
             </span>
 
             <span className="rounded-full border border-white/10 px-4 py-2 text-sm font-bold text-neutral-300">
@@ -2917,14 +2960,14 @@ export default function Home() {
               onClick={() => openTrailer(featuredContent)}
               className="rounded border-2 border-white bg-white px-6 py-3 font-black text-black transition duration-200 hover:bg-black hover:text-white hover:shadow-[0_0_22px_rgba(255,255,255,0.25)] active:scale-[0.98]"
             >
-              Смотреть трейлер
+              РЎРјРѕС‚СЂРµС‚СЊ С‚СЂРµР№Р»РµСЂ
             </button>
 
             <button
               onClick={() => openDetails(featuredContent)}
               className="rounded border border-white/20 bg-neutral-900 px-6 py-3 font-bold text-white transition duration-200 hover:bg-white hover:text-black active:scale-[0.98]"
             >
-              Подробнее
+              РџРѕРґСЂРѕР±РЅРµРµ
             </button>
           </div>
         </div>
@@ -2937,7 +2980,7 @@ export default function Home() {
         <div className="flex flex-col gap-6">
           <div className="relative">
             <label className="mb-3 block text-sm font-bold text-neutral-400">
-              Поиск по названию
+              РџРѕРёСЃРє РїРѕ РЅР°Р·РІР°РЅРёСЋ
             </label>
 
             <input
@@ -2949,14 +2992,14 @@ export default function Home() {
               onBlur={() => {
                 window.setTimeout(() => setIsSearchFocused(false), 140);
               }}
-              placeholder="Например: Наруто, Начало, Матрица, Inception..."
+              placeholder="РќР°РїСЂРёРјРµСЂ: РќР°СЂСѓС‚Рѕ, РќР°С‡Р°Р»Рѕ, РњР°С‚СЂРёС†Р°, Inception..."
               className="mobile-search-input w-full rounded-xl border border-white/10 bg-black px-5 py-4 text-white outline-none placeholder:text-neutral-600 transition duration-200 focus:border-white/40"
             />
 
             {shouldRenderSearchSuggestions && (
               <div className="mobile-suggestions absolute left-0 right-0 top-full z-50 mt-3 overflow-hidden rounded-2xl border border-white/10 bg-black/95 shadow-[0_24px_80px_rgba(0,0,0,0.72)] backdrop-blur-xl">
                 <div className="border-b border-white/10 px-4 py-3 text-xs font-black uppercase tracking-[0.28em] text-neutral-500">
-                  Быстрые подсказки
+                  Р‘С‹СЃС‚СЂС‹Рµ РїРѕРґСЃРєР°Р·РєРё
                 </div>
 
                 <div className="max-h-[430px] overflow-y-auto p-2">
@@ -3007,7 +3050,7 @@ export default function Home() {
                             {item.originalTitle}
                           </span>
                           <span className="mt-2 flex flex-wrap gap-2 text-[11px] font-black text-neutral-300">
-                            <span className="rounded-full bg-white/10 px-2 py-1">★ {item.rating}</span>
+                            <span className="rounded-full bg-white/10 px-2 py-1">в… {item.rating}</span>
                             <span className="rounded-full bg-white/10 px-2 py-1">{item.year}</span>
                             <span className="rounded-full bg-white/10 px-2 py-1">{item.type}</span>
                           </span>
@@ -3022,7 +3065,7 @@ export default function Home() {
 
           <div>
             <p className="mb-3 text-sm font-bold text-neutral-400">
-              Тип контента
+              РўРёРї РєРѕРЅС‚РµРЅС‚Р°
             </p>
 
             <div className="mobile-chip-row flex flex-wrap gap-3">
@@ -3043,7 +3086,7 @@ export default function Home() {
           </div>
 
           <div>
-            <p className="mb-3 text-sm font-bold text-neutral-400">Жанры</p>
+            <p className="mb-3 text-sm font-bold text-neutral-400">Р–Р°РЅСЂС‹</p>
 
             <div className="mobile-chip-row mobile-genre-row flex flex-wrap gap-3">
               {allGenres.map((genre) => (
@@ -3067,16 +3110,16 @@ export default function Home() {
       <section className="mobile-section px-8 py-14">
         <div className="mb-6">
           <p className="text-sm font-bold uppercase tracking-[0.35em] text-neutral-500">
-            Новая полка
+            РќРѕРІР°СЏ РїРѕР»РєР°
           </p>
 
           <h3 className="mt-2 text-3xl font-black tracking-tight">
-            Новинки 2026
+            РќРѕРІРёРЅРєРё 2026
           </h3>
 
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-neutral-500">
-            Оригинальные обложки, ровная лента и компактная карточка: описание,
-            жанры и кнопки теперь держат одну визуальную линию.
+            РћСЂРёРіРёРЅР°Р»СЊРЅС‹Рµ РѕР±Р»РѕР¶РєРё, СЂРѕРІРЅР°СЏ Р»РµРЅС‚Р° Рё РєРѕРјРїР°РєС‚РЅР°СЏ РєР°СЂС‚РѕС‡РєР°: РѕРїРёСЃР°РЅРёРµ,
+            Р¶Р°РЅСЂС‹ Рё РєРЅРѕРїРєРё С‚РµРїРµСЂСЊ РґРµСЂР¶Р°С‚ РѕРґРЅСѓ РІРёР·СѓР°Р»СЊРЅСѓСЋ Р»РёРЅРёСЋ.
           </p>
         </div>
 
@@ -3085,14 +3128,14 @@ export default function Home() {
             direction="left"
             hidden={!newReleasesScrollState.canScrollLeft}
             onClick={() => smoothScrollMovieRow(newReleasesScrollRef, "left")}
-            ariaLabel="Листать новинки влево"
+            ariaLabel="Р›РёСЃС‚Р°С‚СЊ РЅРѕРІРёРЅРєРё РІР»РµРІРѕ"
           />
 
           <RowArrowButton
             direction="right"
             hidden={!newReleasesScrollState.canScrollRight}
             onClick={() => smoothScrollMovieRow(newReleasesScrollRef, "right")}
-            ariaLabel="Листать новинки вправо"
+            ariaLabel="Р›РёСЃС‚Р°С‚СЊ РЅРѕРІРёРЅРєРё РІРїСЂР°РІРѕ"
           />
 
           <div
@@ -3119,22 +3162,22 @@ export default function Home() {
       <section className="mobile-section px-8 py-12">
         <div className="mobile-section-head mb-6 flex items-end justify-between gap-4">
           <div>
-            <h3 className="text-2xl font-bold">Популярное сейчас</h3>
+            <h3 className="text-2xl font-bold">РџРѕРїСѓР»СЏСЂРЅРѕРµ СЃРµР№С‡Р°СЃ</h3>
             <p className="mt-2 text-sm text-neutral-500">
-              Найдено: {filteredContent.length}
+              РќР°Р№РґРµРЅРѕ: {filteredContent.length}
             </p>
           </div>
 
-          {(search || selectedType !== "Все" || selectedGenre !== "Все") && (
+          {(search || selectedType !== "Р’СЃРµ" || selectedGenre !== "Р’СЃРµ") && (
             <button
               onClick={() => {
                 setSearch("");
-                setSelectedType("Все");
-                setSelectedGenre("Все");
+                setSelectedType("Р’СЃРµ");
+                setSelectedGenre("Р’СЃРµ");
               }}
               className="rounded border border-white/10 px-4 py-2 text-sm font-bold text-neutral-300 transition duration-200 hover:bg-white hover:text-black"
             >
-              Сбросить
+              РЎР±СЂРѕСЃРёС‚СЊ
             </button>
           )}
         </div>
@@ -3154,9 +3197,9 @@ export default function Home() {
           </div>
         ) : (
           <div className="rounded-xl border border-white/10 bg-neutral-950 p-10 text-center">
-            <h4 className="text-xl font-bold">Ничего не найдено</h4>
+            <h4 className="text-xl font-bold">РќРёС‡РµРіРѕ РЅРµ РЅР°Р№РґРµРЅРѕ</h4>
             <p className="mt-2 text-neutral-500">
-              Попробуй написать название на русском или английском.
+              РџРѕРїСЂРѕР±СѓР№ РЅР°РїРёСЃР°С‚СЊ РЅР°Р·РІР°РЅРёРµ РЅР° СЂСѓСЃСЃРєРѕРј РёР»Рё Р°РЅРіР»РёР№СЃРєРѕРј.
             </p>
           </div>
         )}
@@ -3165,16 +3208,16 @@ export default function Home() {
       <section className="mobile-section px-8 pb-16">
         <div className="mb-6">
           <p className="text-sm font-bold uppercase tracking-[0.35em] text-neutral-500">
-            Подборка
+            РџРѕРґР±РѕСЂРєР°
           </p>
 
           <h3 className="mt-2 text-2xl font-bold">
-            Культовая фантастика и экшен
+            РљСѓР»СЊС‚РѕРІР°СЏ С„Р°РЅС‚Р°СЃС‚РёРєР° Рё СЌРєС€РµРЅ
           </h3>
 
           <p className="mt-2 max-w-2xl text-sm text-neutral-500">
-            Карточки собраны плотнее: описание и жанры подняты выше, а кнопки
-            не прилипают к нижнему краю.
+            РљР°СЂС‚РѕС‡РєРё СЃРѕР±СЂР°РЅС‹ РїР»РѕС‚РЅРµРµ: РѕРїРёСЃР°РЅРёРµ Рё Р¶Р°РЅСЂС‹ РїРѕРґРЅСЏС‚С‹ РІС‹С€Рµ, Р° РєРЅРѕРїРєРё
+            РЅРµ РїСЂРёР»РёРїР°СЋС‚ Рє РЅРёР¶РЅРµРјСѓ РєСЂР°СЋ.
           </p>
         </div>
 
@@ -3183,14 +3226,14 @@ export default function Home() {
             direction="left"
             hidden={!curatedScrollState.canScrollLeft}
             onClick={() => smoothScrollMovieRow(curatedScrollRef, "left")}
-            ariaLabel="Листать влево"
+            ariaLabel="Р›РёСЃС‚Р°С‚СЊ РІР»РµРІРѕ"
           />
 
           <RowArrowButton
             direction="right"
             hidden={!curatedScrollState.canScrollRight}
             onClick={() => smoothScrollMovieRow(curatedScrollRef, "right")}
-            ariaLabel="Листать вправо"
+            ariaLabel="Р›РёСЃС‚Р°С‚СЊ РІРїСЂР°РІРѕ"
           />
 
           <div
@@ -3215,9 +3258,9 @@ export default function Home() {
       </section>
 
       <MovieShelf
-        label="Фильмы"
-        title="Большое кино на вечер"
-        description="Подборка фильмов для тех случаев, когда хочется включить что-то уверенное: от эпичной фантастики до мощного экшена."
+        label="ФильмС‹"
+        title="Р‘РѕР»СЊС€РѕРµ РєРёРЅРѕ РЅР° РІРµС‡РµСЂ"
+        description="РџРѕРґР±РѕСЂРєР° С„РёР»СЊРјРѕРІ РґР»СЏ С‚РµС… СЃР»СѓС‡Р°РµРІ, РєРѕРіРґР° С…РѕС‡РµС‚СЃСЏ РІРєР»СЋС‡РёС‚СЊ С‡С‚Рѕ-С‚Рѕ СѓРІРµСЂРµРЅРЅРѕРµ: РѕС‚ СЌРїРёС‡РЅРѕР№ С„Р°РЅС‚Р°СЃС‚РёРєРё РґРѕ РјРѕС‰РЅРѕРіРѕ СЌРєС€РµРЅР°."
         items={filmShelfContent}
         watchLaterIds={watchLaterIds}
         onOpenDetails={openDetails}
@@ -3226,8 +3269,8 @@ export default function Home() {
 
       <MovieShelf
         label="Аниме"
-        title="Аниме: энергия и легенды"
-        description="Истории с сильными героями, яркими мирами и таким количеством эмоций, что обычный сериал рядом тихо пьёт чай."
+        title="Аниме: СЌРЅРµСЂРіРёСЏ Рё Р»РµРіРµРЅРґС‹"
+        description="РСЃС‚РѕСЂРёРё СЃ СЃРёР»СЊРЅС‹РјРё РіРµСЂРѕСЏРјРё, СЏСЂРєРёРјРё РјРёСЂР°РјРё Рё С‚Р°РєРёРј РєРѕР»РёС‡РµСЃС‚РІРѕРј СЌРјРѕС†РёР№, С‡С‚Рѕ РѕР±С‹С‡РЅС‹Р№ СЃРµСЂРёР°Р» СЂСЏРґРѕРј С‚РёС…Рѕ РїСЊС‘С‚ С‡Р°Р№."
         items={animeShelfContent}
         watchLaterIds={watchLaterIds}
         onOpenDetails={openDetails}
@@ -3235,9 +3278,9 @@ export default function Home() {
       />
 
       <MovieShelf
-        label="Мультфильмы"
-        title="Анимация для всех возрастов"
-        description="Мультфильмы, которые работают и для лёгкого вечера, и для ностальгии, и для проверки: осталось ли сердце на месте."
+        label="МультфильмС‹"
+        title="РђРЅРёРјР°С†РёСЏ РґР»СЏ РІСЃРµС… РІРѕР·СЂР°СЃС‚РѕРІ"
+        description="МультфильмС‹, РєРѕС‚РѕСЂС‹Рµ СЂР°Р±РѕС‚Р°СЋС‚ Рё РґР»СЏ Р»С‘РіРєРѕРіРѕ РІРµС‡РµСЂР°, Рё РґР»СЏ РЅРѕСЃС‚Р°Р»СЊРіРёРё, Рё РґР»СЏ РїСЂРѕРІРµСЂРєРё: РѕСЃС‚Р°Р»РѕСЃСЊ Р»Рё СЃРµСЂРґС†Рµ РЅР° РјРµСЃС‚Рµ."
         items={cartoonShelfContent}
         watchLaterIds={watchLaterIds}
         onOpenDetails={openDetails}
@@ -3245,9 +3288,9 @@ export default function Home() {
       />
 
       <MovieShelf
-        label="Сериалы"
-        title="Серии, которые затягивают"
-        description="Сериалы, где одна серия легко превращается в три. Ничего необычного, просто классическая ловушка хорошего сюжета."
+        label="СериалС‹"
+        title="РЎРµСЂРёРё, РєРѕС‚РѕСЂС‹Рµ Р·Р°С‚СЏРіРёРІР°СЋС‚"
+        description="СериалС‹, РіРґРµ РѕРґРЅР° СЃРµСЂРёСЏ Р»РµРіРєРѕ РїСЂРµРІСЂР°С‰Р°РµС‚СЃСЏ РІ С‚СЂРё. РќРёС‡РµРіРѕ РЅРµРѕР±С‹С‡РЅРѕРіРѕ, РїСЂРѕСЃС‚Рѕ РєР»Р°СЃСЃРёС‡РµСЃРєР°СЏ Р»РѕРІСѓС€РєР° С…РѕСЂРѕС€РµРіРѕ СЃСЋР¶РµС‚Р°."
         items={seriesShelfContent}
         watchLaterIds={watchLaterIds}
         onOpenDetails={openDetails}
@@ -3258,14 +3301,14 @@ export default function Home() {
         <section className="mobile-section border-t border-white/10 px-8 py-14">
           <div className="mb-6">
             <p className="text-sm font-bold uppercase tracking-[0.35em] text-neutral-500">
-              Мой список
+              РњРѕР№ СЃРїРёСЃРѕРє
             </p>
 
-            <h3 className="mt-2 text-2xl font-bold">Смотреть позже</h3>
+            <h3 className="mt-2 text-2xl font-bold">РЎРјРѕС‚СЂРµС‚СЊ РїРѕР·Р¶Рµ</h3>
 
             <p className="mt-2 text-sm text-neutral-500">
-              Эти фильмы сохранены в браузере. Если очистить данные сайта,
-              список тоже очистится.
+              Р­С‚Рё С„РёР»СЊРјС‹ СЃРѕС…СЂР°РЅРµРЅС‹ РІ Р±СЂР°СѓР·РµСЂРµ. Р•СЃР»Рё РѕС‡РёСЃС‚РёС‚СЊ РґР°РЅРЅС‹Рµ СЃР°Р№С‚Р°,
+              СЃРїРёСЃРѕРє С‚РѕР¶Рµ РѕС‡РёСЃС‚РёС‚СЃСЏ.
             </p>
           </div>
 
@@ -3274,14 +3317,14 @@ export default function Home() {
               direction="left"
               hidden={!watchLaterScrollState.canScrollLeft}
               onClick={() => smoothScrollMovieRow(watchLaterScrollRef, "left")}
-              ariaLabel="Листать смотреть позже влево"
+              ariaLabel="Р›РёСЃС‚Р°С‚СЊ СЃРјРѕС‚СЂРµС‚СЊ РїРѕР·Р¶Рµ РІР»РµРІРѕ"
             />
 
             <RowArrowButton
               direction="right"
               hidden={!watchLaterScrollState.canScrollRight}
               onClick={() => smoothScrollMovieRow(watchLaterScrollRef, "right")}
-              ariaLabel="Листать смотреть позже вправо"
+              ariaLabel="Р›РёСЃС‚Р°С‚СЊ СЃРјРѕС‚СЂРµС‚СЊ РїРѕР·Р¶Рµ РІРїСЂР°РІРѕ"
             />
 
             <div
@@ -3325,9 +3368,9 @@ export default function Home() {
             <button
               onClick={closeDetailsModal}
               className="absolute right-4 top-4 z-10 rounded-full border border-white/10 bg-black px-3 py-1 text-xl font-bold text-white transition duration-200 hover:bg-white hover:text-black"
-              aria-label="Закрыть"
+              aria-label="Р—Р°РєСЂС‹С‚СЊ"
             >
-              ×
+              Г—
             </button>
 
             <div className="details-modal-poster h-[520px] bg-neutral-900">
@@ -3361,7 +3404,7 @@ export default function Home() {
 
               <div className="mt-5 flex flex-wrap gap-3">
                 <span className="rounded-full bg-white px-4 py-2 text-sm font-black text-black">
-                  ★ {selectedItem.rating} / 10
+                  в… {selectedItem.rating} / 10
                 </span>
 
                 <span className="rounded-full border border-white/10 px-4 py-2 text-sm font-bold text-neutral-300">
@@ -3389,15 +3432,15 @@ export default function Home() {
                   onClick={() => openTrailer(selectedItem)}
                   className="rounded border-2 border-white bg-white px-6 py-3 font-black text-black transition duration-200 hover:bg-black hover:text-white hover:shadow-[0_0_22px_rgba(255,255,255,0.25)] active:scale-[0.98]"
                 >
-                  Смотреть трейлер
+                  РЎРјРѕС‚СЂРµС‚СЊ С‚СЂРµР№Р»РµСЂ
                 </button>
 
                 <button
                   onClick={() => openContent(selectedItem)}
                   className="rounded border border-white bg-white px-6 py-3 font-bold text-black transition duration-200 hover:bg-black hover:text-white hover:shadow-[0_0_22px_rgba(255,255,255,0.25)] active:scale-[0.98]"
-                  title="Открыть страницу фильма"
+                  title="РћС‚РєСЂС‹С‚СЊ СЃС‚СЂР°РЅРёС†Сѓ С„РёР»СЊРјР°"
                 >
-                  Смотреть контент
+                  РЎРјРѕС‚СЂРµС‚СЊ РєРѕРЅС‚РµРЅС‚
                 </button>
 
                 <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/60 p-1.5">
@@ -3406,13 +3449,13 @@ export default function Home() {
                     onClick={() => toggleWatchLater(selectedItem.id)}
                     ariaLabel={
                       watchLaterIds.includes(selectedItem.id)
-                        ? "Убрать из смотреть позже"
-                        : "Добавить в смотреть позже"
+                        ? "РЈР±СЂР°С‚СЊ РёР· СЃРјРѕС‚СЂРµС‚СЊ РїРѕР·Р¶Рµ"
+                        : "Р”РѕР±Р°РІРёС‚СЊ РІ СЃРјРѕС‚СЂРµС‚СЊ РїРѕР·Р¶Рµ"
                     }
                     title={
                       watchLaterIds.includes(selectedItem.id)
-                        ? "Убрать из смотреть позже"
-                        : "Смотреть позже"
+                        ? "РЈР±СЂР°С‚СЊ РёР· СЃРјРѕС‚СЂРµС‚СЊ РїРѕР·Р¶Рµ"
+                        : "РЎРјРѕС‚СЂРµС‚СЊ РїРѕР·Р¶Рµ"
                     }
                   >
                     <ClockIcon />
@@ -3423,13 +3466,13 @@ export default function Home() {
                     onClick={() => toggleLiked(selectedItem.id)}
                     ariaLabel={
                       likedItemIds.includes(selectedItem.id)
-                        ? "Убрать лайк"
-                        : "Фильм понравился"
+                        ? "РЈР±СЂР°С‚СЊ Р»Р°Р№Рє"
+                        : "Фильм РїРѕРЅСЂР°РІРёР»СЃСЏ"
                     }
                     title={
                       likedItemIds.includes(selectedItem.id)
-                        ? "Убрать лайк"
-                        : "Понравилось"
+                        ? "РЈР±СЂР°С‚СЊ Р»Р°Р№Рє"
+                        : "РџРѕРЅСЂР°РІРёР»РѕСЃСЊ"
                     }
                   >
                     <HeartIcon filled={likedItemIds.includes(selectedItem.id)} />
@@ -3440,13 +3483,13 @@ export default function Home() {
                     onClick={() => toggleDisliked(selectedItem.id)}
                     ariaLabel={
                       dislikedItemIds.includes(selectedItem.id)
-                        ? "Убрать дизлайк"
-                        : "Фильм не понравился"
+                        ? "РЈР±СЂР°С‚СЊ РґРёР·Р»Р°Р№Рє"
+                        : "Фильм РЅРµ РїРѕРЅСЂР°РІРёР»СЃСЏ"
                     }
                     title={
                       dislikedItemIds.includes(selectedItem.id)
-                        ? "Убрать дизлайк"
-                        : "Не понравилось"
+                        ? "РЈР±СЂР°С‚СЊ РґРёР·Р»Р°Р№Рє"
+                        : "РќРµ РїРѕРЅСЂР°РІРёР»РѕСЃСЊ"
                     }
                   >
                     <DislikeIcon
@@ -3479,7 +3522,7 @@ export default function Home() {
             <div className="mb-4 flex items-center justify-between gap-4">
               <div>
                 <p className="text-sm font-bold uppercase tracking-[0.3em] text-neutral-500">
-                  Трейлер
+                  РўСЂРµР№Р»РµСЂ
                 </p>
 
                 <h3 className="mt-1 text-2xl font-black">
@@ -3494,9 +3537,9 @@ export default function Home() {
               <button
                 onClick={closeTrailerModal}
                 className="rounded-full border border-white/10 bg-black px-4 py-2 text-xl font-bold text-white transition duration-200 hover:bg-white hover:text-black"
-                aria-label="Закрыть трейлер"
+                aria-label="Р—Р°РєСЂС‹С‚СЊ С‚СЂРµР№Р»РµСЂ"
               >
-                ×
+                Г—
               </button>
             </div>
 
@@ -3532,35 +3575,35 @@ export default function Home() {
             <button
               onClick={closeAuthModal}
               className="absolute right-4 top-4 rounded-full border border-white/10 bg-black px-3 py-1 text-xl font-bold text-white transition duration-200 hover:bg-white hover:text-black"
-              aria-label="Закрыть вход"
+              aria-label="Р—Р°РєСЂС‹С‚СЊ РІС…РѕРґ"
             >
-              ×
+              Г—
             </button>
 
             <p className="text-sm font-bold uppercase tracking-[0.3em] text-neutral-500">
-              Аккаунт KinoLuma
+              РђРєРєР°СѓРЅС‚ KinoLuma
             </p>
 
             <h3 className="mt-3 text-3xl font-black">
-              {authMode === "login" ? "Вход" : "Регистрация"}
+              {authMode === "login" ? "Р’С…РѕРґ" : "Р РµРіРёСЃС‚СЂР°С†РёСЏ"}
             </h3>
 
             <p className="mt-2 text-sm text-neutral-500">
               {authMode === "login"
-                ? "Войди, чтобы открыть свои списки, реакции и персональные подборки."
-                : "Создай аккаунт, чтобы сохранять фильмы, реакции и подборки в профиле."}
+                ? "Р’РѕР№РґРё, С‡С‚РѕР±С‹ РѕС‚РєСЂС‹С‚СЊ СЃРІРѕРё СЃРїРёСЃРєРё, СЂРµР°РєС†РёРё Рё РїРµСЂСЃРѕРЅР°Р»СЊРЅС‹Рµ РїРѕРґР±РѕСЂРєРё."
+                : "РЎРѕР·РґР°Р№ Р°РєРєР°СѓРЅС‚, С‡С‚РѕР±С‹ СЃРѕС…СЂР°РЅСЏС‚СЊ С„РёР»СЊРјС‹, СЂРµР°РєС†РёРё Рё РїРѕРґР±РѕСЂРєРё РІ РїСЂРѕС„РёР»Рµ."}
             </p>
 
             <form onSubmit={handleAuthSubmit} className="mt-6 space-y-4">
               {authMode === "register" && (
                 <div>
                   <label className="mb-2 block text-sm font-bold text-neutral-400">
-                    Имя
+                    РРјСЏ
                   </label>
                   <input
                     value={authName}
                     onChange={(event) => setAuthName(event.target.value)}
-                    placeholder="Например: Алекс"
+                    placeholder="РќР°РїСЂРёРјРµСЂ: РђР»РµРєСЃ"
                     className="w-full rounded-xl border border-white/10 bg-black px-4 py-3 text-white outline-none placeholder:text-neutral-700 transition duration-200 focus:border-white/40"
                   />
                 </div>
@@ -3581,12 +3624,12 @@ export default function Home() {
 
               <div>
                 <label className="mb-2 block text-sm font-bold text-neutral-400">
-                  Пароль
+                  РџР°СЂРѕР»СЊ
                 </label>
                 <input
                   value={authPassword}
                   onChange={(event) => setAuthPassword(event.target.value)}
-                  placeholder="Минимум 4 символа"
+                  placeholder="РњРёРЅРёРјСѓРј 4 СЃРёРјРІРѕР»Р°"
                   type="password"
                   className="w-full rounded-xl border border-white/10 bg-black px-4 py-3 text-white outline-none placeholder:text-neutral-700 transition duration-200 focus:border-white/40"
                 />
@@ -3602,7 +3645,7 @@ export default function Home() {
                 type="submit"
                 className="w-full rounded-xl border-2 border-white bg-white px-5 py-3 font-black text-black transition duration-200 hover:bg-black hover:text-white active:scale-[0.98]"
               >
-                {authMode === "login" ? "Войти" : "Зарегистрироваться"}
+                {authMode === "login" ? "Р’РѕР№С‚Рё" : "Р—Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°С‚СЊСЃСЏ"}
               </button>
             </form>
 
@@ -3615,7 +3658,7 @@ export default function Home() {
                   }}
                   className="text-sm font-bold text-neutral-300 transition duration-200 hover:text-white"
                 >
-                  Нет аккаунта? Зарегистрироваться
+                  РќРµС‚ Р°РєРєР°СѓРЅС‚Р°? Р—Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°С‚СЊСЃСЏ
                 </button>
               ) : (
                 <button
@@ -3625,14 +3668,14 @@ export default function Home() {
                   }}
                   className="text-sm font-bold text-neutral-300 transition duration-200 hover:text-white"
                 >
-                  Уже есть аккаунт? Войти
+                  РЈР¶Рµ РµСЃС‚СЊ Р°РєРєР°СѓРЅС‚? Р’РѕР№С‚Рё
                 </button>
               )}
             </div>
 
             <p className="mt-4 text-xs leading-relaxed text-neutral-600">
-              После входа твои списки, реакции и подборки будут доступны в
-              профиле KinoLuma.
+              РџРѕСЃР»Рµ РІС…РѕРґР° С‚РІРѕРё СЃРїРёСЃРєРё, СЂРµР°РєС†РёРё Рё РїРѕРґР±РѕСЂРєРё Р±СѓРґСѓС‚ РґРѕСЃС‚СѓРїРЅС‹ РІ
+              РїСЂРѕС„РёР»Рµ KinoLuma.
             </p>
           </div>
         </div>
@@ -3643,3 +3686,4 @@ export default function Home() {
     </main>
   );
 }
+

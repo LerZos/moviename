@@ -235,7 +235,7 @@ export const movies: Movie[] = [
       year: "2014",
       rating: 8.7,
       genres: ["Фантастика", "Драма", "Приключения"],
-      poster: "https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg",
+      poster: "https://avatars.mds.yandex.net/get-kinopoisk-image/1704946/ef2f5aa6-daf6-4b71-acb1-40dd61d9c692/600x900",
       description: "Путешествие через космос ради спасения человечества.",
       trailerUrl: "https://www.youtube.com/embed/2LqzF5WauAw",
       longDescription:
@@ -2031,7 +2031,3694 @@ export const movies: Movie[] = [
         { id: "player-1", name: "Плеер 1", embedUrl: "" },
         { id: "player-2", name: "Плеер 2", embedUrl: "" },
       ],
-    }
+    },
+  {
+      id: 48,
+      slug: "the-shawshank-redemption",
+      title: "Побег из Шоушенка",
+      originalTitle: "The Shawshank Redemption",
+      searchTitles: ["побег из шоушенка", "шоушенк", "shawshank redemption", "shawshank"],
+      type: "Фильм",
+      year: "1994",
+      rating: 9.3,
+      genres: ["Драма", "Криминал"],
+      poster: "https://image.tmdb.org/t/p/w500/q6y0Go1tsGEsmtFryDOJo3dEmqu.jpg",
+      description: "История надежды, дружбы и внутренней свободы за стенами тюрьмы.",
+      trailerUrl: "https://www.youtube.com/embed/PLl99DlL6b4",
+      longDescription:
+        "Банкир Энди Дюфрейн попадает в тюрьму Шоушенк и сталкивается с системой, которая пытается стереть личность. Его спокойствие, ум и дружба с Рэдом превращают мрачную историю в фильм о надежде, которая работает тише, чем молоток, но сильнее стены.",
+      facts: [
+        { label: "Год", value: "1994" },
+        { label: "Тип", value: "Фильм" },
+        { label: "Страна", value: "США" },
+        { label: "Длительность", value: "142 мин" },
+        { label: "Студия", value: "Castle Rock Entertainment" },
+        { label: "Режиссёр", value: "Frank Darabont" },
+        { label: "Основа", value: "Повесть Stephen King" },
+        { label: "Темы", value: "Надежда, дружба, свобода" },
+      ],
+      cast: [
+        { name: "Tim Robbins", role: "Энди Дюфрейн" },
+        { name: "Morgan Freeman", role: "Эллис «Рэд» Реддинг" },
+        { name: "Bob Gunton", role: "Начальник тюрьмы Нортон" },
+        { name: "William Sadler", role: "Хейвуд" },
+        { name: "Clancy Brown", role: "Капитан Хэдли" },
+      ],
+      players: [
+        { id: "player-1", name: "Плеер 1", embedUrl: "" },
+        { id: "player-2", name: "Плеер 2", embedUrl: "" },
+        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+      ],
+    },
+  {
+      id: 49,
+      slug: "forrest-gump",
+      title: "Форрест Гамп",
+      originalTitle: "Forrest Gump",
+      searchTitles: ["форрест гамп", "форест гамп", "forrest gump", "гамп"],
+      type: "Фильм",
+      year: "1994",
+      rating: 8.8,
+      genres: ["Драма", "Романтика", "Комедия"],
+      poster: "https://image.tmdb.org/t/p/w500/arw2vcBveWOVZr6pxd9XTd1TdQa.jpg",
+      description: "Трогательная история человека, который проходит через эпоху с открытым сердцем.",
+      trailerUrl: "https://www.youtube.com/embed/bLvqoHBptjg",
+      longDescription:
+        "Форрест Гамп видит мир проще многих, но именно это помогает ему прожить удивительную жизнь. Он оказывается рядом с большими событиями истории, сохраняет верность близким и доказывает: доброта иногда быстрее любой стратегии.",
+      facts: [
+        { label: "Год", value: "1994" },
+        { label: "Тип", value: "Фильм" },
+        { label: "Страна", value: "США" },
+        { label: "Длительность", value: "142 мин" },
+        { label: "Студия", value: "Paramount Pictures" },
+        { label: "Режиссёр", value: "Robert Zemeckis" },
+        { label: "Основа", value: "Роман Winston Groom" },
+        { label: "Темы", value: "Судьба, любовь, доброта" },
+      ],
+      cast: [
+        { name: "Tom Hanks", role: "Форрест Гамп" },
+        { name: "Robin Wright", role: "Дженни Карран" },
+        { name: "Gary Sinise", role: "Лейтенант Дэн" },
+        { name: "Mykelti Williamson", role: "Бабба" },
+        { name: "Sally Field", role: "Миссис Гамп" },
+      ],
+      players: [
+        { id: "player-1", name: "Плеер 1", embedUrl: "" },
+        { id: "player-2", name: "Плеер 2", embedUrl: "" },
+        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+      ],
+    },
+  {
+      id: 50,
+      slug: "the-lord-of-the-rings-the-fellowship-of-the-ring",
+      title: "Властелин колец: Братство кольца",
+      originalTitle: "The Lord of the Rings: The Fellowship of the Ring",
+      searchTitles: ["властелин колец", "братство кольца", "lord of the rings", "fellowship of the ring"],
+      type: "Фильм",
+      year: "2001",
+      rating: 8.9,
+      genres: ["Фэнтези", "Приключения", "Драма"],
+      poster: "https://image.tmdb.org/t/p/w500/6oom5QYQ2yQTMJIbnvbkBL9cHo6.jpg",
+      description: "Начало большого путешествия через Средиземье ради уничтожения кольца.",
+      trailerUrl: "https://www.youtube.com/embed/V75dMMIW2B4",
+      longDescription:
+        "Фродо получает кольцо, от которого зависит судьба Средиземья. Вместе с Братством он начинает путь, где дружба, смелость и маленький шаг вперёд оказываются важнее громких титулов и древних пророчеств.",
+      facts: [
+        { label: "Год", value: "2001" },
+        { label: "Тип", value: "Фильм" },
+        { label: "Страна", value: "Новая Зеландия, США" },
+        { label: "Длительность", value: "178 мин" },
+        { label: "Студия", value: "New Line Cinema, WingNut Films" },
+        { label: "Режиссёр", value: "Peter Jackson" },
+        { label: "Основа", value: "Роман J. R. R. Tolkien" },
+        { label: "Мир", value: "Средиземье" },
+      ],
+      cast: [
+        { name: "Elijah Wood", role: "Фродо Бэггинс" },
+        { name: "Ian McKellen", role: "Гэндальф" },
+        { name: "Viggo Mortensen", role: "Арагорн" },
+        { name: "Sean Astin", role: "Сэм" },
+        { name: "Orlando Bloom", role: "Леголас" },
+      ],
+      players: [
+        { id: "player-1", name: "Плеер 1", embedUrl: "" },
+        { id: "player-2", name: "Плеер 2", embedUrl: "" },
+        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+      ],
+    },
+  {
+      id: 51,
+      slug: "the-wild-robot",
+      title: "Дикий робот",
+      originalTitle: "The Wild Robot",
+      searchTitles: ["дикий робот", "wild robot", "робот роз", "роз"],
+      type: "Мультфильм",
+      year: "2024",
+      rating: 8.2,
+      genres: ["Анимация", "Приключения", "Семейный", "Фантастика"],
+      poster: "https://image.tmdb.org/t/p/w500/wTnV3PCVW5O92JMrFvvrRcV39RU.jpg",
+      description: "Робот оказывается на диком острове и учится понимать жизнь вокруг.",
+      trailerUrl: "https://www.youtube.com/embed/67vbA5ZJdKQ",
+      longDescription:
+        "Робот ROZZUM попадает на необитаемый остров и пытается выжить среди животных. Постепенно она учится заботе, языку природы и дружбе, превращаясь из машины с инструкциями в героя с сердцем.",
+      facts: [
+        { label: "Год", value: "2024" },
+        { label: "Тип", value: "Мультфильм" },
+        { label: "Страна", value: "США" },
+        { label: "Длительность", value: "102 мин" },
+        { label: "Студия", value: "DreamWorks Animation" },
+        { label: "Режиссёр", value: "Chris Sanders" },
+        { label: "Основа", value: "Книга Peter Brown" },
+        { label: "Темы", value: "Забота, природа, адаптация" },
+      ],
+      cast: [
+        { name: "Роз", role: "Робот, который учится жить среди природы" },
+        { name: "Брайтбилл", role: "Гусёнок и важная связь Роз" },
+        { name: "Финк", role: "Лис и неожиданный союзник" },
+        { name: "Пинктейл", role: "Опытная мама-опоссум" },
+        { name: "Жители острова", role: "Дикая, шумная и честная школа жизни" },
+      ],
+      players: [
+        { id: "player-1", name: "Плеер 1", embedUrl: "" },
+        { id: "player-2", name: "Плеер 2", embedUrl: "" },
+      ],
+    },
+  {
+      id: 52,
+      slug: "inside-out-2",
+      title: "Головоломка 2",
+      originalTitle: "Inside Out 2",
+      searchTitles: ["головоломка 2", "inside out 2", "эмоции", "тревожность", "райли"],
+      type: "Мультфильм",
+      year: "2024",
+      rating: 7.6,
+      genres: ["Анимация", "Комедия", "Семейный", "Драма"],
+      poster: "https://image.tmdb.org/t/p/w500/vpnVM9B6NMmQpWeZvzLvDESb2QY.jpg",
+      description: "У Райли появляются новые эмоции, и в голове снова начинается ремонт без предупреждения.",
+      trailerUrl: "https://www.youtube.com/embed/LEjhY15eCx0",
+      longDescription:
+        "Райли взрослеет, а вместе с ней меняется и штаб эмоций. Радость, Печаль и старые знакомые сталкиваются с новыми чувствами, которые делают подростковый возраст сложным, смешным и очень узнаваемым.",
+      facts: [
+        { label: "Год", value: "2024" },
+        { label: "Тип", value: "Мультфильм" },
+        { label: "Страна", value: "США" },
+        { label: "Длительность", value: "96 мин" },
+        { label: "Студия", value: "Pixar Animation Studios" },
+        { label: "Режиссёр", value: "Kelsey Mann" },
+        { label: "Продолжение", value: "Головоломка" },
+        { label: "Темы", value: "Взросление, эмоции, самооценка" },
+      ],
+      cast: [
+        { name: "Райли", role: "Девочка, которая взрослеет" },
+        { name: "Радость", role: "Эмоция, которая всё ещё хочет как лучше" },
+        { name: "Печаль", role: "Эмоция, без которой не собрать себя" },
+        { name: "Тревожность", role: "Новая эмоция с планами на всё сразу" },
+        { name: "Зависть", role: "Новая участница внутренней команды" },
+      ],
+      players: [
+        { id: "player-1", name: "Плеер 1", embedUrl: "" },
+        { id: "player-2", name: "Плеер 2", embedUrl: "" },
+      ],
+    },
+  {
+      id: 53,
+      slug: "furiosa-a-mad-max-saga",
+      title: "Фуриоса: Хроники Безумного Макса",
+      originalTitle: "Furiosa: A Mad Max Saga",
+      searchTitles: ["фуриоса", "furiosa", "безумный макс", "mad max saga"],
+      type: "Фильм",
+      year: "2024",
+      rating: 7.5,
+      genres: ["Экшен", "Приключения", "Фантастика"],
+      poster: "https://image.tmdb.org/t/p/w500/iADOJ8Zymht2JPMoy3R7xceZprc.jpg",
+      description: "История Фуриосы до Дороги ярости: пустошь, власть и выживание.",
+      trailerUrl: "https://www.youtube.com/embed/XJMuhwVlca4",
+      longDescription:
+        "Юная Фуриоса оказывается вырвана из родного места и попадает в жестокий мир пустоши. На пути к свободе ей приходится изучить правила силы, союзы и цену мести в мире, где бензин иногда звучит как валюта судьбы.",
+      facts: [
+        { label: "Год", value: "2024" },
+        { label: "Тип", value: "Фильм" },
+        { label: "Страна", value: "Австралия, США" },
+        { label: "Длительность", value: "148 мин" },
+        { label: "Студия", value: "Warner Bros., Village Roadshow" },
+        { label: "Режиссёр", value: "George Miller" },
+        { label: "Связь", value: "Приквел к Дороге ярости" },
+        { label: "Настроение", value: "Пыльно, быстро, сурово" },
+      ],
+      cast: [
+        { name: "Anya Taylor-Joy", role: "Фуриоса" },
+        { name: "Chris Hemsworth", role: "Дементус" },
+        { name: "Tom Burke", role: "Преторианец Джек" },
+        { name: "Alyla Browne", role: "Юная Фуриоса" },
+        { name: "Lachy Hulme", role: "Несмертный Джо" },
+      ],
+      players: [
+        { id: "player-1", name: "Плеер 1", embedUrl: "" },
+        { id: "player-2", name: "Плеер 2", embedUrl: "" },
+        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+      ],
+    },
+  {
+      id: 54,
+      slug: "alien-romulus",
+      title: "Чужой: Ромул",
+      originalTitle: "Alien: Romulus",
+      searchTitles: ["чужой ромул", "alien romulus", "чужой", "ксеноморф"],
+      type: "Фильм",
+      year: "2024",
+      rating: 7.1,
+      genres: ["Ужасы", "Фантастика", "Триллер"],
+      poster: "https://image.tmdb.org/t/p/w500/b33nnKl1GSFbao4l3fZDDqsMx0F.jpg",
+      description: "Космический хоррор о группе молодых людей и очень плохой находке.",
+      trailerUrl: "https://www.youtube.com/embed/x0XDEhP4MQs",
+      longDescription:
+        "Группа молодых колонистов исследует заброшенную космическую станцию и сталкивается с угрозой, которую лучше было бы оставить в темноте. Фильм возвращает франшизу к тесным коридорам, саспенсу и ощущению, что космос не любит любопытных.",
+      facts: [
+        { label: "Год", value: "2024" },
+        { label: "Тип", value: "Фильм" },
+        { label: "Страна", value: "США" },
+        { label: "Длительность", value: "119 мин" },
+        { label: "Студия", value: "20th Century Studios" },
+        { label: "Режиссёр", value: "Fede Álvarez" },
+        { label: "Вселенная", value: "Alien" },
+        { label: "Настроение", value: "Напряжённо, мрачно, клаустрофобно" },
+      ],
+      cast: [
+        { name: "Cailee Spaeny", role: "Рейн" },
+        { name: "David Jonsson", role: "Энди" },
+        { name: "Archie Renaux", role: "Тайлер" },
+        { name: "Isabela Merced", role: "Кей" },
+        { name: "Ксеноморф", role: "Причина не заходить в странные коридоры" },
+      ],
+      players: [
+        { id: "player-1", name: "Плеер 1", embedUrl: "" },
+        { id: "player-2", name: "Плеер 2", embedUrl: "" },
+        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+      ],
+    },
+  {
+      id: 55,
+      slug: "a-silent-voice",
+      title: "Форма голоса",
+      originalTitle: "A Silent Voice",
+      searchTitles: ["форма голоса", "a silent voice", "koe no katachi", "голос формы"],
+      type: "Аниме",
+      year: "2016",
+      rating: 8.1,
+      genres: ["Аниме", "Драма", "Школа"],
+      poster: "https://image.tmdb.org/t/p/w500/tuFaWiqX0TXoWu7DGNcmX3UW7sT.jpg",
+      description: "Школьная драма о вине, взрослении и попытке наладить связь.",
+      trailerUrl: "https://www.youtube.com/embed/nfK6UgLra7g",
+      longDescription:
+        "Сёя пытается исправить ошибки прошлого и снова встретиться с Сёко, девочкой, над которой когда-то издевался. Это тихая, эмоциональная история о принятии, ответственности и сложном пути к прощению.",
+      facts: [
+        { label: "Год", value: "2016" },
+        { label: "Тип", value: "Аниме" },
+        { label: "Страна", value: "Япония" },
+        { label: "Длительность", value: "130 мин" },
+        { label: "Студия", value: "Kyoto Animation" },
+        { label: "Режиссёр", value: "Naoko Yamada" },
+        { label: "Основа", value: "Манга Yoshitoki Ōima" },
+        { label: "Темы", value: "Прощение, вина, общение" },
+      ],
+      cast: [
+        { name: "Сёя Исида", role: "Парень, который пытается измениться" },
+        { name: "Сёко Нисимия", role: "Девочка, с которой он хочет восстановить связь" },
+        { name: "Юдзуру Нисимия", role: "Сестра Сёко" },
+        { name: "Наока Уэно", role: "Одноклассница с непростым характером" },
+        { name: "Томохиро Нагацука", role: "Друг, который появляется очень вовремя" },
+      ],
+      players: [
+        { id: "player-1", name: "Плеер 1", embedUrl: "" },
+        { id: "player-2", name: "Плеер 2", embedUrl: "" },
+      ],
+    },
+  {
+      id: 56,
+      slug: "spirited-away",
+      title: "Унесённые призраками",
+      originalTitle: "Spirited Away",
+      searchTitles: ["унесенные призраками", "унесённые призраками", "spirited away", "тихиро", "хаку"],
+      type: "Аниме",
+      year: "2001",
+      rating: 8.6,
+      genres: ["Аниме", "Фэнтези", "Приключения"],
+      poster: "https://image.tmdb.org/t/p/w500/39wmItIWsg5sZMyRUHLkWBcuVCM.jpg",
+      description: "Волшебное путешествие девочки в мир духов, где нужно найти смелость.",
+      trailerUrl: "https://www.youtube.com/embed/ByXuk9QqQkk",
+      longDescription:
+        "Тихиро попадает в загадочный мир духов и должна найти способ спасти родителей. История смешивает сказку, взросление и невероятную атмосферу, где каждый новый персонаж будто пришёл из сна, который слишком хорошо нарисовали.",
+      facts: [
+        { label: "Год", value: "2001" },
+        { label: "Тип", value: "Аниме" },
+        { label: "Страна", value: "Япония" },
+        { label: "Длительность", value: "125 мин" },
+        { label: "Студия", value: "Studio Ghibli" },
+        { label: "Режиссёр", value: "Hayao Miyazaki" },
+        { label: "Формат", value: "Полнометражное аниме" },
+        { label: "Темы", value: "Смелость, взросление, память" },
+      ],
+      cast: [
+        { name: "Тихиро Огино", role: "Девочка, которая учится быть смелой" },
+        { name: "Хаку", role: "Таинственный союзник" },
+        { name: "Юбаба", role: "Хозяйка купален" },
+        { name: "Безликий", role: "Дух, которому очень нужна связь" },
+        { name: "Камадзи", role: "Хранитель котельной" },
+      ],
+      players: [
+        { id: "player-1", name: "Плеер 1", embedUrl: "" },
+        { id: "player-2", name: "Плеер 2", embedUrl: "" },
+      ],
+    },
+  {
+      id: 57,
+      slug: "coraline",
+      title: "Коралина в Стране Кошмаров",
+      originalTitle: "Coraline",
+      searchTitles: ["коралина", "coraline", "страна кошмаров", "кукольная анимация"],
+      type: "Мультфильм",
+      year: "2009",
+      rating: 7.8,
+      genres: ["Анимация", "Фэнтези", "Приключения", "Мистика"],
+      poster: "https://image.tmdb.org/t/p/w500/4jeFXQYytChdZYE9JYO7Un87IlW.jpg",
+      description: "Кукольная сказка с мрачной атмосферой и очень подозрительной идеальной реальностью.",
+      trailerUrl: "https://www.youtube.com/embed/m9bOpeuvNwY",
+      longDescription:
+        "Коралина находит дверь в альтернативный мир, где всё кажется ярче и лучше. Но чем дольше она там остаётся, тем яснее становится: идеальная версия дома может просить слишком дорогую цену.",
+      facts: [
+        { label: "Год", value: "2009" },
+        { label: "Тип", value: "Мультфильм" },
+        { label: "Страна", value: "США" },
+        { label: "Длительность", value: "100 мин" },
+        { label: "Студия", value: "Laika" },
+        { label: "Режиссёр", value: "Henry Selick" },
+        { label: "Основа", value: "Повесть Neil Gaiman" },
+        { label: "Формат", value: "Покадровая анимация" },
+      ],
+      cast: [
+        { name: "Коралина Джонс", role: "Девочка с любопытством сильнее страха" },
+        { name: "Другая Мама", role: "Слишком идеальная хозяйка другого мира" },
+        { name: "Кот", role: "Проводник и независимый эксперт по странностям" },
+        { name: "Уайби", role: "Сосед и неожиданный помощник" },
+        { name: "Другой мир", role: "Место, где уют быстро становится ловушкой" },
+      ],
+      players: [
+        { id: "player-1", name: "Плеер 1", embedUrl: "" },
+        { id: "player-2", name: "Плеер 2", embedUrl: "" },
+      ],
+    },
+  {
+      id: 58,
+      slug: "planet-earth",
+      title: "Планета Земля",
+      originalTitle: "Planet Earth",
+      searchTitles: ["планета земля", "planet earth", "bbc earth", "природа", "документальный"],
+      type: "Документальный",
+      year: "2006",
+      rating: 9.4,
+      genres: ["Документальный", "Природа"],
+      poster: "https://kinogo.media/uploads/posts/2021-10/1634926941_iphone360_279548.jpg",
+      posterFallbacks: [
+        "https://upload.wikimedia.org/wikipedia/en/thumb/7/7f/Planet_Earth_DVD_cover.jpg/330px-Planet_Earth_DVD_cover.jpg"
+      ],
+      description: "Классический документальный проект BBC о природе и самых удивительных местах планеты.",
+      trailerUrl: "https://www.youtube.com/embed/lMta7k46JWE",
+      longDescription:
+        "«Планета Земля» показывает разные экосистемы и редкие моменты жизни дикой природы. Это документальное путешествие, где настоящие пейзажи выглядят так, будто природа сама решила снять дорогой блокбастер без спецэффектов.",
+      facts: [
+        { label: "Год", value: "2006" },
+        { label: "Тип", value: "Документальный" },
+        { label: "Страна", value: "Великобритания" },
+        { label: "Длительность", value: "около 50 мин / серия" },
+        { label: "Студия", value: "BBC Natural History Unit" },
+        { label: "Рассказчик", value: "David Attenborough" },
+        { label: "Серий", value: "11" },
+        { label: "Темы", value: "Природа, экосистемы, животные" },
+      ],
+      cast: [
+        { name: "David Attenborough", role: "Рассказчик" },
+        { name: "BBC Earth", role: "Съёмочная команда" },
+        { name: "Дикая природа", role: "Главный герой проекта" },
+        { name: "Горы, океаны и леса", role: "Ключевые локации" },
+        { name: "Планета Земля", role: "Главная тема проекта" },
+      ],
+      players: [
+        { id: "player-1", name: "Плеер 1", embedUrl: "" },
+        { id: "player-2", name: "Плеер 2", embedUrl: "" },
+        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+      ],
+    },
+  {
+    "slug": "gladiator",
+    "title": "Гладиатор",
+    "originalTitle": "Gladiator",
+    "searchTitles": [
+      "гладиатор",
+      "gladiator",
+      "максимус",
+      "рим"
+    ],
+    "type": "Фильм",
+    "year": "2000",
+    "rating": 8.5,
+    "genres": [
+      "История",
+      "Драма",
+      "Экшен",
+      "Приключения"
+    ],
+    "poster": "https://image.tmdb.org/t/p/w500/ty8TGRuvJLPUmAR1H1nRIsgwvim.jpg",
+    "posterFallbacks": [
+      "https://upload.wikimedia.org/wikipedia/en/8/8d/Gladiator_ver1.jpg"
+    ],
+    "description": "Историческая драма о генерале, который теряет всё и выходит на арену ради справедливости.",
+    "trailerUrl": "https://www.youtube.com/embed/P5ieIbInFpg",
+    "longDescription": "Максимус был верным генералом Рима, но предательство лишает его семьи, статуса и будущего. На арене Колизея он превращает борьбу за выживание в вызов императорской власти и легенду о чести.",
+    "facts": [
+      {
+        "label": "Год",
+        "value": "2000"
+      },
+      {
+        "label": "Тип",
+        "value": "Фильм"
+      },
+      {
+        "label": "Страна",
+        "value": "США, Великобритания"
+      },
+      {
+        "label": "Длительность",
+        "value": "155 мин"
+      },
+      {
+        "label": "Студия",
+        "value": "DreamWorks Pictures, Universal Pictures"
+      },
+      {
+        "label": "Режиссёр",
+        "value": "Ridley Scott"
+      },
+      {
+        "label": "Настроение",
+        "value": "Эпично, драматично, масштабно"
+      },
+      {
+        "label": "Темы",
+        "value": "Месть, честь, власть"
+      }
+    ],
+    "cast": [
+      {
+        "name": "Russell Crowe",
+        "role": "Максимус"
+      },
+      {
+        "name": "Joaquin Phoenix",
+        "role": "Коммод"
+      },
+      {
+        "name": "Connie Nielsen",
+        "role": "Луцилла"
+      },
+      {
+        "name": "Oliver Reed",
+        "role": "Проксимо"
+      },
+      {
+        "name": "Richard Harris",
+        "role": "Марк Аврелий"
+      }
+    ],
+    "players": [
+      {
+        "id": "player-1",
+        "name": "Плеер 1",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-2",
+        "name": "Плеер 2",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-3",
+        "name": "Плеер 3",
+        "embedUrl": ""
+      }
+    ],
+    "id": 59
+  },
+  {
+    "slug": "pulp-fiction",
+    "title": "Криминальное чтиво",
+    "originalTitle": "Pulp Fiction",
+    "searchTitles": [
+      "криминальное чтиво",
+      "pulp fiction",
+      "тарантино",
+      "винсент и джулс"
+    ],
+    "type": "Фильм",
+    "year": "1994",
+    "rating": 8.9,
+    "genres": [
+      "Криминал",
+      "Драма",
+      "Комедия"
+    ],
+    "poster": "https://image.tmdb.org/t/p/w500/d5iIlFn5s0ImszYzBPb8JPIfbXD.jpg",
+    "posterFallbacks": [
+      "https://upload.wikimedia.org/wikipedia/en/8/82/Pulp_Fiction_cover.jpg"
+    ],
+    "description": "Нелинейная криминальная классика с диалогами, которые давно ушли в цитаты.",
+    "trailerUrl": "https://www.youtube.com/embed/s7EdQ4FqbhY",
+    "longDescription": "Несколько историй из криминального Лос-Анджелеса переплетаются вокруг случайностей, странных решений и людей, которые слишком уверены, что контролируют ситуацию. Фильм держится на ритме, стиле и разговорах, где каждое слово работает на атмосферу.",
+    "facts": [
+      {
+        "label": "Год",
+        "value": "1994"
+      },
+      {
+        "label": "Тип",
+        "value": "Фильм"
+      },
+      {
+        "label": "Страна",
+        "value": "США"
+      },
+      {
+        "label": "Длительность",
+        "value": "154 мин"
+      },
+      {
+        "label": "Студия",
+        "value": "Miramax"
+      },
+      {
+        "label": "Режиссёр",
+        "value": "Quentin Tarantino"
+      },
+      {
+        "label": "Настроение",
+        "value": "Стильно, иронично, криминально"
+      },
+      {
+        "label": "Темы",
+        "value": "Случайность, мораль, поп-культура"
+      }
+    ],
+    "cast": [
+      {
+        "name": "John Travolta",
+        "role": "Винсент Вега"
+      },
+      {
+        "name": "Samuel L. Jackson",
+        "role": "Джулс Уиннфилд"
+      },
+      {
+        "name": "Uma Thurman",
+        "role": "Миа Уоллес"
+      },
+      {
+        "name": "Bruce Willis",
+        "role": "Бутч Куллидж"
+      },
+      {
+        "name": "Ving Rhames",
+        "role": "Марселлас Уоллес"
+      }
+    ],
+    "players": [
+      {
+        "id": "player-1",
+        "name": "Плеер 1",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-2",
+        "name": "Плеер 2",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-3",
+        "name": "Плеер 3",
+        "embedUrl": ""
+      }
+    ],
+    "id": 60
+  },
+  {
+    "slug": "fight-club",
+    "title": "Бойцовский клуб",
+    "originalTitle": "Fight Club",
+    "searchTitles": [
+      "бойцовский клуб",
+      "fight club",
+      "тайлер дерден"
+    ],
+    "type": "Фильм",
+    "year": "1999",
+    "rating": 8.8,
+    "genres": [
+      "Драма",
+      "Триллер"
+    ],
+    "poster": "https://image.tmdb.org/t/p/w500/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg",
+    "posterFallbacks": [
+      "https://upload.wikimedia.org/wikipedia/en/f/fc/Fight_Club_poster.jpg"
+    ],
+    "description": "Психологическая история о пустоте, бунте и правилах, о которых все всё равно говорят.",
+    "trailerUrl": "https://www.youtube.com/embed/qtRKdVHc-cE",
+    "longDescription": "Безымянный герой застрял в рутине и бессоннице, пока знакомство с Тайлером Дерденом не открывает ему новый способ чувствовать себя живым. Но личный протест быстро вырастает в опасную систему, которую уже трудно остановить.",
+    "facts": [
+      {
+        "label": "Год",
+        "value": "1999"
+      },
+      {
+        "label": "Тип",
+        "value": "Фильм"
+      },
+      {
+        "label": "Страна",
+        "value": "США, Германия"
+      },
+      {
+        "label": "Длительность",
+        "value": "139 мин"
+      },
+      {
+        "label": "Студия",
+        "value": "20th Century Fox, Regency Enterprises"
+      },
+      {
+        "label": "Режиссёр",
+        "value": "David Fincher"
+      },
+      {
+        "label": "Настроение",
+        "value": "Мрачно, нервно, провокационно"
+      },
+      {
+        "label": "Темы",
+        "value": "Идентичность, потребление, контроль"
+      }
+    ],
+    "cast": [
+      {
+        "name": "Edward Norton",
+        "role": "Рассказчик"
+      },
+      {
+        "name": "Brad Pitt",
+        "role": "Тайлер Дерден"
+      },
+      {
+        "name": "Helena Bonham Carter",
+        "role": "Марла Сингер"
+      },
+      {
+        "name": "Meat Loaf",
+        "role": "Роберт Полсон"
+      },
+      {
+        "name": "Jared Leto",
+        "role": "Ангельское лицо"
+      }
+    ],
+    "players": [
+      {
+        "id": "player-1",
+        "name": "Плеер 1",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-2",
+        "name": "Плеер 2",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-3",
+        "name": "Плеер 3",
+        "embedUrl": ""
+      }
+    ],
+    "id": 61
+  },
+  {
+    "slug": "se7en",
+    "title": "Семь",
+    "originalTitle": "Se7en",
+    "searchTitles": [
+      "семь",
+      "seven",
+      "se7en",
+      "финчер",
+      "детектив"
+    ],
+    "type": "Фильм",
+    "year": "1995",
+    "rating": 8.6,
+    "genres": [
+      "Триллер",
+      "Криминал",
+      "Драма"
+    ],
+    "poster": "https://image.tmdb.org/t/p/w500/191nKfP0ehp3uIvWqgPbFmI4lv9.jpg",
+    "posterFallbacks": [
+      "https://upload.wikimedia.org/wikipedia/en/6/68/Seven_%28movie%29_poster.jpg"
+    ],
+    "description": "Мрачный детектив о двух напарниках и серии преступлений, построенных как страшная головоломка.",
+    "trailerUrl": "https://www.youtube.com/embed/znmZoVkCjpI",
+    "longDescription": "Опытный детектив Сомерсет и молодой Миллс расследуют цепочку преступлений, связанных с семью грехами. Город будто сам становится участником дела: дождливым, уставшим и полным тревожных подсказок.",
+    "facts": [
+      {
+        "label": "Год",
+        "value": "1995"
+      },
+      {
+        "label": "Тип",
+        "value": "Фильм"
+      },
+      {
+        "label": "Страна",
+        "value": "США"
+      },
+      {
+        "label": "Длительность",
+        "value": "127 мин"
+      },
+      {
+        "label": "Студия",
+        "value": "New Line Cinema"
+      },
+      {
+        "label": "Режиссёр",
+        "value": "David Fincher"
+      },
+      {
+        "label": "Настроение",
+        "value": "Мрачно, напряжённо, детективно"
+      },
+      {
+        "label": "Темы",
+        "value": "Справедливость, вина, одержимость"
+      }
+    ],
+    "cast": [
+      {
+        "name": "Brad Pitt",
+        "role": "Дэвид Миллс"
+      },
+      {
+        "name": "Morgan Freeman",
+        "role": "Уильям Сомерсет"
+      },
+      {
+        "name": "Gwyneth Paltrow",
+        "role": "Трейси Миллс"
+      },
+      {
+        "name": "Kevin Spacey",
+        "role": "Джон Доу"
+      },
+      {
+        "name": "R. Lee Ermey",
+        "role": "Капитан полиции"
+      }
+    ],
+    "players": [
+      {
+        "id": "player-1",
+        "name": "Плеер 1",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-2",
+        "name": "Плеер 2",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-3",
+        "name": "Плеер 3",
+        "embedUrl": ""
+      }
+    ],
+    "id": 62
+  },
+  {
+    "slug": "the-godfather",
+    "title": "Крёстный отец",
+    "originalTitle": "The Godfather",
+    "searchTitles": [
+      "крестный отец",
+      "крёстный отец",
+      "godfather",
+      "корлеоне"
+    ],
+    "type": "Фильм",
+    "year": "1972",
+    "rating": 9.2,
+    "genres": [
+      "Криминал",
+      "Драма"
+    ],
+    "poster": "https://images.kinorium.com/movie/poster/2060815/w1500_51470371.jpg",
+    "posterFallbacks": [
+      "https://upload.wikimedia.org/wikipedia/en/1/1c/Godfather_ver1.jpg"
+    ],
+    "description": "Криминальная сага о семье Корлеоне, власти и цене наследия.",
+    "trailerUrl": "https://www.youtube.com/embed/sY1S34973zA",
+    "longDescription": "Семья Корлеоне живёт по своим правилам, где честь, бизнес и насилие опасно близки. Майкл сначала держится в стороне от дел семьи, но обстоятельства постепенно превращают его в человека, от которого зависит будущее клана.",
+    "facts": [
+      {
+        "label": "Год",
+        "value": "1972"
+      },
+      {
+        "label": "Тип",
+        "value": "Фильм"
+      },
+      {
+        "label": "Страна",
+        "value": "США"
+      },
+      {
+        "label": "Длительность",
+        "value": "175 мин"
+      },
+      {
+        "label": "Студия",
+        "value": "Paramount Pictures"
+      },
+      {
+        "label": "Режиссёр",
+        "value": "Francis Ford Coppola"
+      },
+      {
+        "label": "Настроение",
+        "value": "Величественно, напряжённо, классически"
+      },
+      {
+        "label": "Темы",
+        "value": "Семья, власть, наследие"
+      }
+    ],
+    "cast": [
+      {
+        "name": "Marlon Brando",
+        "role": "Вито Корлеоне"
+      },
+      {
+        "name": "Al Pacino",
+        "role": "Майкл Корлеоне"
+      },
+      {
+        "name": "James Caan",
+        "role": "Сонни Корлеоне"
+      },
+      {
+        "name": "Diane Keaton",
+        "role": "Кей Адамс"
+      },
+      {
+        "name": "Robert Duvall",
+        "role": "Том Хейген"
+      }
+    ],
+    "players": [
+      {
+        "id": "player-1",
+        "name": "Плеер 1",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-2",
+        "name": "Плеер 2",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-3",
+        "name": "Плеер 3",
+        "embedUrl": ""
+      }
+    ],
+    "id": 63
+  },
+  {
+    "slug": "the-green-mile",
+    "title": "Зелёная миля",
+    "originalTitle": "The Green Mile",
+    "searchTitles": [
+      "зеленая миля",
+      "зелёная миля",
+      "green mile",
+      "джон коффи"
+    ],
+    "type": "Фильм",
+    "year": "1999",
+    "rating": 8.6,
+    "genres": [
+      "Драма",
+      "Фэнтези",
+      "Криминал"
+    ],
+    "poster": "https://image.tmdb.org/t/p/w500/8VG8fDNiy50H4FedGwdSVUPoaJe.jpg",
+    "posterFallbacks": [
+      "https://upload.wikimedia.org/wikipedia/en/c/ce/Green_mile.jpg"
+    ],
+    "description": "Трогательная драма о надзирателях, заключённом и чуде, которое трудно объяснить.",
+    "trailerUrl": "https://www.youtube.com/embed/Ki4haFrqSrw",
+    "longDescription": "Пол Эджкомб работает в тюремном блоке смертников и привык не удивляться людям. Но появление Джона Коффи меняет его взгляд на добро, страх и чудеса, которые могут прийти в самое тяжёлое место.",
+    "facts": [
+      {
+        "label": "Год",
+        "value": "1999"
+      },
+      {
+        "label": "Тип",
+        "value": "Фильм"
+      },
+      {
+        "label": "Страна",
+        "value": "США"
+      },
+      {
+        "label": "Длительность",
+        "value": "189 мин"
+      },
+      {
+        "label": "Студия",
+        "value": "Warner Bros., Castle Rock Entertainment"
+      },
+      {
+        "label": "Режиссёр",
+        "value": "Frank Darabont"
+      },
+      {
+        "label": "Настроение",
+        "value": "Трогательно, мистически, человечно"
+      },
+      {
+        "label": "Темы",
+        "value": "Сострадание, вина, чудо"
+      }
+    ],
+    "cast": [
+      {
+        "name": "Tom Hanks",
+        "role": "Пол Эджкомб"
+      },
+      {
+        "name": "Michael Clarke Duncan",
+        "role": "Джон Коффи"
+      },
+      {
+        "name": "David Morse",
+        "role": "Брут Хауэлл"
+      },
+      {
+        "name": "Sam Rockwell",
+        "role": "Уильям Уортон"
+      },
+      {
+        "name": "Bonnie Hunt",
+        "role": "Джан Эджкомб"
+      }
+    ],
+    "players": [
+      {
+        "id": "player-1",
+        "name": "Плеер 1",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-2",
+        "name": "Плеер 2",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-3",
+        "name": "Плеер 3",
+        "embedUrl": ""
+      }
+    ],
+    "id": 64
+  },
+  {
+    "slug": "whiplash",
+    "title": "Одержимость",
+    "originalTitle": "Whiplash",
+    "searchTitles": [
+      "одержимость",
+      "whiplash",
+      "барабанщик",
+      "джаз"
+    ],
+    "type": "Фильм",
+    "year": "2014",
+    "rating": 8.5,
+    "genres": [
+      "Драма",
+      "Музыка"
+    ],
+    "poster": "https://image.tmdb.org/t/p/w500/7fn624j5lj3xTme2SgiLCeuedmO.jpg",
+    "posterFallbacks": [
+      "https://upload.wikimedia.org/wikipedia/en/0/01/Whiplash_poster.jpg"
+    ],
+    "description": "Жёсткая музыкальная драма о таланте, давлении и цене идеального темпа.",
+    "trailerUrl": "https://www.youtube.com/embed/7d_jQycdQGo",
+    "longDescription": "Молодой барабанщик Эндрю хочет стать великим, но встреча с преподавателем Флетчером превращает обучение в психологическое испытание. Фильм звучит как дуэль: громко, точно и без права на фальшивую ноту.",
+    "facts": [
+      {
+        "label": "Год",
+        "value": "2014"
+      },
+      {
+        "label": "Тип",
+        "value": "Фильм"
+      },
+      {
+        "label": "Страна",
+        "value": "США"
+      },
+      {
+        "label": "Длительность",
+        "value": "106 мин"
+      },
+      {
+        "label": "Студия",
+        "value": "Bold Films, Blumhouse Productions"
+      },
+      {
+        "label": "Режиссёр",
+        "value": "Damien Chazelle"
+      },
+      {
+        "label": "Настроение",
+        "value": "Нервно, энергично, музыкально"
+      },
+      {
+        "label": "Темы",
+        "value": "Талант, дисциплина, давление"
+      }
+    ],
+    "cast": [
+      {
+        "name": "Miles Teller",
+        "role": "Эндрю Ниман"
+      },
+      {
+        "name": "J. K. Simmons",
+        "role": "Теренс Флетчер"
+      },
+      {
+        "name": "Melissa Benoist",
+        "role": "Николь"
+      },
+      {
+        "name": "Paul Reiser",
+        "role": "Джим Ниман"
+      },
+      {
+        "name": "Austin Stowell",
+        "role": "Райан"
+      }
+    ],
+    "players": [
+      {
+        "id": "player-1",
+        "name": "Плеер 1",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-2",
+        "name": "Плеер 2",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-3",
+        "name": "Плеер 3",
+        "embedUrl": ""
+      }
+    ],
+    "id": 65
+  },
+  {
+    "slug": "parasite",
+    "title": "Паразиты",
+    "originalTitle": "Parasite",
+    "searchTitles": [
+      "паразиты",
+      "parasite",
+      "кино корея",
+      "бон джун хо"
+    ],
+    "type": "Фильм",
+    "year": "2019",
+    "rating": 8.5,
+    "genres": [
+      "Драма",
+      "Триллер",
+      "Комедия"
+    ],
+    "poster": "https://image.tmdb.org/t/p/w500/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg",
+    "posterFallbacks": [
+      "https://upload.wikimedia.org/wikipedia/en/5/53/Parasite_%282019_film%29.png"
+    ],
+    "description": "Социальный триллер, где чужой дом становится сценой для очень неудобной правды.",
+    "trailerUrl": "https://www.youtube.com/embed/5xH0HfJHsaY",
+    "longDescription": "Семья Кимов постепенно устраивается работать в богатый дом, используя смекалку и риск. Но за красивым фасадом прячется больше слоёв, чем кажется, и каждая лестница в этом фильме ведёт к новой правде о неравенстве.",
+    "facts": [
+      {
+        "label": "Год",
+        "value": "2019"
+      },
+      {
+        "label": "Тип",
+        "value": "Фильм"
+      },
+      {
+        "label": "Страна",
+        "value": "Южная Корея"
+      },
+      {
+        "label": "Длительность",
+        "value": "132 мин"
+      },
+      {
+        "label": "Студия",
+        "value": "Barunson E&A"
+      },
+      {
+        "label": "Режиссёр",
+        "value": "Bong Joon-ho"
+      },
+      {
+        "label": "Настроение",
+        "value": "Умно, напряжённо, сатирично"
+      },
+      {
+        "label": "Темы",
+        "value": "Классы, семья, выживание"
+      }
+    ],
+    "cast": [
+      {
+        "name": "Song Kang-ho",
+        "role": "Ким Ки-тэк"
+      },
+      {
+        "name": "Choi Woo-shik",
+        "role": "Ки-у"
+      },
+      {
+        "name": "Park So-dam",
+        "role": "Ки-джон"
+      },
+      {
+        "name": "Jang Hye-jin",
+        "role": "Чхун-сук"
+      },
+      {
+        "name": "Lee Sun-kyun",
+        "role": "Пак Дон-ик"
+      }
+    ],
+    "players": [
+      {
+        "id": "player-1",
+        "name": "Плеер 1",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-2",
+        "name": "Плеер 2",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-3",
+        "name": "Плеер 3",
+        "embedUrl": ""
+      }
+    ],
+    "id": 66
+  },
+  {
+    "slug": "joker-2019",
+    "title": "Джокер",
+    "originalTitle": "Joker",
+    "searchTitles": [
+      "джокер",
+      "joker",
+      "артур флек",
+      "dc"
+    ],
+    "type": "Фильм",
+    "year": "2019",
+    "rating": 8.4,
+    "genres": [
+      "Драма",
+      "Криминал",
+      "Триллер"
+    ],
+    "poster": "https://image.tmdb.org/t/p/w500/udDclJoHjfjb8Ekgsd4FDteOkCU.jpg",
+    "posterFallbacks": [
+      "https://upload.wikimedia.org/wikipedia/en/e/e1/Joker_%282019_film%29_poster.jpg"
+    ],
+    "description": "Мрачная история Артура Флека и города, который не умеет слышать слабых.",
+    "trailerUrl": "https://www.youtube.com/embed/zAGVQLHvwOY",
+    "longDescription": "Артур Флек пытается быть комиком и удержаться на плаву в безразличном Готэме. Его путь постепенно превращается в историю о боли, одиночестве и опасной силе образа, который город сам помогает создать.",
+    "facts": [
+      {
+        "label": "Год",
+        "value": "2019"
+      },
+      {
+        "label": "Тип",
+        "value": "Фильм"
+      },
+      {
+        "label": "Страна",
+        "value": "США, Канада"
+      },
+      {
+        "label": "Длительность",
+        "value": "122 мин"
+      },
+      {
+        "label": "Студия",
+        "value": "Warner Bros., DC Films"
+      },
+      {
+        "label": "Режиссёр",
+        "value": "Todd Phillips"
+      },
+      {
+        "label": "Настроение",
+        "value": "Мрачно, психологически, тревожно"
+      },
+      {
+        "label": "Темы",
+        "value": "Одиночество, образ, общество"
+      }
+    ],
+    "cast": [
+      {
+        "name": "Joaquin Phoenix",
+        "role": "Артур Флек / Джокер"
+      },
+      {
+        "name": "Robert De Niro",
+        "role": "Мюррей Франклин"
+      },
+      {
+        "name": "Zazie Beetz",
+        "role": "Софи Дюмонд"
+      },
+      {
+        "name": "Frances Conroy",
+        "role": "Пенни Флек"
+      },
+      {
+        "name": "Brett Cullen",
+        "role": "Томас Уэйн"
+      }
+    ],
+    "players": [
+      {
+        "id": "player-1",
+        "name": "Плеер 1",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-2",
+        "name": "Плеер 2",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-3",
+        "name": "Плеер 3",
+        "embedUrl": ""
+      }
+    ],
+    "id": 67
+  },
+  {
+    "slug": "chernobyl",
+    "title": "Чернобыль",
+    "originalTitle": "Chernobyl",
+    "searchTitles": [
+      "чернобыль",
+      "chernobyl",
+      "hbo",
+      "авария"
+    ],
+    "type": "Сериал",
+    "year": "2019",
+    "rating": 9.3,
+    "genres": [
+      "Драма",
+      "История",
+      "Мини-сериал"
+    ],
+    "poster": "https://image.tmdb.org/t/p/w500/hlLXt2tOPT6RRnjiUmoxyG1LTFi.jpg",
+    "description": "Мини-сериал о катастрофе, решениях людей и цене молчания.",
+    "trailerUrl": "https://www.youtube.com/embed/s9APLXM9Ei8",
+    "longDescription": "После взрыва на Чернобыльской АЭС учёные, ликвидаторы и чиновники оказываются перед реальностью, которую нельзя отменить приказом. Сериал показывает не только катастрофу, но и борьбу фактов против страха и политического удобства.",
+    "facts": [
+      {
+        "label": "Год",
+        "value": "2019"
+      },
+      {
+        "label": "Тип",
+        "value": "Сериал"
+      },
+      {
+        "label": "Страна",
+        "value": "США, Великобритания"
+      },
+      {
+        "label": "Длительность",
+        "value": "60–72 мин / серия"
+      },
+      {
+        "label": "Студия",
+        "value": "HBO, Sky UK"
+      },
+      {
+        "label": "Создатель",
+        "value": "Craig Mazin"
+      },
+      {
+        "label": "Настроение",
+        "value": "Сдержанно, напряжённо, исторично"
+      },
+      {
+        "label": "Темы",
+        "value": "Правда, ответственность, последствия"
+      }
+    ],
+    "cast": [
+      {
+        "name": "Jared Harris",
+        "role": "Валерий Легасов"
+      },
+      {
+        "name": "Stellan Skarsgård",
+        "role": "Борис Щербина"
+      },
+      {
+        "name": "Emily Watson",
+        "role": "Ульяна Хомюк"
+      },
+      {
+        "name": "Paul Ritter",
+        "role": "Анатолий Дятлов"
+      },
+      {
+        "name": "Jessie Buckley",
+        "role": "Людмила Игнатенко"
+      }
+    ],
+    "players": [
+      {
+        "id": "player-1",
+        "name": "Плеер 1",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-2",
+        "name": "Плеер 2",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-3",
+        "name": "Плеер 3",
+        "embedUrl": ""
+      }
+    ],
+    "id": 68
+  },
+  {
+    "slug": "sherlock",
+    "title": "Шерлок",
+    "originalTitle": "Sherlock",
+    "searchTitles": [
+      "шерлок",
+      "sherlock",
+      "холмс",
+      "ватсон"
+    ],
+    "type": "Сериал",
+    "year": "2010",
+    "rating": 9.1,
+    "genres": [
+      "Детектив",
+      "Криминал",
+      "Драма"
+    ],
+    "poster": "https://image.tmdb.org/t/p/w500/7WTsnHkbA0FaG6R9twfFde0I9hl.jpg",
+    "description": "Современная версия Холмса, где дедукция работает быстрее уведомлений на телефоне.",
+    "trailerUrl": "https://www.youtube.com/embed/qlcWFoNqZHc",
+    "longDescription": "Шерлок Холмс и доктор Ватсон расследуют дела в современном Лондоне, где классическая дедукция встречается с технологиями, медиа и очень странными преступниками. Сериал делает знакомого героя быстрым, остроумным и опасно наблюдательным.",
+    "facts": [
+      {
+        "label": "Год",
+        "value": "2010"
+      },
+      {
+        "label": "Тип",
+        "value": "Сериал"
+      },
+      {
+        "label": "Страна",
+        "value": "Великобритания"
+      },
+      {
+        "label": "Длительность",
+        "value": "около 90 мин / серия"
+      },
+      {
+        "label": "Студия",
+        "value": "BBC"
+      },
+      {
+        "label": "Создатели",
+        "value": "Steven Moffat, Mark Gatiss"
+      },
+      {
+        "label": "Настроение",
+        "value": "Остроумно, детективно, динамично"
+      },
+      {
+        "label": "Темы",
+        "value": "Логика, дружба, загадки"
+      }
+    ],
+    "cast": [
+      {
+        "name": "Benedict Cumberbatch",
+        "role": "Шерлок Холмс"
+      },
+      {
+        "name": "Martin Freeman",
+        "role": "Джон Ватсон"
+      },
+      {
+        "name": "Andrew Scott",
+        "role": "Джим Мориарти"
+      },
+      {
+        "name": "Mark Gatiss",
+        "role": "Майкрофт Холмс"
+      },
+      {
+        "name": "Una Stubbs",
+        "role": "Миссис Хадсон"
+      }
+    ],
+    "players": [
+      {
+        "id": "player-1",
+        "name": "Плеер 1",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-2",
+        "name": "Плеер 2",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-3",
+        "name": "Плеер 3",
+        "embedUrl": ""
+      }
+    ],
+    "id": 69
+  },
+  {
+    "slug": "better-call-saul",
+    "title": "Лучше звоните Солу",
+    "originalTitle": "Better Call Saul",
+    "searchTitles": [
+      "лучше звоните солу",
+      "better call saul",
+      "сол гудман",
+      "джимми макгилл"
+    ],
+    "type": "Сериал",
+    "year": "2015",
+    "rating": 9.0,
+    "genres": [
+      "Драма",
+      "Криминал"
+    ],
+    "poster": "https://image.tmdb.org/t/p/w500/fC2HDm5t0kHl7mTm7jxMR31b7by.jpg",
+    "description": "История превращения Джимми Макгилла в адвоката, которого лучше не недооценивать.",
+    "trailerUrl": "https://www.youtube.com/embed/HN4oydykJFc",
+    "longDescription": "Джимми Макгилл пытается построить карьеру юриста честно, хитро и иногда слишком творчески. Сериал показывает медленную, точную трансформацию человека, который умеет говорить красиво, но всё чаще выбирает опасные обходные пути.",
+    "facts": [
+      {
+        "label": "Год",
+        "value": "2015"
+      },
+      {
+        "label": "Тип",
+        "value": "Сериал"
+      },
+      {
+        "label": "Страна",
+        "value": "США"
+      },
+      {
+        "label": "Длительность",
+        "value": "46–69 мин / серия"
+      },
+      {
+        "label": "Студия",
+        "value": "AMC, Sony Pictures Television"
+      },
+      {
+        "label": "Создатели",
+        "value": "Vince Gilligan, Peter Gould"
+      },
+      {
+        "label": "Настроение",
+        "value": "Медленно, умно, драматично"
+      },
+      {
+        "label": "Темы",
+        "value": "Выбор, амбиции, мораль"
+      }
+    ],
+    "cast": [
+      {
+        "name": "Bob Odenkirk",
+        "role": "Джимми Макгилл / Сол Гудман"
+      },
+      {
+        "name": "Rhea Seehorn",
+        "role": "Ким Уэкслер"
+      },
+      {
+        "name": "Jonathan Banks",
+        "role": "Майк Эрмантраут"
+      },
+      {
+        "name": "Michael McKean",
+        "role": "Чак Макгилл"
+      },
+      {
+        "name": "Giancarlo Esposito",
+        "role": "Густаво Фринг"
+      }
+    ],
+    "players": [
+      {
+        "id": "player-1",
+        "name": "Плеер 1",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-2",
+        "name": "Плеер 2",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-3",
+        "name": "Плеер 3",
+        "embedUrl": ""
+      }
+    ],
+    "id": 70
+  },
+  {
+    "slug": "the-boys",
+    "title": "Пацаны",
+    "originalTitle": "The Boys",
+    "searchTitles": [
+      "пацаны",
+      "the boys",
+      "homelander",
+      "хоумлендер",
+      "супергерои"
+    ],
+    "type": "Сериал",
+    "year": "2019",
+    "rating": 8.7,
+    "genres": [
+      "Экшен",
+      "Сатира",
+      "Драма",
+      "Супергерои"
+    ],
+    "poster": "https://image.tmdb.org/t/p/w500/stTEycfG9928HYGEISBFaG1ngjM.jpg",
+    "description": "Сатирический сериал о мире, где супергерои стали брендами, а бренды — почти властью.",
+    "trailerUrl": "https://www.youtube.com/embed/M1bhOaLV4FU",
+    "longDescription": "В мире, где супергерои работают на корпорацию и живут как знаменитости, группа обычных людей пытается показать их настоящую сторону. Сериал смешивает экшен, сатиру и мрачный взгляд на культ популярности.",
+    "facts": [
+      {
+        "label": "Год",
+        "value": "2019"
+      },
+      {
+        "label": "Тип",
+        "value": "Сериал"
+      },
+      {
+        "label": "Страна",
+        "value": "США"
+      },
+      {
+        "label": "Длительность",
+        "value": "55–68 мин / серия"
+      },
+      {
+        "label": "Студия",
+        "value": "Amazon Studios, Sony Pictures Television"
+      },
+      {
+        "label": "Создатель",
+        "value": "Eric Kripke"
+      },
+      {
+        "label": "Настроение",
+        "value": "Дерзко, сатирично, жёстко"
+      },
+      {
+        "label": "Темы",
+        "value": "Власть, медиа, ответственность"
+      }
+    ],
+    "cast": [
+      {
+        "name": "Karl Urban",
+        "role": "Билли Бутчер"
+      },
+      {
+        "name": "Jack Quaid",
+        "role": "Хьюи Кэмпбелл"
+      },
+      {
+        "name": "Antony Starr",
+        "role": "Хоумлендер"
+      },
+      {
+        "name": "Erin Moriarty",
+        "role": "Старлайт"
+      },
+      {
+        "name": "Laz Alonso",
+        "role": "Молоко матери"
+      }
+    ],
+    "players": [
+      {
+        "id": "player-1",
+        "name": "Плеер 1",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-2",
+        "name": "Плеер 2",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-3",
+        "name": "Плеер 3",
+        "embedUrl": ""
+      }
+    ],
+    "id": 71
+  },
+  {
+    "slug": "peaky-blinders",
+    "title": "Острые козырьки",
+    "originalTitle": "Peaky Blinders",
+    "searchTitles": [
+      "острые козырьки",
+      "peaky blinders",
+      "томас шелби",
+      "шелби"
+    ],
+    "type": "Сериал",
+    "year": "2013",
+    "rating": 8.8,
+    "genres": [
+      "Криминал",
+      "Драма",
+      "История"
+    ],
+    "poster": "https://image.tmdb.org/t/p/w500/vUUqzWa2LnHIVqkaKVlVGkVcZIW.jpg",
+    "description": "Криминальная сага о семье Шелби, амбициях и очень опасном стиле.",
+    "trailerUrl": "https://www.youtube.com/embed/oVzVdvGIC7U",
+    "longDescription": "После Первой мировой войны Томас Шелби превращает семейную банду в растущую силу Бирмингема. В сериале политика, бизнес и криминал идут рядом, а каждый шаг вверх требует новой сделки с совестью.",
+    "facts": [
+      {
+        "label": "Год",
+        "value": "2013"
+      },
+      {
+        "label": "Тип",
+        "value": "Сериал"
+      },
+      {
+        "label": "Страна",
+        "value": "Великобритания"
+      },
+      {
+        "label": "Длительность",
+        "value": "55–65 мин / серия"
+      },
+      {
+        "label": "Студия",
+        "value": "BBC"
+      },
+      {
+        "label": "Создатель",
+        "value": "Steven Knight"
+      },
+      {
+        "label": "Настроение",
+        "value": "Стильно, мрачно, криминально"
+      },
+      {
+        "label": "Темы",
+        "value": "Семья, власть, амбиции"
+      }
+    ],
+    "cast": [
+      {
+        "name": "Cillian Murphy",
+        "role": "Томас Шелби"
+      },
+      {
+        "name": "Paul Anderson",
+        "role": "Артур Шелби"
+      },
+      {
+        "name": "Helen McCrory",
+        "role": "Полли Грей"
+      },
+      {
+        "name": "Sophie Rundle",
+        "role": "Ада Шелби"
+      },
+      {
+        "name": "Tom Hardy",
+        "role": "Альфи Соломонс"
+      }
+    ],
+    "players": [
+      {
+        "id": "player-1",
+        "name": "Плеер 1",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-2",
+        "name": "Плеер 2",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-3",
+        "name": "Плеер 3",
+        "embedUrl": ""
+      }
+    ],
+    "id": 72
+  },
+  {
+    "slug": "dark",
+    "title": "Тьма",
+    "originalTitle": "Dark",
+    "searchTitles": [
+      "тьма",
+      "dark",
+      "винден",
+      "путешествие во времени"
+    ],
+    "type": "Сериал",
+    "year": "2017",
+    "rating": 8.7,
+    "genres": [
+      "Фантастика",
+      "Драма",
+      "Детектив"
+    ],
+    "poster": "https://image.tmdb.org/t/p/w500/apbrbWs8M9lyOpJYU5WXrpFbk1Z.jpg",
+    "description": "Немецкая фантастическая загадка, где семейные тайны путаются со временем.",
+    "trailerUrl": "https://www.youtube.com/embed/rrwycJ08PSA",
+    "longDescription": "В маленьком городе Винден исчезновение ребёнка открывает цепочку событий, связанную с несколькими поколениями. Сериал превращает путешествия во времени в семейный лабиринт, где каждое решение отзывается далеко вперёд и назад.",
+    "facts": [
+      {
+        "label": "Год",
+        "value": "2017"
+      },
+      {
+        "label": "Тип",
+        "value": "Сериал"
+      },
+      {
+        "label": "Страна",
+        "value": "Германия"
+      },
+      {
+        "label": "Длительность",
+        "value": "44–73 мин / серия"
+      },
+      {
+        "label": "Студия",
+        "value": "Netflix, Wiedemann & Berg"
+      },
+      {
+        "label": "Создатели",
+        "value": "Baran bo Odar, Jantje Friese"
+      },
+      {
+        "label": "Настроение",
+        "value": "Мрачно, сложно, атмосферно"
+      },
+      {
+        "label": "Темы",
+        "value": "Время, семья, судьба"
+      }
+    ],
+    "cast": [
+      {
+        "name": "Louis Hofmann",
+        "role": "Йонас Канвальд"
+      },
+      {
+        "name": "Lisa Vicari",
+        "role": "Марта Нильсен"
+      },
+      {
+        "name": "Maja Schöne",
+        "role": "Ханна Канвальд"
+      },
+      {
+        "name": "Oliver Masucci",
+        "role": "Ульрих Нильсен"
+      },
+      {
+        "name": "Andreas Pietschmann",
+        "role": "Незнакомец"
+      }
+    ],
+    "players": [
+      {
+        "id": "player-1",
+        "name": "Плеер 1",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-2",
+        "name": "Плеер 2",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-3",
+        "name": "Плеер 3",
+        "embedUrl": ""
+      }
+    ],
+    "id": 73
+  },
+  {
+    "slug": "the-mandalorian",
+    "title": "Мандалорец",
+    "originalTitle": "The Mandalorian",
+    "searchTitles": [
+      "мандалорец",
+      "the mandalorian",
+      "мандо",
+      "гроґу",
+      "грогу",
+      "baby yoda"
+    ],
+    "type": "Сериал",
+    "year": "2019",
+    "rating": 8.7,
+    "genres": [
+      "Фантастика",
+      "Приключения",
+      "Экшен"
+    ],
+    "poster": "https://image.tmdb.org/t/p/w500/sWgBv7LV2PRoQgkxwlibdGXKz1S.jpg",
+    "description": "Космический вестерн о наёмнике, который неожиданно получает очень маленькую ответственность.",
+    "trailerUrl": "https://www.youtube.com/embed/aOC8E8z_ifw",
+    "longDescription": "Одинокий мандалорский охотник за головами выполняет задания на окраинах галактики, пока встреча с загадочным ребёнком не меняет его путь. Сериал соединяет дух приключений, вестерн и мир Star Wars без лишнего шума.",
+    "facts": [
+      {
+        "label": "Год",
+        "value": "2019"
+      },
+      {
+        "label": "Тип",
+        "value": "Сериал"
+      },
+      {
+        "label": "Страна",
+        "value": "США"
+      },
+      {
+        "label": "Длительность",
+        "value": "30–50 мин / серия"
+      },
+      {
+        "label": "Студия",
+        "value": "Lucasfilm"
+      },
+      {
+        "label": "Создатель",
+        "value": "Jon Favreau"
+      },
+      {
+        "label": "Настроение",
+        "value": "Приключенчески, космически, спокойно круто"
+      },
+      {
+        "label": "Темы",
+        "value": "Защита, честь, путь"
+      }
+    ],
+    "cast": [
+      {
+        "name": "Pedro Pascal",
+        "role": "Дин Джарин / Мандалорец"
+      },
+      {
+        "name": "Grogu",
+        "role": "Таинственный ребёнок"
+      },
+      {
+        "name": "Carl Weathers",
+        "role": "Гриф Карга"
+      },
+      {
+        "name": "Gina Carano",
+        "role": "Кара Дьюн"
+      },
+      {
+        "name": "Giancarlo Esposito",
+        "role": "Мофф Гидеон"
+      }
+    ],
+    "players": [
+      {
+        "id": "player-1",
+        "name": "Плеер 1",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-2",
+        "name": "Плеер 2",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-3",
+        "name": "Плеер 3",
+        "embedUrl": ""
+      }
+    ],
+    "id": 74
+  },
+  {
+    "slug": "arcane",
+    "title": "Аркейн",
+    "originalTitle": "Arcane",
+    "searchTitles": [
+      "аркейн",
+      "arcane",
+      "league of legends",
+      "джинкс",
+      "вай"
+    ],
+    "type": "Сериал",
+    "year": "2021",
+    "rating": 9.0,
+    "genres": [
+      "Анимация",
+      "Фэнтези",
+      "Драма",
+      "Экшен"
+    ],
+    "poster": "https://image.tmdb.org/t/p/w500/fqldf2t8ztc9aiwn3k6mlX3tvRT.jpg",
+    "description": "Анимационная драма о двух городах, двух сёстрах и цене прогресса.",
+    "trailerUrl": "https://www.youtube.com/embed/fXmAurh012s",
+    "longDescription": "Пилтовер и Заун живут рядом, но разделены статусом, технологиями и обидами. История Вай и Джинкс показывает, как личная травма и политический конфликт могут сломать связь, которая казалась неразрушимой.",
+    "facts": [
+      {
+        "label": "Год",
+        "value": "2021"
+      },
+      {
+        "label": "Тип",
+        "value": "Сериал"
+      },
+      {
+        "label": "Страна",
+        "value": "США, Франция"
+      },
+      {
+        "label": "Длительность",
+        "value": "39–44 мин / серия"
+      },
+      {
+        "label": "Студия",
+        "value": "Riot Games, Fortiche"
+      },
+      {
+        "label": "Создатели",
+        "value": "Christian Linke, Alex Yee"
+      },
+      {
+        "label": "Настроение",
+        "value": "Красиво, драматично, зрелищно"
+      },
+      {
+        "label": "Темы",
+        "value": "Сёстры, прогресс, раскол"
+      }
+    ],
+    "cast": [
+      {
+        "name": "Вай",
+        "role": "Сильная и упрямая защитница"
+      },
+      {
+        "name": "Джинкс",
+        "role": "Хаотичная героиня с болью внутри"
+      },
+      {
+        "name": "Джейс",
+        "role": "Изобретатель и политик"
+      },
+      {
+        "name": "Виктор",
+        "role": "Учёный, ищущий новый путь"
+      },
+      {
+        "name": "Кейтлин",
+        "role": "Следовательница из Пилтовера"
+      }
+    ],
+    "players": [
+      {
+        "id": "player-1",
+        "name": "Плеер 1",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-2",
+        "name": "Плеер 2",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-3",
+        "name": "Плеер 3",
+        "embedUrl": ""
+      }
+    ],
+    "id": 75
+  },
+  {
+    "slug": "death-note",
+    "title": "Тетрадь смерти",
+    "originalTitle": "Death Note",
+    "searchTitles": [
+      "тетрадь смерти",
+      "death note",
+      "лайт",
+      "л",
+      "рьюк"
+    ],
+    "type": "Аниме",
+    "year": "2006",
+    "rating": 8.9,
+    "genres": [
+      "Аниме",
+      "Триллер",
+      "Детектив",
+      "Сверхъестественное"
+    ],
+    "poster": "https://image.tmdb.org/t/p/w500/iigTJJskR1PcjjXqxdyJwVB3BoU.jpg",
+    "description": "Интеллектуальная дуэль о школьнике, тетради и власти решать чужие судьбы.",
+    "trailerUrl": "https://www.youtube.com/embed/NlJZ-YgAt-c",
+    "longDescription": "Лайт Ягами находит тетрадь, способную убивать людей, чьи имена в неё записаны. Его идея справедливости быстро сталкивается с расследованием загадочного L, и история превращается в шахматную партию между двумя гениями.",
+    "facts": [
+      {
+        "label": "Год",
+        "value": "2006"
+      },
+      {
+        "label": "Тип",
+        "value": "Аниме"
+      },
+      {
+        "label": "Страна",
+        "value": "Япония"
+      },
+      {
+        "label": "Длительность",
+        "value": "23 мин / серия"
+      },
+      {
+        "label": "Студия",
+        "value": "Madhouse"
+      },
+      {
+        "label": "Оригинал",
+        "value": "Манга Tsugumi Ohba и Takeshi Obata"
+      },
+      {
+        "label": "Настроение",
+        "value": "Напряжённо, интеллектуально, мрачно"
+      },
+      {
+        "label": "Темы",
+        "value": "Власть, справедливость, контроль"
+      }
+    ],
+    "cast": [
+      {
+        "name": "Лайт Ягами",
+        "role": "Владелец тетради"
+      },
+      {
+        "name": "L",
+        "role": "Гениальный детектив"
+      },
+      {
+        "name": "Рюк",
+        "role": "Синигами-наблюдатель"
+      },
+      {
+        "name": "Миса Аманэ",
+        "role": "Айдол и союзница Лайта"
+      },
+      {
+        "name": "Соичиро Ягами",
+        "role": "Отец Лайта и полицейский"
+      }
+    ],
+    "players": [
+      {
+        "id": "player-1",
+        "name": "Плеер 1",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-2",
+        "name": "Плеер 2",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-3",
+        "name": "Плеер 3",
+        "embedUrl": ""
+      }
+    ],
+    "id": 76
+  },
+  {
+    "slug": "jujutsu-kaisen",
+    "title": "Магическая битва",
+    "originalTitle": "Jujutsu Kaisen",
+    "searchTitles": [
+      "магическая битва",
+      "jujutsu kaisen",
+      "дзюдзюцу кайсен",
+      "юдзи",
+      "годжо"
+    ],
+    "type": "Аниме",
+    "year": "2020",
+    "rating": 8.6,
+    "genres": [
+      "Аниме",
+      "Экшен",
+      "Фэнтези",
+      "Сверхъестественное"
+    ],
+    "poster": "https://image.tmdb.org/t/p/w500/fHpKWq9ayzSk8nSwqRuaAUemRKh.jpg",
+    "description": "Динамичное аниме о проклятиях, магии и учениках, которым рано расслабляться.",
+    "trailerUrl": "https://www.youtube.com/embed/pkKu9hLT-t8",
+    "longDescription": "Юдзи Итадори оказывается связан с могущественным проклятием и поступает в школу магов, где учатся бороться с опасными сущностями. Аниме быстро переключается между юмором, боевой постановкой и серьёзными ставками.",
+    "facts": [
+      {
+        "label": "Год",
+        "value": "2020"
+      },
+      {
+        "label": "Тип",
+        "value": "Аниме"
+      },
+      {
+        "label": "Страна",
+        "value": "Япония"
+      },
+      {
+        "label": "Длительность",
+        "value": "24 мин / серия"
+      },
+      {
+        "label": "Студия",
+        "value": "MAPPA"
+      },
+      {
+        "label": "Оригинал",
+        "value": "Манга Gege Akutami"
+      },
+      {
+        "label": "Настроение",
+        "value": "Быстро, эффектно, сверхъестественно"
+      },
+      {
+        "label": "Темы",
+        "value": "Дружба, долг, проклятия"
+      }
+    ],
+    "cast": [
+      {
+        "name": "Юдзи Итадори",
+        "role": "Ученик магической школы"
+      },
+      {
+        "name": "Мегуми Фусигуро",
+        "role": "Спокойный и сильный маг"
+      },
+      {
+        "name": "Нобара Кугисаки",
+        "role": "Уверенная боевая союзница"
+      },
+      {
+        "name": "Сатору Годжо",
+        "role": "Наставник с пугающей силой"
+      },
+      {
+        "name": "Сукуна",
+        "role": "Король проклятий"
+      }
+    ],
+    "players": [
+      {
+        "id": "player-1",
+        "name": "Плеер 1",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-2",
+        "name": "Плеер 2",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-3",
+        "name": "Плеер 3",
+        "embedUrl": ""
+      }
+    ],
+    "id": 77
+  },
+  {
+    "slug": "fullmetal-alchemist-brotherhood",
+    "title": "Стальной алхимик: Братство",
+    "originalTitle": "Fullmetal Alchemist: Brotherhood",
+    "searchTitles": [
+      "стальной алхимик",
+      "fullmetal alchemist",
+      "brotherhood",
+      "эдвард элрик"
+    ],
+    "type": "Аниме",
+    "year": "2009",
+    "rating": 9.1,
+    "genres": [
+      "Аниме",
+      "Приключения",
+      "Фэнтези",
+      "Драма"
+    ],
+    "poster": "https://image.tmdb.org/t/p/w500/5ZFUEOULaVml7pQuXxhpR2SmVUw.jpg",
+    "description": "История двух братьев, алхимии и закона равноценного обмена.",
+    "trailerUrl": "https://www.youtube.com/embed/2uq34TeWEdQ",
+    "longDescription": "Эдвард и Альфонс Элрики ищут способ вернуть потерянное после трагического эксперимента. Их путь раскрывает не только правила алхимии, но и большую политическую тайну, где цена силы всегда оказывается личной.",
+    "facts": [
+      {
+        "label": "Год",
+        "value": "2009"
+      },
+      {
+        "label": "Тип",
+        "value": "Аниме"
+      },
+      {
+        "label": "Страна",
+        "value": "Япония"
+      },
+      {
+        "label": "Длительность",
+        "value": "24 мин / серия"
+      },
+      {
+        "label": "Студия",
+        "value": "Bones"
+      },
+      {
+        "label": "Оригинал",
+        "value": "Манга Hiromu Arakawa"
+      },
+      {
+        "label": "Настроение",
+        "value": "Эпично, драматично, приключенчески"
+      },
+      {
+        "label": "Темы",
+        "value": "Семья, цена силы, искупление"
+      }
+    ],
+    "cast": [
+      {
+        "name": "Эдвард Элрик",
+        "role": "Стальной алхимик"
+      },
+      {
+        "name": "Альфонс Элрик",
+        "role": "Брат Эдварда в доспехах"
+      },
+      {
+        "name": "Рой Мустанг",
+        "role": "Огненный алхимик"
+      },
+      {
+        "name": "Уинри Рокбелл",
+        "role": "Механик и близкая подруга"
+      },
+      {
+        "name": "Скар",
+        "role": "Мститель с тяжёлым прошлым"
+      }
+    ],
+    "players": [
+      {
+        "id": "player-1",
+        "name": "Плеер 1",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-2",
+        "name": "Плеер 2",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-3",
+        "name": "Плеер 3",
+        "embedUrl": ""
+      }
+    ],
+    "id": 78
+  },
+  {
+    "slug": "one-piece",
+    "title": "Ван-Пис",
+    "originalTitle": "One Piece",
+    "searchTitles": [
+      "ван пис",
+      "ван-пис",
+      "one piece",
+      "луффи",
+      "пираты"
+    ],
+    "type": "Аниме",
+    "year": "1999",
+    "rating": 9.0,
+    "genres": [
+      "Аниме",
+      "Приключения",
+      "Экшен",
+      "Комедия"
+    ],
+    "poster": "https://image.tmdb.org/t/p/w500/cMD9Ygz11zjJzAovURpO75Qg7rT.jpg",
+    "description": "Большое пиратское приключение о мечтах, команде и поиске легендарного сокровища.",
+    "trailerUrl": "https://www.youtube.com/embed/S8_YwFLCh4U",
+    "longDescription": "Монки Д. Луффи собирает команду, чтобы отправиться к Гранд Лайн и найти сокровище One Piece. За весёлым приключением скрывается огромный мир, где дружба, свобода и мечты важнее любой карты.",
+    "facts": [
+      {
+        "label": "Год",
+        "value": "1999"
+      },
+      {
+        "label": "Тип",
+        "value": "Аниме"
+      },
+      {
+        "label": "Страна",
+        "value": "Япония"
+      },
+      {
+        "label": "Длительность",
+        "value": "24 мин / серия"
+      },
+      {
+        "label": "Студия",
+        "value": "Toei Animation"
+      },
+      {
+        "label": "Оригинал",
+        "value": "Манга Eiichiro Oda"
+      },
+      {
+        "label": "Настроение",
+        "value": "Весело, масштабно, приключенчески"
+      },
+      {
+        "label": "Темы",
+        "value": "Свобода, дружба, мечта"
+      }
+    ],
+    "cast": [
+      {
+        "name": "Монки Д. Луффи",
+        "role": "Капитан Пиратов Соломенной Шляпы"
+      },
+      {
+        "name": "Ророноа Зоро",
+        "role": "Мечник команды"
+      },
+      {
+        "name": "Нами",
+        "role": "Навигатор"
+      },
+      {
+        "name": "Санджи",
+        "role": "Кок и боец"
+      },
+      {
+        "name": "Усопп",
+        "role": "Стрелок и рассказчик"
+      }
+    ],
+    "players": [
+      {
+        "id": "player-1",
+        "name": "Плеер 1",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-2",
+        "name": "Плеер 2",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-3",
+        "name": "Плеер 3",
+        "embedUrl": ""
+      }
+    ],
+    "id": 79
+  },
+  {
+    "slug": "chainsaw-man",
+    "title": "Человек-бензопила",
+    "originalTitle": "Chainsaw Man",
+    "searchTitles": [
+      "человек бензопила",
+      "человек-бензопила",
+      "chainsaw man",
+      "дэнджи",
+      "почита"
+    ],
+    "type": "Аниме",
+    "year": "2022",
+    "rating": 8.5,
+    "genres": [
+      "Аниме",
+      "Экшен",
+      "Фэнтези",
+      "Драма"
+    ],
+    "poster": "https://image.tmdb.org/t/p/w500/npdB6eFzizki0WaZ1OvKcJrWe97.jpg",
+    "description": "Безумное и энергичное аниме о парне, демонах и мечте о нормальной жизни.",
+    "trailerUrl": "https://www.youtube.com/embed/v4yLeNt-kCU",
+    "longDescription": "Дэнджи живёт в долгах и охотится на демонов вместе с Почитой, пока обстоятельства не превращают его в Человека-бензопилу. История сочетает экшен, абсурдный юмор и очень человеческое желание просто жить лучше.",
+    "facts": [
+      {
+        "label": "Год",
+        "value": "2022"
+      },
+      {
+        "label": "Тип",
+        "value": "Аниме"
+      },
+      {
+        "label": "Страна",
+        "value": "Япония"
+      },
+      {
+        "label": "Длительность",
+        "value": "24 мин / серия"
+      },
+      {
+        "label": "Студия",
+        "value": "MAPPA"
+      },
+      {
+        "label": "Оригинал",
+        "value": "Манга Tatsuki Fujimoto"
+      },
+      {
+        "label": "Настроение",
+        "value": "Дико, энергично, странно трогательно"
+      },
+      {
+        "label": "Темы",
+        "value": "Мечты, выживание, доверие"
+      }
+    ],
+    "cast": [
+      {
+        "name": "Дэнджи",
+        "role": "Парень, ставший Человеком-бензопилой"
+      },
+      {
+        "name": "Почита",
+        "role": "Демон-бензопила и друг"
+      },
+      {
+        "name": "Макима",
+        "role": "Загадочная руководительница"
+      },
+      {
+        "name": "Аки Хаякава",
+        "role": "Охотник на демонов"
+      },
+      {
+        "name": "Пауэр",
+        "role": "Демон крови с ярким характером"
+      }
+    ],
+    "players": [
+      {
+        "id": "player-1",
+        "name": "Плеер 1",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-2",
+        "name": "Плеер 2",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-3",
+        "name": "Плеер 3",
+        "embedUrl": ""
+      }
+    ],
+    "id": 80
+  },
+  {
+    "slug": "cyberpunk-edgerunners",
+    "title": "Киберпанк: Бегущие по краю",
+    "originalTitle": "Cyberpunk: Edgerunners",
+    "searchTitles": [
+      "киберпанк",
+      "cyberpunk edgerunners",
+      "бегущие по краю",
+      "дэвид мартинес"
+    ],
+    "type": "Аниме",
+    "year": "2022",
+    "rating": 8.6,
+    "genres": [
+      "Аниме",
+      "Фантастика",
+      "Экшен",
+      "Драма"
+    ],
+    "poster": "https://image.tmdb.org/t/p/w500/7jSWOc6jWSw5hZ78HB8Hw3pJxuk.jpg",
+    "description": "Неоновая история Найт-Сити о скорости, мечтах и цене улучшений.",
+    "trailerUrl": "https://www.youtube.com/embed/JtqIas3bYhg",
+    "longDescription": "Дэвид Мартинес попадает в мир наёмников, имплантов и больших рисков. Найт-Сити обещает быстрый подъём, но каждая новая возможность там почти всегда требует слишком дорогой оплаты.",
+    "facts": [
+      {
+        "label": "Год",
+        "value": "2022"
+      },
+      {
+        "label": "Тип",
+        "value": "Аниме"
+      },
+      {
+        "label": "Страна",
+        "value": "Япония, Польша"
+      },
+      {
+        "label": "Длительность",
+        "value": "24–27 мин / серия"
+      },
+      {
+        "label": "Студия",
+        "value": "Studio Trigger, CD Projekt Red"
+      },
+      {
+        "label": "Основа",
+        "value": "Вселенная Cyberpunk 2077"
+      },
+      {
+        "label": "Настроение",
+        "value": "Неоново, быстро, трагично"
+      },
+      {
+        "label": "Темы",
+        "value": "Амбиции, город, цена силы"
+      }
+    ],
+    "cast": [
+      {
+        "name": "Дэвид Мартинес",
+        "role": "Парень, который хочет вырваться выше"
+      },
+      {
+        "name": "Люси",
+        "role": "Нетраннер и ключевая союзница"
+      },
+      {
+        "name": "Мэйн",
+        "role": "Лидер команды"
+      },
+      {
+        "name": "Ребекка",
+        "role": "Боевая и резкая участница команды"
+      },
+      {
+        "name": "Киви",
+        "role": "Опытная нетраннерша"
+      }
+    ],
+    "players": [
+      {
+        "id": "player-1",
+        "name": "Плеер 1",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-2",
+        "name": "Плеер 2",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-3",
+        "name": "Плеер 3",
+        "embedUrl": ""
+      }
+    ],
+    "id": 81
+  },
+  {
+    "slug": "vinland-saga",
+    "title": "Сага о Винланде",
+    "originalTitle": "Vinland Saga",
+    "searchTitles": [
+      "сага о винланде",
+      "vinland saga",
+      "торфинн",
+      "викинги"
+    ],
+    "type": "Аниме",
+    "year": "2019",
+    "rating": 8.8,
+    "genres": [
+      "Аниме",
+      "История",
+      "Драма",
+      "Приключения"
+    ],
+    "poster": "https://image.tmdb.org/t/p/w500/rDBHXTuQQAw0o4AdVwfKKhYzWvS.jpg",
+    "description": "Историческая аниме-драма о мести, взрослении и поиске настоящей свободы.",
+    "trailerUrl": "https://www.youtube.com/embed/f8JrZ7Q_p-8",
+    "longDescription": "Торфинн растёт в мире викингов, войн и личной мести. Но чем дальше идёт его путь, тем сильнее история смещается от битв к вопросу: что значит жить свободно и не повторять круг насилия.",
+    "facts": [
+      {
+        "label": "Год",
+        "value": "2019"
+      },
+      {
+        "label": "Тип",
+        "value": "Аниме"
+      },
+      {
+        "label": "Страна",
+        "value": "Япония"
+      },
+      {
+        "label": "Длительность",
+        "value": "24 мин / серия"
+      },
+      {
+        "label": "Студия",
+        "value": "Wit Studio, MAPPA"
+      },
+      {
+        "label": "Оригинал",
+        "value": "Манга Makoto Yukimura"
+      },
+      {
+        "label": "Настроение",
+        "value": "Сурово, исторично, драматично"
+      },
+      {
+        "label": "Темы",
+        "value": "Месть, свобода, взросление"
+      }
+    ],
+    "cast": [
+      {
+        "name": "Торфинн",
+        "role": "Юный воин, ищущий свой путь"
+      },
+      {
+        "name": "Аскеладд",
+        "role": "Хитрый лидер наёмников"
+      },
+      {
+        "name": "Торс",
+        "role": "Отец Торфинна"
+      },
+      {
+        "name": "Кнуд",
+        "role": "Принц с непростой судьбой"
+      },
+      {
+        "name": "Торкель",
+        "role": "Сильнейший воин и любитель битв"
+      }
+    ],
+    "players": [
+      {
+        "id": "player-1",
+        "name": "Плеер 1",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-2",
+        "name": "Плеер 2",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-3",
+        "name": "Плеер 3",
+        "embedUrl": ""
+      }
+    ],
+    "id": 82
+  },
+  {
+    "slug": "cowboy-bebop",
+    "title": "Ковбой Бибоп",
+    "originalTitle": "Cowboy Bebop",
+    "searchTitles": [
+      "ковбой бибоп",
+      "cowboy bebop",
+      "спайк",
+      "джаз",
+      "космос"
+    ],
+    "type": "Аниме",
+    "year": "1998",
+    "rating": 8.9,
+    "genres": [
+      "Аниме",
+      "Фантастика",
+      "Приключения",
+      "Драма"
+    ],
+    "poster": "https://image.tmdb.org/t/p/w500/xDiXDfZwC6XYC6fxHI1jl3A3Ill.jpg",
+    "description": "Космический нуар с джазом, охотниками за головами и прошлым, от которого не улететь.",
+    "trailerUrl": "https://www.youtube.com/embed/RI08P5SaJNU",
+    "longDescription": "Экипаж корабля Bebop берётся за разные задания по всей Солнечной системе. За лёгким стилем и музыкой скрываются одиночество, старые ошибки и истории людей, которые постоянно пытаются догнать завтрашний день.",
+    "facts": [
+      {
+        "label": "Год",
+        "value": "1998"
+      },
+      {
+        "label": "Тип",
+        "value": "Аниме"
+      },
+      {
+        "label": "Страна",
+        "value": "Япония"
+      },
+      {
+        "label": "Длительность",
+        "value": "24 мин / серия"
+      },
+      {
+        "label": "Студия",
+        "value": "Sunrise"
+      },
+      {
+        "label": "Режиссёр",
+        "value": "Shinichirō Watanabe"
+      },
+      {
+        "label": "Настроение",
+        "value": "Стильно, джазово, меланхолично"
+      },
+      {
+        "label": "Темы",
+        "value": "Прошлое, свобода, одиночество"
+      }
+    ],
+    "cast": [
+      {
+        "name": "Спайк Шпигель",
+        "role": "Охотник за головами с прошлым"
+      },
+      {
+        "name": "Джет Блэк",
+        "role": "Капитан Bebop"
+      },
+      {
+        "name": "Фэй Валентайн",
+        "role": "Авантюристка с долгами"
+      },
+      {
+        "name": "Эд",
+        "role": "Гениальная хакерша"
+      },
+      {
+        "name": "Эйн",
+        "role": "Очень умный пёс"
+      }
+    ],
+    "players": [
+      {
+        "id": "player-1",
+        "name": "Плеер 1",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-2",
+        "name": "Плеер 2",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-3",
+        "name": "Плеер 3",
+        "embedUrl": ""
+      }
+    ],
+    "id": 83
+  },
+  {
+    "slug": "kung-fu-panda",
+    "title": "Кунг-фу Панда",
+    "originalTitle": "Kung Fu Panda",
+    "searchTitles": [
+      "кунг фу панда",
+      "kung fu panda",
+      "по",
+      "панда"
+    ],
+    "type": "Мультфильм",
+    "year": "2008",
+    "rating": 7.6,
+    "genres": [
+      "Анимация",
+      "Комедия",
+      "Приключения",
+      "Семейный"
+    ],
+    "poster": "https://image.tmdb.org/t/p/w500/wWt4JYXTg5Wr3xBW2phBrMKgp3x.jpg",
+    "description": "История ленивого мечтателя По, который внезапно получает шанс стать воином.",
+    "trailerUrl": "https://www.youtube.com/embed/PXi3Mv6KMzY",
+    "longDescription": "По обожает лапшу и кунг-фу, но сам не похож на легендарного героя. Когда его неожиданно выбирают Воином Дракона, ему приходится доказать, что сила может прятаться там, где её никто не ищет.",
+    "facts": [
+      {
+        "label": "Год",
+        "value": "2008"
+      },
+      {
+        "label": "Тип",
+        "value": "Мультфильм"
+      },
+      {
+        "label": "Страна",
+        "value": "США"
+      },
+      {
+        "label": "Длительность",
+        "value": "92 мин"
+      },
+      {
+        "label": "Студия",
+        "value": "DreamWorks Animation"
+      },
+      {
+        "label": "Режиссёры",
+        "value": "John Stevenson, Mark Osborne"
+      },
+      {
+        "label": "Настроение",
+        "value": "Весело, тепло, боевито"
+      },
+      {
+        "label": "Темы",
+        "value": "Самопринятие, вера, мастерство"
+      }
+    ],
+    "cast": [
+      {
+        "name": "По",
+        "role": "Панда, который мечтает о кунг-фу"
+      },
+      {
+        "name": "Шифу",
+        "role": "Строгий наставник"
+      },
+      {
+        "name": "Тигрица",
+        "role": "Сильная участница Пятёрки"
+      },
+      {
+        "name": "Тай Лунг",
+        "role": "Опасный противник"
+      },
+      {
+        "name": "Мастер Угвей",
+        "role": "Мудрый учитель"
+      }
+    ],
+    "players": [
+      {
+        "id": "player-1",
+        "name": "Плеер 1",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-2",
+        "name": "Плеер 2",
+        "embedUrl": ""
+      }
+    ],
+    "id": 84
+  },
+  {
+    "slug": "zootopia",
+    "title": "Зверополис",
+    "originalTitle": "Zootopia",
+    "searchTitles": [
+      "зверополис",
+      "zootopia",
+      "зутопия",
+      "джуди хоппс",
+      "ник уайлд"
+    ],
+    "type": "Мультфильм",
+    "year": "2016",
+    "rating": 8.0,
+    "genres": [
+      "Анимация",
+      "Комедия",
+      "Приключения",
+      "Детектив"
+    ],
+    "poster": "https://image.tmdb.org/t/p/w500/hlK0e0wAQ3VLuJcsfIYPvb4JVud.jpg",
+    "description": "Детективная история в городе животных, где маленькая крольчиха берётся за большое дело.",
+    "trailerUrl": "https://www.youtube.com/embed/jWM0ct-OLsM",
+    "longDescription": "Джуди Хоппс приезжает в Зверополис, чтобы стать настоящим полицейским, но быстро понимает: мечта требует больше, чем энтузиазм. Вместе с хитрым Ником Уайлдом она расследует дело, которое меняет взгляд города на самого себя.",
+    "facts": [
+      {
+        "label": "Год",
+        "value": "2016"
+      },
+      {
+        "label": "Тип",
+        "value": "Мультфильм"
+      },
+      {
+        "label": "Страна",
+        "value": "США"
+      },
+      {
+        "label": "Длительность",
+        "value": "108 мин"
+      },
+      {
+        "label": "Студия",
+        "value": "Walt Disney Animation Studios"
+      },
+      {
+        "label": "Режиссёры",
+        "value": "Byron Howard, Rich Moore"
+      },
+      {
+        "label": "Настроение",
+        "value": "Ярко, смешно, детективно"
+      },
+      {
+        "label": "Темы",
+        "value": "Предрассудки, дружба, смелость"
+      }
+    ],
+    "cast": [
+      {
+        "name": "Джуди Хоппс",
+        "role": "Крольчиха-полицейская"
+      },
+      {
+        "name": "Ник Уайлд",
+        "role": "Хитрый лис и неожиданный напарник"
+      },
+      {
+        "name": "Буйволсон",
+        "role": "Начальник полиции"
+      },
+      {
+        "name": "Газелле",
+        "role": "Поп-звезда города"
+      },
+      {
+        "name": "Леодор Златогрив",
+        "role": "Мэр Зверополиса"
+      }
+    ],
+    "players": [
+      {
+        "id": "player-1",
+        "name": "Плеер 1",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-2",
+        "name": "Плеер 2",
+        "embedUrl": ""
+      }
+    ],
+    "id": 85
+  },
+  {
+    "slug": "moana",
+    "title": "Моана",
+    "originalTitle": "Moana",
+    "searchTitles": [
+      "моана",
+      "moana",
+      "мауи",
+      "океан"
+    ],
+    "type": "Мультфильм",
+    "year": "2016",
+    "rating": 7.6,
+    "genres": [
+      "Анимация",
+      "Приключения",
+      "Семейный",
+      "Музыка"
+    ],
+    "poster": "https://image.tmdb.org/t/p/w500/4JeejGugONWpJkbnvL12hVoYEDa.jpg",
+    "description": "Музыкальное приключение о девушке, океане и поиске своего пути.",
+    "trailerUrl": "https://www.youtube.com/embed/LKFuXETZUsI",
+    "longDescription": "Моана отправляется за риф, чтобы спасти свой остров и понять, кем она хочет быть. На пути ей помогает полубог Мауи, а главным наставником становится сам океан — довольно нестандартный, но эффектный коуч.",
+    "facts": [
+      {
+        "label": "Год",
+        "value": "2016"
+      },
+      {
+        "label": "Тип",
+        "value": "Мультфильм"
+      },
+      {
+        "label": "Страна",
+        "value": "США"
+      },
+      {
+        "label": "Длительность",
+        "value": "107 мин"
+      },
+      {
+        "label": "Студия",
+        "value": "Walt Disney Animation Studios"
+      },
+      {
+        "label": "Режиссёры",
+        "value": "Ron Clements, John Musker"
+      },
+      {
+        "label": "Настроение",
+        "value": "Ярко, музыкально, приключенчески"
+      },
+      {
+        "label": "Темы",
+        "value": "Семья, путь, смелость"
+      }
+    ],
+    "cast": [
+      {
+        "name": "Моана",
+        "role": "Дочь вождя и будущая путешественница"
+      },
+      {
+        "name": "Мауи",
+        "role": "Полубог с большим эго"
+      },
+      {
+        "name": "Тала",
+        "role": "Бабушка Моаны"
+      },
+      {
+        "name": "Таматоа",
+        "role": "Краб, который слишком любит блеск"
+      },
+      {
+        "name": "Океан",
+        "role": "Самый водный помощник"
+      }
+    ],
+    "players": [
+      {
+        "id": "player-1",
+        "name": "Плеер 1",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-2",
+        "name": "Плеер 2",
+        "embedUrl": ""
+      }
+    ],
+    "id": 86
+  },
+  {
+    "slug": "the-incredibles",
+    "title": "Суперсемейка",
+    "originalTitle": "The Incredibles",
+    "searchTitles": [
+      "суперсемейка",
+      "the incredibles",
+      "мистер исключительный",
+      "pixar"
+    ],
+    "type": "Мультфильм",
+    "year": "2004",
+    "rating": 8.0,
+    "genres": [
+      "Анимация",
+      "Экшен",
+      "Комедия",
+      "Семейный"
+    ],
+    "poster": "https://image.tmdb.org/t/p/w500/2LqaLgk4Z226KkgPJuiOQ58wvrm.jpg",
+    "description": "Семейная супергеройская история о том, что спасать мир проще, когда дома есть поддержка.",
+    "trailerUrl": "https://www.youtube.com/embed/-UaGUdNJdRQ",
+    "longDescription": "Семья Парр пытается жить обычной жизнью после запрета супергероев, но прошлое и новые угрозы быстро возвращают их в дело. Мультфильм смешивает экшен, семейную драму и отличный ретро-стиль.",
+    "facts": [
+      {
+        "label": "Год",
+        "value": "2004"
+      },
+      {
+        "label": "Тип",
+        "value": "Мультфильм"
+      },
+      {
+        "label": "Страна",
+        "value": "США"
+      },
+      {
+        "label": "Длительность",
+        "value": "115 мин"
+      },
+      {
+        "label": "Студия",
+        "value": "Pixar Animation Studios"
+      },
+      {
+        "label": "Режиссёр",
+        "value": "Brad Bird"
+      },
+      {
+        "label": "Настроение",
+        "value": "Динамично, семейно, супергеройски"
+      },
+      {
+        "label": "Темы",
+        "value": "Семья, принятие, команда"
+      }
+    ],
+    "cast": [
+      {
+        "name": "Боб Парр",
+        "role": "Мистер Исключительный"
+      },
+      {
+        "name": "Хелен Парр",
+        "role": "Эластика"
+      },
+      {
+        "name": "Виолетта",
+        "role": "Дочь с силовыми полями"
+      },
+      {
+        "name": "Шастик",
+        "role": "Очень быстрый сын"
+      },
+      {
+        "name": "Синдром",
+        "role": "Злодей с обидой и гаджетами"
+      }
+    ],
+    "players": [
+      {
+        "id": "player-1",
+        "name": "Плеер 1",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-2",
+        "name": "Плеер 2",
+        "embedUrl": ""
+      }
+    ],
+    "id": 87
+  },
+  {
+    "slug": "cosmos-a-spacetime-odyssey",
+    "title": "Космос: Пространство и время",
+    "originalTitle": "Cosmos: A Spacetime Odyssey",
+    "searchTitles": [
+      "космос пространство и время",
+      "cosmos",
+      "нил деграсс тайсон",
+      "документальный космос"
+    ],
+    "type": "Документальный",
+    "year": "2014",
+    "rating": 9.3,
+    "genres": [
+      "Документальный",
+      "Наука",
+      "Космос"
+    ],
+    "poster": "https://kinogo.online/uploads/posts/2021-03/1615665601-1144240884.jpg",
+    "description": "Документальное путешествие по Вселенной, науке и месту человека в огромном космосе.",
+    "trailerUrl": "https://www.youtube.com/embed/XFF2ECZ8m1A",
+    "longDescription": "Нил Деграсс Тайсон ведёт зрителя через историю науки, строение Вселенной и идеи, которые изменили наше понимание мира. Проект объясняет сложные вещи через визуальные образы и чувство удивления.",
+    "facts": [
+      {
+        "label": "Год",
+        "value": "2014"
+      },
+      {
+        "label": "Тип",
+        "value": "Документальный"
+      },
+      {
+        "label": "Страна",
+        "value": "США"
+      },
+      {
+        "label": "Длительность",
+        "value": "около 44 мин / серия"
+      },
+      {
+        "label": "Студия",
+        "value": "Cosmos Studios, Fuzzy Door Productions"
+      },
+      {
+        "label": "Ведущий",
+        "value": "Neil deGrasse Tyson"
+      },
+      {
+        "label": "Настроение",
+        "value": "Познавательно, красиво, масштабно"
+      },
+      {
+        "label": "Темы",
+        "value": "Космос, наука, история идей"
+      }
+    ],
+    "cast": [
+      {
+        "name": "Neil deGrasse Tyson",
+        "role": "Ведущий"
+      },
+      {
+        "name": "Ann Druyan",
+        "role": "Автор и продюсер"
+      },
+      {
+        "name": "Carl Sagan",
+        "role": "Духовное наследие проекта"
+      },
+      {
+        "name": "Корабль воображения",
+        "role": "Визуальный проводник"
+      },
+      {
+        "name": "Вселенная",
+        "role": "Главная тема"
+      }
+    ],
+    "players": [
+      {
+        "id": "player-1",
+        "name": "Плеер 1",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-2",
+        "name": "Плеер 2",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-3",
+        "name": "Плеер 3",
+        "embedUrl": ""
+      }
+    ],
+    "id": 88
+  },
+  {
+    "slug": "free-solo",
+    "title": "Фри-соло",
+    "originalTitle": "Free Solo",
+    "searchTitles": [
+      "фри соло",
+      "free solo",
+      "alex honnold",
+      "эль капитан"
+    ],
+    "type": "Документальный",
+    "year": "2018",
+    "rating": 8.1,
+    "genres": [
+      "Документальный",
+      "Спорт",
+      "Биография"
+    ],
+    "poster": "https://image.tmdb.org/t/p/w500/v4QfYZMACODlWul9doN9RxE99ag.jpg",
+    "description": "Документальный фильм об Алексe Хоннольде и восхождении, где нет права на ошибку.",
+    "trailerUrl": "https://www.youtube.com/embed/urRVZ4SW7WU",
+    "longDescription": "Алекс Хоннольд готовится к свободному прохождению стены Эль-Капитан без страховки. Фильм показывает не только физическую подготовку, но и психологию человека, который умеет управлять страхом иначе, чем большинство людей.",
+    "facts": [
+      {
+        "label": "Год",
+        "value": "2018"
+      },
+      {
+        "label": "Тип",
+        "value": "Документальный"
+      },
+      {
+        "label": "Страна",
+        "value": "США"
+      },
+      {
+        "label": "Длительность",
+        "value": "100 мин"
+      },
+      {
+        "label": "Студия",
+        "value": "National Geographic Documentary Films"
+      },
+      {
+        "label": "Режиссёры",
+        "value": "Elizabeth Chai Vasarhelyi, Jimmy Chin"
+      },
+      {
+        "label": "Настроение",
+        "value": "Напряжённо, вдохновляюще, честно"
+      },
+      {
+        "label": "Темы",
+        "value": "Риск, концентрация, мечта"
+      }
+    ],
+    "cast": [
+      {
+        "name": "Alex Honnold",
+        "role": "Скалолаз"
+      },
+      {
+        "name": "Jimmy Chin",
+        "role": "Режиссёр и оператор"
+      },
+      {
+        "name": "Elizabeth Chai Vasarhelyi",
+        "role": "Режиссёр"
+      },
+      {
+        "name": "Tommy Caldwell",
+        "role": "Скалолаз и друг"
+      },
+      {
+        "name": "Эль-Капитан",
+        "role": "Главная стена фильма"
+      }
+    ],
+    "players": [
+      {
+        "id": "player-1",
+        "name": "Плеер 1",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-2",
+        "name": "Плеер 2",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-3",
+        "name": "Плеер 3",
+        "embedUrl": ""
+      }
+    ],
+    "id": 89
+  },
+  {
+    "slug": "the-last-dance",
+    "title": "Последний танец",
+    "originalTitle": "The Last Dance",
+    "searchTitles": [
+      "последний танец",
+      "the last dance",
+      "майкл джордан",
+      "chicago bulls"
+    ],
+    "type": "Документальный",
+    "year": "2020",
+    "rating": 9.1,
+    "genres": [
+      "Документальный",
+      "Спорт",
+      "Биография"
+    ],
+    "poster": "https://image.tmdb.org/t/p/w500/zU0htwkhNvBQdVSIKB9s6hgVeFK.jpg",
+    "description": "Документальный сериал о Майкле Джордане, Chicago Bulls и сезоне, ставшем легендой.",
+    "trailerUrl": "https://www.youtube.com/embed/N9Z9JtNcCWY",
+    "longDescription": "Проект возвращает зрителя в финальный чемпионский сезон Chicago Bulls и показывает, как строилась одна из самых известных спортивных династий. Это история таланта, давления, лидерства и команды, которая стала символом эпохи.",
+    "facts": [
+      {
+        "label": "Год",
+        "value": "2020"
+      },
+      {
+        "label": "Тип",
+        "value": "Документальный"
+      },
+      {
+        "label": "Страна",
+        "value": "США"
+      },
+      {
+        "label": "Длительность",
+        "value": "около 50 мин / серия"
+      },
+      {
+        "label": "Студия",
+        "value": "ESPN Films, Netflix"
+      },
+      {
+        "label": "Режиссёр",
+        "value": "Jason Hehir"
+      },
+      {
+        "label": "Настроение",
+        "value": "Динамично, спортивно, ностальгично"
+      },
+      {
+        "label": "Темы",
+        "value": "Лидерство, команда, победа"
+      }
+    ],
+    "cast": [
+      {
+        "name": "Michael Jordan",
+        "role": "Главный герой"
+      },
+      {
+        "name": "Scottie Pippen",
+        "role": "Игрок Chicago Bulls"
+      },
+      {
+        "name": "Dennis Rodman",
+        "role": "Игрок Chicago Bulls"
+      },
+      {
+        "name": "Phil Jackson",
+        "role": "Тренер"
+      },
+      {
+        "name": "Chicago Bulls",
+        "role": "Команда эпохи"
+      }
+    ],
+    "players": [
+      {
+        "id": "player-1",
+        "name": "Плеер 1",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-2",
+        "name": "Плеер 2",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-3",
+        "name": "Плеер 3",
+        "embedUrl": ""
+      }
+    ],
+    "id": 90
+  },
+  {
+    "slug": "my-octopus-teacher",
+    "title": "Мой учитель — осьминог",
+    "originalTitle": "My Octopus Teacher",
+    "searchTitles": [
+      "мой учитель осьминог",
+      "my octopus teacher",
+      "осьминог",
+      "документальный океан"
+    ],
+    "type": "Документальный",
+    "year": "2020",
+    "rating": 8.1,
+    "genres": [
+      "Документальный",
+      "Природа"
+    ],
+    "poster": "https://avatars.mds.yandex.net/get-kinopoisk-image/1704946/d331d388-d5f6-43af-8911-c4b60d863484/600x900",
+    "description": "Тихий документальный фильм о необычной связи человека и осьминога в подводном лесу.",
+    "trailerUrl": "https://www.youtube.com/embed/3s0LTDhqe5A",
+    "longDescription": "Крейг Фостер каждый день возвращается в холодные воды у побережья Южной Африки и наблюдает за жизнью осьминога. Постепенно это становится историей о внимании, восстановлении и уважении к природе.",
+    "facts": [
+      {
+        "label": "Год",
+        "value": "2020"
+      },
+      {
+        "label": "Тип",
+        "value": "Документальный"
+      },
+      {
+        "label": "Страна",
+        "value": "Южная Африка"
+      },
+      {
+        "label": "Длительность",
+        "value": "85 мин"
+      },
+      {
+        "label": "Студия",
+        "value": "Netflix, Off the Fence"
+      },
+      {
+        "label": "Режиссёры",
+        "value": "Pippa Ehrlich, James Reed"
+      },
+      {
+        "label": "Настроение",
+        "value": "Спокойно, красиво, созерцательно"
+      },
+      {
+        "label": "Темы",
+        "value": "Природа, связь, внимание"
+      }
+    ],
+    "cast": [
+      {
+        "name": "Craig Foster",
+        "role": "Наблюдатель и рассказчик"
+      },
+      {
+        "name": "Осьминог",
+        "role": "Главная героиня наблюдений"
+      },
+      {
+        "name": "Подводный лес",
+        "role": "Ключевая локация"
+      },
+      {
+        "name": "Pippa Ehrlich",
+        "role": "Режиссёр"
+      },
+      {
+        "name": "James Reed",
+        "role": "Режиссёр"
+      }
+    ],
+    "players": [
+      {
+        "id": "player-1",
+        "name": "Плеер 1",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-2",
+        "name": "Плеер 2",
+        "embedUrl": ""
+      },
+      {
+        "id": "player-3",
+        "name": "Плеер 3",
+        "embedUrl": ""
+      }
+    ],
+    "id": 91
+  },
+  {
+      id: 92,
+      slug: "scorpion",
+      title: "Скорпион",
+      originalTitle: "Scorpion",
+      searchTitles: ["Скорпион", "Scorpion"],
+      type: "Сериал",
+      year: "2014 - 2018",
+      rating: 7,
+      genres: [
+        "Боевик",
+        "Триллер",
+        "Драма",
+        "Криминал",
+      ],
+      poster: "https://kinopoisk-ru.clstorage.net/2a95Th371/ce5fd6dh031/9C3Jy3slmvceAtTBAgdMaA3T7Ev5QhuB-Qxj2-8i3oj_tcRKPTkOiHomYozQy71zd3cihjkMsqduTj_qGBXe5XT-yNyp4s1iCZAGQQFSDe9IEDsbfJAOEP5ItI046RKC8z-Yw7LzBoNid_EcFtxqZqdnNQQ9GvSiq9KxbAxZjfv67oeKsX0S_BHTGEWJRI_lFJRnTKlF1gbrDKFVoKPeDrG710s4O81A6HAy3QfU6SfnpzoOvdSsrKrYv_DIUgV5fOWEQz0yH_WQ1NPJy04LL9JTZI3vDZEBa4ujnWqgnoa9eZPIPLvGAms5t5fDVCtl5uBwgnXbJe6qE300QtbJOXzmT4-8_lO-kVXeRw-LR2ySUywL4cJYBuoK494laJiOfjlURfO9S0Gqdz3ZSNDor6VvfMR1nK1nLl7wOUMcBnl2KULD939a9d4amkrASwXmUpIjhCgOXE7mQqgb6KYcBvq620W1_8fB6zdx3cdVoWEv6TqPNJLpaCYX_3ZO1QQ9vm5LQn-3Uz_QGt4MRA2Nahsb44ciBt7Eaw2gEuCikwQw_t5OeP1CCKVzfZkGWiohrWb7TT2Zr6tuFnK6DthLsjjsDM6_vJF3FFyZTwxECK1cHeQCKUcfRisFKd2lJdeLN3TSwP-zzUxsv7GZDtVsL6Hju040kimurtR0eEUfTXl-pkoLfjXSeljc2EHDxYlgFZzgwurGnMFpAK2TLKoYALp1XoS2tA-L7_rwEk0YoGxtr78DvBElr-dVsv-F2U30seLLQ3-_EPyfEBdDC0QE7Z_Z4Mqny1FCo0fiEqhvU8-wtFQFNjtOjGf69pFBH2zk5GW3jjhSIihsX754z5HB8njhgs97Nxo3FliWTQWFRaTQHGiNIgZbCWiOa1OpppRCPv9UA77wTovjdH7Xg1-kZGio-Mv7GarqJBl4PQrViXx1qsnJ-zqVMBqZEI2IS4fqnFknj-_Jm4hjhi-UKOYeQHm2nI1-Oc5CobQ52AdSqGOlbv2E81xuaqXZ9blLmUe-ce2LAfZymnpR3deCAk6AZ94Sro0kiVCAKcSs1Knj2Mu595WCunDHgqe-MpxF36nnZu2_C_pV5uotEXC6SxlOsLpug8e-MtL1XtCbBEfLxiBbFW2Pow-eAOrML9Zna5cIeHmSSju7QUKoM33TwNij4KYqfgu7niqoL9x_cExWzvRwKkoKNnfa8B-bGMLDB0xi0hPvhSnPEIXjg2NSKmvVhrYz20s_8EZPbPg4FUNd6i3sKjpPvRNn5qJdtHXOkAl0N6yPzfM23XyTnNYIRwyHJZSSbsVsB9SBZo7iEeeum0r-P9UNcjpNBKLxv90DGCLtp-02AvAeYmukl7T1i1FHcXyjREb_upT0W9sQQwUKRqxV2ibDYAsXyGwGJVRt4JwLM76ey7N5jUJrOTeaBhXr5C6nfcq80OqgZBYw90XYDTL46EwF8XBbfZJQ38iJQgOiH5Pow6INX8YnCKCVZqqVhv73Uwq3dc5JYrq-mAncomQh7vsPPBrtJOYfPvgL0c929aCAQ_n3Wn8QGZECyAvE7d4cJYjiyZJI4UCsFewmFgj989sL_fyFxOP3-FEO2KPnZGD_ijuTLagjm3OxC1HPePXhz4xzvtpyFtxcycrNS6IXXmXELkJShGcAqFXh5xsKMrZTDTg3zMUlvneUSVfubOTptoVwWeznKxb8uEyfQz147IOKsfdbNR_VVkpExY6sHdvuC6AGU4avAuBYJCMZiD111o78uMIFKLn-F4maa-ahaX6D_5VmZC_dv7TOHwmzcCbAxLy6GvhSF1cJiczE4xUUKAVnDlfBaMrsm6fmWYf_OZeFdvWKh2pwPhxNEqKv524_RDRcKusvWXi3y55IOzStC4M58ts8mZfazIWCwWSfnG3CZ0ebBqPLpFToIpQO-LWbizrygcFpsPASTltlaWihP8t8UKpm71Y9sYjfTj34LIyMcnPc8xPU28uFC4ijFNXozKlN2k6rx2pR4CIXyjZ9GoH8P0WAIvl2EUSfrajmbrfCPZDiYGyX9neGlYd1-usNRPa1Ev1fEpDLQsDOrBzUpkwmCdEN6MTk0-3n0QO29FfDPDDFx6y5uZKE0ujpr-v_yvBRb67j3Dq-wlEMNDBkC0l6fZtykRNbCE2EDyOcUyfIrgiUTywPYRLgIFnM-nOciTBxjkIr-HjTjNUtZqjgdEa0niNn5lZ79EwYTji6LoXJvLLTfBeZ2cGEBo3m0NJtwKLPl8LnBSVY7SJWw3B0l80yugoN7Hp3HcDWIWAtLz5L-1wmr6bUsD1FGE_2MiXIBPo8kLUf05ZPA8yBapvWbUUuQdBG50ovkOYikcvz_luK_TXJxeU5uFLOGivo6OY-SnTSK-8mHDJ3AhmOs_itD4I0uFx4UlcTicFCyGCXla7Lp8rUSuePodImr1dJ-_MTBPI3DAcn8T1fR9Xjo6Zm_QXyWurtb5k1f8RSjHJ14ceF_DqUdZOXGcULTQlmXFEkj-cCV89hwyOe56YTQXqynMM8eEYIa_j8lQBUoixtKTKN_FIn7mzVu34FmgP8eS3Ij3w4VX2SHBkMyU2JIJRcZABuydNB50AoWeFol0w48xbL8DWOhaI5_1FO0KptaSvzS3Kbqatlk_cwAh1AMvypR417fZf2nFhXS48EjCBSWmBC70ETRC-HJVztqFiJc7sSwXA9zcvkNvgcRFSibG_htwp_1iyv4ln_OExeTHzyJAzKu_OYf5RTXgNLigkvlNZkRW6CGwLvCiTRoupUSjKyFgg2-MuKozvx1YETZOBnrz8AMpYmoKCc_HFFUE-492RFS_I4FbRQkRfAQgcArROaaQ9jyJBGIM3j2KQtH8kyMpOCt7kHhKyzNB-AV2EhZ651Q7IeqWdsVPY0ih7Msr_tg84081z8Ud_ZzIQNhqXaEK6MKgKbjq5CZ9Am6hxBNj_dgbSwggsv-Xndg1PqqahgNwO41q5oKw",
+      posterFallbacks: [],
+      description: "Динамичный сериал о команде гениальных специалистов, которые решают самые опасные и сложные кризисы для правительства и обычных людей, используя интеллект там, где бессильны обычные методы.",
+      trailerUrl: "https://www.youtube.com/watch?v=vkQo84TxzHA",
+      longDescription: "Захватывающий американский сериал в жанре драмы, боевика и техно-триллера о команде выдающихся гениев во главе с Уолтером О’Брайеном, обладающим одним из самых высоких IQ в мире. Вместе они работают на правительство США и берутся за самые сложные и опасные миссии: предотвращают кибератаки, спасают людей во время катастроф, взломов, авиакризисов и международных угроз. Каждый участник команды обладает уникальными способностями в области программирования, инженерии, математики, психологии и механики, что помогает им находить решения там, где обычные спецслужбы бессильны. Сериал «Scorpion» сочетает напряженный сюжет, высокие технологии, экшен, расследования, юмор и человеческие отношения, показывая, как гениальный интеллект помогает спасать жизни и бороться с глобальными угрозами. Отличный выбор для любителей сериалов про хакеров, технологии, спецоперации, искусственный интеллект, командную работу и нестандартные расследования.",
+      facts: [
+        { label: "Год", value: "2014 - 2018" },
+        { label: "Тип", value: "Сериал" },
+        { label: "Страна", value: "США" },
+        { label: "Длительность", value: "43 Минуты серия" },
+        { label: "Студия", value: "CBS Television Studios" },
+        { label: "Режиссёр", value: "Сэм Хилл" },
+      ],
+      cast: [
+        { name: "Elyes Gabel", role: "Уолтер О’Брайен" },
+        { name: "Katharine McPhee", role: "Пейдж Динин" },
+        { name: "Eddie Kaye Thomas", role: "Тоби Кёртис" },
+        { name: "Jadyn Wong", role: "Хэппи Куинн" },
+        { name: "Ari Stidham", role: "Сильвестр Додд" },
+        { name: "Robert Patrick", role: "Кэб Галло" },
+        { name: "Riley B. Smith", role: "Ральф Динин" },
+      ],
+      players: [
+        { id: "player-1", name: "Плеер 1", embedUrl: "" },
+        { id: "player-2", name: "Плеер 2", embedUrl: "" },
+        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+      ],
+    },
 ];
 
 export function getMovieBySlug(slug: string) {

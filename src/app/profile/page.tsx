@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import {
@@ -21,8 +21,11 @@ import { movies as catalogItems, type Movie } from "../data/movies";
 import { supabase } from "../lib/supabase";
 import {
   clearMovieActions,
+  getCurrentSupabaseUser,
   loadMovieActions,
   mapSupabaseUser,
+  removeCurrentUserFromStorage,
+  saveCurrentUserToStorage,
   syncMovieAction,
 } from "../lib/kinolumaSupabase";
 
@@ -238,17 +241,17 @@ function SortControls({
   onChange: (value: ProfileSort) => void;
 }) {
   const options: Array<{ value: ProfileSort; label: string }> = [
-    { value: "recent", label: "Новые" },
-    { value: "rating", label: "Рейтинг" },
-    { value: "year", label: "Год" },
-    { value: "title", label: "А-Я" },
+    { value: "recent", label: "РќРѕРІС‹Рµ" },
+    { value: "rating", label: "Р РµР№С‚РёРЅРі" },
+    { value: "year", label: "Р“РѕРґ" },
+    { value: "title", label: "Рђ-РЇ" },
   ];
 
   return (
-    <section className="sort-card" aria-label="Сортировка списков профиля">
+    <section className="sort-card" aria-label="РЎРѕСЂС‚РёСЂРѕРІРєР° СЃРїРёСЃРєРѕРІ РїСЂРѕС„РёР»СЏ">
       <div>
-        <p className="eyebrow">Сортировка</p>
-        <strong>Порядок карточек</strong>
+        <p className="eyebrow">РЎРѕСЂС‚РёСЂРѕРІРєР°</p>
+        <strong>РџРѕСЂСЏРґРѕРє РєР°СЂС‚РѕС‡РµРє</strong>
       </div>
 
       <div className="sort-actions">
@@ -286,7 +289,7 @@ function EmptyState({
       <h3>{title}</h3>
       <p>{text}</p>
       <a href="/" className="small-link-button">
-        Перейти в каталог
+        РџРµСЂРµР№С‚Рё РІ РєР°С‚Р°Р»РѕРі
       </a>
     </div>
   );
@@ -309,7 +312,7 @@ function MovieCard({
         type="button"
         className="movie-card-main"
         onClick={() => onOpen(item)}
-        aria-label={`Открыть ${item.title}`}
+        aria-label={`РћС‚РєСЂС‹С‚СЊ ${item.title}`}
       >
         <div className="movie-poster-wrap">
           <img
@@ -330,7 +333,7 @@ function MovieCard({
 
           <div className="movie-badge">{badge}</div>
 
-          <div className="movie-rating">★ {item.rating}</div>
+          <div className="movie-rating">в… {item.rating}</div>
 
           <div className="movie-title-block">
             <h3>{item.title}</h3>
@@ -350,7 +353,7 @@ function MovieCard({
       {onRemove && (
         <button className="remove-button" onClick={onRemove}>
           <Trash2 size={16} strokeWidth={2.4} aria-hidden="true" />
-          Убрать
+          РЈР±СЂР°С‚СЊ
         </button>
       )}
     </article>
@@ -443,7 +446,7 @@ function DetailsModal({
           type="button"
           className="details-close"
           onClick={onClose}
-          aria-label="Закрыть"
+          aria-label="Р—Р°РєСЂС‹С‚СЊ"
         >
           <X size={22} strokeWidth={2.6} aria-hidden="true" />
         </button>
@@ -471,7 +474,7 @@ function DetailsModal({
           <p className="details-original-title">{item.originalTitle}</p>
 
           <div className="details-meta-row">
-            <span className="details-rating">★ {item.rating} / 10</span>
+            <span className="details-rating">в… {item.rating} / 10</span>
             <span>{item.year}</span>
             {item.genres.map((genre) => (
               <span key={genre}>{genre}</span>
@@ -491,7 +494,7 @@ function DetailsModal({
               ) : (
                 <Bookmark size={17} strokeWidth={2.4} aria-hidden="true" />
               )}
-              {isWatchLater ? "В списке" : "Смотреть позже"}
+              {isWatchLater ? "Р’ СЃРїРёСЃРєРµ" : "РЎРјРѕС‚СЂРµС‚СЊ РїРѕР·Р¶Рµ"}
             </button>
 
             <button
@@ -505,7 +508,7 @@ function DetailsModal({
                 fill={isLiked ? "currentColor" : "none"}
                 aria-hidden="true"
               />
-              Нравится
+              РќСЂР°РІРёС‚СЃСЏ
             </button>
 
             <button
@@ -519,7 +522,7 @@ function DetailsModal({
                 fill={isDisliked ? "currentColor" : "none"}
                 aria-hidden="true"
               />
-              {isDisliked ? "Не понравилось" : "Не нравится"}
+              {isDisliked ? "РќРµ РїРѕРЅСЂР°РІРёР»РѕСЃСЊ" : "РќРµ РЅСЂР°РІРёС‚СЃСЏ"}
             </button>
           </div>
 
@@ -531,14 +534,14 @@ function DetailsModal({
                 onClick={() => setIsTrailerOpen((current) => !current)}
               >
                 <Play size={17} strokeWidth={2.4} aria-hidden="true" />
-                {isTrailerOpen ? "Скрыть трейлер" : "Смотреть трейлер"}
+                {isTrailerOpen ? "РЎРєСЂС‹С‚СЊ С‚СЂРµР№Р»РµСЂ" : "РЎРјРѕС‚СЂРµС‚СЊ С‚СЂРµР№Р»РµСЂ"}
               </button>
 
               {isTrailerOpen && (
                 <div className="trailer-frame-wrap">
                   <iframe
                     src={details.trailerUrl}
-                    title={`Трейлер: ${item.title}`}
+                    title={`РўСЂРµР№Р»РµСЂ: ${item.title}`}
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowFullScreen
                   />
@@ -547,13 +550,13 @@ function DetailsModal({
             </div>
           ) : (
             <p className="details-note">
-              Для этого материала трейлер пока не подключён.
+              Р”Р»СЏ СЌС‚РѕРіРѕ РјР°С‚РµСЂРёР°Р»Р° С‚СЂРµР№Р»РµСЂ РїРѕРєР° РЅРµ РїРѕРґРєР»СЋС‡С‘РЅ.
             </p>
           )}
 
           <p className="details-note">
-            Управляй списками и реакциями прямо здесь, не теряя контекст
-            выбранного фильма.
+            РЈРїСЂР°РІР»СЏР№ СЃРїРёСЃРєР°РјРё Рё СЂРµР°РєС†РёСЏРјРё РїСЂСЏРјРѕ Р·РґРµСЃСЊ, РЅРµ С‚РµСЂСЏСЏ РєРѕРЅС‚РµРєСЃС‚
+            РІС‹Р±СЂР°РЅРЅРѕРіРѕ С„РёР»СЊРјР°.
           </p>
         </div>
       </section>
@@ -620,29 +623,22 @@ export default function ProfilePage() {
 
     async function initializeProfile() {
       const localActions = loadLocalActions();
+      const savedUser = readCurrentUserFromStorage();
+
+      if (savedUser) {
+        setCurrentUser(savedUser);
+      }
 
       try {
-        const sessionResult = await Promise.race([
-          supabase.auth.getSession().catch(() => ({
-            data: {
-              session: null,
-            },
-          })),
-          wait(4500, {
-            data: {
-              session: null,
-            },
-          }),
-        ]);
+        const user = await getCurrentSupabaseUser();
 
         if (!isMounted) {
           return;
         }
 
-        const user = sessionResult.data.session?.user ?? null;
-
         if (!user) {
           setCurrentUser(null);
+          removeCurrentUserFromStorage();
           setWatchLaterIds(localActions.watchLaterIds);
           setLikedItemIds(localActions.likedItemIds);
           setDislikedItemIds(localActions.dislikedItemIds);
@@ -652,14 +648,11 @@ export default function ProfilePage() {
 
         const mappedUser = mapSupabaseUser(user);
         setCurrentUser(mappedUser);
-        window.localStorage.setItem(
-          "kinoluma-current-user",
-          JSON.stringify(mappedUser),
-        );
+        saveCurrentUserToStorage(mappedUser);
 
         const actions = await Promise.race([
           loadMovieActions().catch(() => localActions),
-          wait(4500, localActions),
+          wait(5500, localActions),
         ]);
 
         if (!isMounted) {
@@ -670,12 +663,13 @@ export default function ProfilePage() {
         setLikedItemIds(actions.likedItemIds);
         setDislikedItemIds(actions.dislikedItemIds);
         setIsLoaded(true);
-      } catch {
+      } catch (error) {
+        console.error("РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ РїСЂРѕС„РёР»СЊ Supabase:", error);
+
         if (!isMounted) {
           return;
         }
 
-        const savedUser = readCurrentUserFromStorage();
         setCurrentUser(savedUser);
         setWatchLaterIds(localActions.watchLaterIds);
         setLikedItemIds(localActions.likedItemIds);
@@ -687,35 +681,35 @@ export default function ProfilePage() {
     void initializeProfile();
 
     const { data: listener } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
         if (!isMounted) {
           return;
         }
 
-        setIsLoaded(true);
-
         if (!session?.user) {
-          const localActions = loadLocalActions();
+          if (event === "SIGNED_OUT") {
+            const localActions = loadLocalActions();
 
-          setCurrentUser(null);
-          setWatchLaterIds(localActions.watchLaterIds);
-          setLikedItemIds(localActions.likedItemIds);
-          setDislikedItemIds(localActions.dislikedItemIds);
-          window.localStorage.removeItem("kinoluma-current-user");
+            setCurrentUser(null);
+            setWatchLaterIds(localActions.watchLaterIds);
+            setLikedItemIds(localActions.likedItemIds);
+            setDislikedItemIds(localActions.dislikedItemIds);
+            removeCurrentUserFromStorage();
+            setIsLoaded(true);
+          }
+
           return;
         }
 
         const mappedUser = mapSupabaseUser(session.user);
         setCurrentUser(mappedUser);
-        window.localStorage.setItem(
-          "kinoluma-current-user",
-          JSON.stringify(mappedUser),
-        );
+        saveCurrentUserToStorage(mappedUser);
+        setIsLoaded(true);
 
         const localActions = loadLocalActions();
         const actions = await Promise.race([
           loadMovieActions().catch(() => localActions),
-          wait(4500, localActions),
+          wait(5500, localActions),
         ]);
 
         if (!isMounted) {
@@ -818,14 +812,14 @@ export default function ProfilePage() {
 
   const tasteTitle =
     likedItems.length === 0
-      ? "Вкус формируется"
-      : likedItems.some((item) => item.genres.includes("Фантастика"))
-        ? "Фантастика и масштаб"
-        : likedItems.some((item) => item.genres.includes("Экшен"))
-          ? "Экшен и драйв"
-          : likedItems.some((item) => item.genres.includes("Драма"))
-            ? "Сильные истории"
-            : "Смешанный вкус";
+      ? "Р’РєСѓСЃ С„РѕСЂРјРёСЂСѓРµС‚СЃСЏ"
+      : likedItems.some((item) => item.genres.includes("Р¤Р°РЅС‚Р°СЃС‚РёРєР°"))
+        ? "Р¤Р°РЅС‚Р°СЃС‚РёРєР° Рё РјР°СЃС€С‚Р°Р±"
+        : likedItems.some((item) => item.genres.includes("Р­РєС€РµРЅ"))
+          ? "Р­РєС€РµРЅ Рё РґСЂР°Р№РІ"
+          : likedItems.some((item) => item.genres.includes("Р”СЂР°РјР°"))
+            ? "РЎРёР»СЊРЅС‹Рµ РёСЃС‚РѕСЂРёРё"
+            : "РЎРјРµС€Р°РЅРЅС‹Р№ РІРєСѓСЃ";
 
   function openItemDetails(item: CatalogItem) {
     setSelectedItem(item);
@@ -902,7 +896,7 @@ export default function ProfilePage() {
 
   function clearAllLists() {
     const confirmed = window.confirm(
-      "Очистить “Смотреть позже”, лайки и дизлайки?",
+      "РћС‡РёСЃС‚РёС‚СЊ вЂњРЎРјРѕС‚СЂРµС‚СЊ РїРѕР·Р¶РµвЂќ, Р»Р°Р№РєРё Рё РґРёР·Р»Р°Р№РєРё?",
     );
 
     if (!confirmed) {
@@ -917,6 +911,7 @@ export default function ProfilePage() {
 
   async function logout() {
     await supabase.auth.signOut();
+    removeCurrentUserFromStorage();
     window.location.href = "/";
   }
 
@@ -931,7 +926,7 @@ export default function ProfilePage() {
               alt="KinoLuma"
               className="loading-logo"
             />
-            <p>Загрузка профиля...</p>
+            <p>Р—Р°РіСЂСѓР·РєР° РїСЂРѕС„РёР»СЏ...</p>
           </div>
         </div>
         <MobileBottomNav />
@@ -956,22 +951,22 @@ export default function ProfilePage() {
               />
               <div>
                 <p className="logo-title">KinoLuma</p>
-                <p className="logo-subtitle">Профиль</p>
+                <p className="logo-subtitle">РџСЂРѕС„РёР»СЊ</p>
               </div>
             </div>
 
-            <p className="eyebrow">Аккаунт</p>
+            <p className="eyebrow">РђРєРєР°СѓРЅС‚</p>
 
-            <h1>Войди, чтобы открыть профиль</h1>
+            <h1>Р’РѕР№РґРё, С‡С‚РѕР±С‹ РѕС‚РєСЂС‹С‚СЊ РїСЂРѕС„РёР»СЊ</h1>
 
             <p className="auth-text">
-              В профиле будут доступны твои списки, реакции и персональная
-              статистика по выбранным фильмам.
+              Р’ РїСЂРѕС„РёР»Рµ Р±СѓРґСѓС‚ РґРѕСЃС‚СѓРїРЅС‹ С‚РІРѕРё СЃРїРёСЃРєРё, СЂРµР°РєС†РёРё Рё РїРµСЂСЃРѕРЅР°Р»СЊРЅР°СЏ
+              СЃС‚Р°С‚РёСЃС‚РёРєР° РїРѕ РІС‹Р±СЂР°РЅРЅС‹Рј С„РёР»СЊРјР°Рј.
             </p>
 
             <a href="/" className="primary-button">
               <ArrowLeft size={18} strokeWidth={2.4} aria-hidden="true" />
-              Вернуться на главную
+              Р’РµСЂРЅСѓС‚СЊСЃСЏ РЅР° РіР»Р°РІРЅСѓСЋ
             </a>
           </div>
         </section>
@@ -996,18 +991,18 @@ export default function ProfilePage() {
             />
             <div>
               <p className="logo-title">KinoLuma</p>
-              <p className="logo-subtitle">Профиль</p>
+              <p className="logo-subtitle">РџСЂРѕС„РёР»СЊ</p>
             </div>
           </a>
 
           <div className="top-actions">
             <a href="/" className="ghost-button">
-              <Film size={17} strokeWidth={2.4} aria-hidden="true" />В каталог
+              <Film size={17} strokeWidth={2.4} aria-hidden="true" />Р’ РєР°С‚Р°Р»РѕРі
             </a>
 
             <button onClick={logout} className="ghost-button">
               <LogOut size={17} strokeWidth={2.4} aria-hidden="true" />
-              Выйти
+              Р’С‹Р№С‚Рё
             </button>
           </div>
         </div>
@@ -1020,7 +1015,7 @@ export default function ProfilePage() {
               <div className="avatar">{getInitials(currentUser.name)}</div>
 
               <div className="user-meta">
-                <p className="eyebrow">Аккаунт</p>
+                <p className="eyebrow">РђРєРєР°СѓРЅС‚</p>
                 <h1>{currentUser.name}</h1>
                 <p>{currentUser.email}</p>
               </div>
@@ -1029,7 +1024,7 @@ export default function ProfilePage() {
             <div className="level-card">
               <div className="level-top">
                 <div>
-                  <p>Уровень профиля</p>
+                  <p>РЈСЂРѕРІРµРЅСЊ РїСЂРѕС„РёР»СЏ</p>
                   <strong>LVL {profileLevel}</strong>
                 </div>
 
@@ -1047,15 +1042,15 @@ export default function ProfilePage() {
             <div className="mini-stats">
               <div>
                 <strong>{watchLaterItems.length}</strong>
-                <span>позже</span>
+                <span>РїРѕР·Р¶Рµ</span>
               </div>
               <div>
                 <strong>{likedItems.length}</strong>
-                <span>лайки</span>
+                <span>Р»Р°Р№РєРё</span>
               </div>
               <div>
                 <strong>{dislikedItems.length}</strong>
-                <span>дизлайки</span>
+                <span>РґРёР·Р»Р°Р№РєРё</span>
               </div>
             </div>
           </aside>
@@ -1064,12 +1059,12 @@ export default function ProfilePage() {
             <div className="dashboard-content">
               <p className="eyebrow">Dashboard</p>
 
-              <h2>Твой центр управления просмотром</h2>
+              <h2>РўРІРѕР№ С†РµРЅС‚СЂ СѓРїСЂР°РІР»РµРЅРёСЏ РїСЂРѕСЃРјРѕС‚СЂРѕРј</h2>
 
               <p>
-                Сохраняй фильмы, отмечай понравившееся и возвращайся к своим
-                подборкам без лишнего поиска. Профиль помогает держать личный
-                киноархив под рукой.
+                РЎРѕС…СЂР°РЅСЏР№ С„РёР»СЊРјС‹, РѕС‚РјРµС‡Р°Р№ РїРѕРЅСЂР°РІРёРІС€РµРµСЃСЏ Рё РІРѕР·РІСЂР°С‰Р°Р№СЃСЏ Рє СЃРІРѕРёРј
+                РїРѕРґР±РѕСЂРєР°Рј Р±РµР· Р»РёС€РЅРµРіРѕ РїРѕРёСЃРєР°. РџСЂРѕС„РёР»СЊ РїРѕРјРѕРіР°РµС‚ РґРµСЂР¶Р°С‚СЊ Р»РёС‡РЅС‹Р№
+                РєРёРЅРѕР°СЂС…РёРІ РїРѕРґ СЂСѓРєРѕР№.
               </p>
 
               <div className="dashboard-actions">
@@ -1079,17 +1074,17 @@ export default function ProfilePage() {
                   className="primary-button"
                 >
                   <Play size={18} strokeWidth={2.4} aria-hidden="true" />
-                  Открыть фильм
+                  РћС‚РєСЂС‹С‚СЊ С„РёР»СЊРј
                 </button>
 
                 <a href="/" className="secondary-button">
-                  <Film size={18} strokeWidth={2.4} aria-hidden="true" />В
-                  каталог
+                  <Film size={18} strokeWidth={2.4} aria-hidden="true" />Р’
+                  РєР°С‚Р°Р»РѕРі
                 </a>
 
                 <button onClick={clearAllLists} className="secondary-button">
                   <Trash2 size={18} strokeWidth={2.4} aria-hidden="true" />
-                  Очистить списки
+                  РћС‡РёСЃС‚РёС‚СЊ СЃРїРёСЃРєРё
                 </button>
               </div>
             </div>
@@ -1113,7 +1108,7 @@ export default function ProfilePage() {
               />
 
               <div>
-                <span>Сейчас в фокусе</span>
+                <span>РЎРµР№С‡Р°СЃ РІ С„РѕРєСѓСЃРµ</span>
                 <strong>{featuredItem.title}</strong>
                 <p>{featuredItem.originalTitle}</p>
               </div>
@@ -1124,30 +1119,30 @@ export default function ProfilePage() {
         <section className="stats-grid">
           <StatCard
             icon={<Activity size={21} strokeWidth={2.4} aria-hidden="true" />}
-            title="Активность"
+            title="РђРєС‚РёРІРЅРѕСЃС‚СЊ"
             value={totalActivity}
-            text="Все сохранения и реакции."
+            text="Р’СЃРµ СЃРѕС…СЂР°РЅРµРЅРёСЏ Рё СЂРµР°РєС†РёРё."
           />
 
           <StatCard
             icon={<Clock size={21} strokeWidth={2.4} aria-hidden="true" />}
-            title="Смотреть позже"
+            title="РЎРјРѕС‚СЂРµС‚СЊ РїРѕР·Р¶Рµ"
             value={watchLaterItems.length}
-            text="Контент на будущий вечер."
+            text="РљРѕРЅС‚РµРЅС‚ РЅР° Р±СѓРґСѓС‰РёР№ РІРµС‡РµСЂ."
           />
 
           <StatCard
             icon={<Heart size={21} strokeWidth={2.4} aria-hidden="true" />}
-            title="Понравилось"
+            title="РџРѕРЅСЂР°РІРёР»РѕСЃСЊ"
             value={likedItems.length}
-            text="Основа будущих рекомендаций."
+            text="РћСЃРЅРѕРІР° Р±СѓРґСѓС‰РёС… СЂРµРєРѕРјРµРЅРґР°С†РёР№."
           />
 
           <StatCard
             icon={<ThumbsDown size={21} strokeWidth={2.4} aria-hidden="true" />}
-            title="Не понравилось"
+            title="РќРµ РїРѕРЅСЂР°РІРёР»РѕСЃСЊ"
             value={dislikedItems.length}
-            text="Чтобы не предлагать лишнее."
+            text="Р§С‚РѕР±С‹ РЅРµ РїСЂРµРґР»Р°РіР°С‚СЊ Р»РёС€РЅРµРµ."
           />
         </section>
 
@@ -1157,7 +1152,7 @@ export default function ProfilePage() {
             onClick={() => setActiveTab("overview")}
           >
             <Activity size={17} strokeWidth={2.4} aria-hidden="true" />
-            Обзор
+            РћР±Р·РѕСЂ
           </TabButton>
 
           <TabButton
@@ -1165,7 +1160,7 @@ export default function ProfilePage() {
             onClick={() => setActiveTab("watchLater")}
           >
             <Clock size={17} strokeWidth={2.4} aria-hidden="true" />
-            Смотреть позже
+            РЎРјРѕС‚СЂРµС‚СЊ РїРѕР·Р¶Рµ
           </TabButton>
 
           <TabButton
@@ -1173,7 +1168,7 @@ export default function ProfilePage() {
             onClick={() => setActiveTab("reactions")}
           >
             <Heart size={17} strokeWidth={2.4} aria-hidden="true" />
-            Реакции
+            Р РµР°РєС†РёРё
           </TabButton>
         </nav>
 
@@ -1182,24 +1177,24 @@ export default function ProfilePage() {
         {activeTab === "overview" && (
           <div className="content-grid animate-in">
             <SectionCard
-              eyebrow="Мой список"
-              title="Смотреть позже"
+              eyebrow="РњРѕР№ СЃРїРёСЃРѕРє"
+              title="РЎРјРѕС‚СЂРµС‚СЊ РїРѕР·Р¶Рµ"
               count={watchLaterItems.length}
             >
               <MovieRail
                 items={sortedWatchLaterItems}
-                badge="Позже"
+                badge="РџРѕР·Р¶Рµ"
                 emptyIcon={
                   <Clock size={24} strokeWidth={2.4} aria-hidden="true" />
                 }
-                emptyTitle="Список пока пуст"
-                emptyText="Открой карточку фильма на главной странице и нажми “Смотреть позже”. После этого карточка появится здесь."
+                emptyTitle="РЎРїРёСЃРѕРє РїРѕРєР° РїСѓСЃС‚"
+                emptyText="РћС‚РєСЂРѕР№ РєР°СЂС‚РѕС‡РєСѓ С„РёР»СЊРјР° РЅР° РіР»Р°РІРЅРѕР№ СЃС‚СЂР°РЅРёС†Рµ Рё РЅР°Р¶РјРё вЂњРЎРјРѕС‚СЂРµС‚СЊ РїРѕР·Р¶РµвЂќ. РџРѕСЃР»Рµ СЌС‚РѕРіРѕ РєР°СЂС‚РѕС‡РєР° РїРѕСЏРІРёС‚СЃСЏ Р·РґРµСЃСЊ."
                 onOpen={openItemDetails}
                 onRemove={removeFromWatchLater}
               />
             </SectionCard>
 
-            <SectionCard eyebrow="Аналитика" title="Любимые жанры">
+            <SectionCard eyebrow="РђРЅР°Р»РёС‚РёРєР°" title="Р›СЋР±РёРјС‹Рµ Р¶Р°РЅСЂС‹">
               {favoriteGenres.length > 0 ? (
                 <div className="genre-list">
                   {favoriteGenres.map(([genre, count]) => (
@@ -1220,36 +1215,36 @@ export default function ProfilePage() {
                 </div>
               ) : (
                 <div className="soft-card">
-                  <h3>Жанры появятся после лайков</h3>
+                  <h3>Р–Р°РЅСЂС‹ РїРѕСЏРІСЏС‚СЃСЏ РїРѕСЃР»Рµ Р»Р°Р№РєРѕРІ</h3>
                   <p>
-                    Поставь лайк нескольким фильмам — и профиль начнёт понимать
-                    твой вкус. Пока он просто делает вид, что загадочный.
+                    РџРѕСЃС‚Р°РІСЊ Р»Р°Р№Рє РЅРµСЃРєРѕР»СЊРєРёРј С„РёР»СЊРјР°Рј вЂ” Рё РїСЂРѕС„РёР»СЊ РЅР°С‡РЅС‘С‚ РїРѕРЅРёРјР°С‚СЊ
+                    С‚РІРѕР№ РІРєСѓСЃ. РџРѕРєР° РѕРЅ РїСЂРѕСЃС‚Рѕ РґРµР»Р°РµС‚ РІРёРґ, С‡С‚Рѕ Р·Р°РіР°РґРѕС‡РЅС‹Р№.
                   </p>
                 </div>
               )}
 
               <div className="soft-card">
-                <h3>Твои подборки</h3>
+                <h3>РўРІРѕРё РїРѕРґР±РѕСЂРєРё</h3>
                 <p>
-                  Списки и реакции помогают быстрее возвращаться к выбранным
-                  фильмам и собирать личную подборку на KinoLuma.
+                  РЎРїРёСЃРєРё Рё СЂРµР°РєС†РёРё РїРѕРјРѕРіР°СЋС‚ Р±С‹СЃС‚СЂРµРµ РІРѕР·РІСЂР°С‰Р°С‚СЊСЃСЏ Рє РІС‹Р±СЂР°РЅРЅС‹Рј
+                  С„РёР»СЊРјР°Рј Рё СЃРѕР±РёСЂР°С‚СЊ Р»РёС‡РЅСѓСЋ РїРѕРґР±РѕСЂРєСѓ РЅР° KinoLuma.
                 </p>
               </div>
             </SectionCard>
 
             <SectionCard
-              eyebrow="Подборка"
-              title="Можно начать с этого"
+              eyebrow="РџРѕРґР±РѕСЂРєР°"
+              title="РњРѕР¶РЅРѕ РЅР°С‡Р°С‚СЊ СЃ СЌС‚РѕРіРѕ"
               count={recommendedItems.length}
             >
               <MovieRail
                 items={recommendedItems}
-                badge="Идея"
+                badge="РРґРµСЏ"
                 emptyIcon={
                   <Check size={24} strokeWidth={2.6} aria-hidden="true" />
                 }
-                emptyTitle="Похоже, ты уже всё отметил"
-                emptyText="В рекомендациях не осталось свободных карточек из базовой подборки."
+                emptyTitle="РџРѕС…РѕР¶Рµ, С‚С‹ СѓР¶Рµ РІСЃС‘ РѕС‚РјРµС‚РёР»"
+                emptyText="Р’ СЂРµРєРѕРјРµРЅРґР°С†РёСЏС… РЅРµ РѕСЃС‚Р°Р»РѕСЃСЊ СЃРІРѕР±РѕРґРЅС‹С… РєР°СЂС‚РѕС‡РµРє РёР· Р±Р°Р·РѕРІРѕР№ РїРѕРґР±РѕСЂРєРё."
                 onOpen={openItemDetails}
               />
             </SectionCard>
@@ -1259,8 +1254,8 @@ export default function ProfilePage() {
         {activeTab === "watchLater" && (
           <div className="animate-in">
             <SectionCard
-              eyebrow="Мой список"
-              title="Смотреть позже"
+              eyebrow="РњРѕР№ СЃРїРёСЃРѕРє"
+              title="РЎРјРѕС‚СЂРµС‚СЊ РїРѕР·Р¶Рµ"
               count={watchLaterItems.length}
             >
               <div className="full-grid">
@@ -1269,7 +1264,7 @@ export default function ProfilePage() {
                     <MovieCard
                       key={item.id}
                       item={item}
-                      badge="Позже"
+                      badge="РџРѕР·Р¶Рµ"
                       onOpen={openItemDetails}
                       onRemove={() => removeFromWatchLater(item.id)}
                     />
@@ -1279,8 +1274,8 @@ export default function ProfilePage() {
                     icon={
                       <Clock size={24} strokeWidth={2.4} aria-hidden="true" />
                     }
-                    title="Список пока пуст"
-                    text="Добавь фильм через кнопку “Смотреть позже” на главной странице."
+                    title="РЎРїРёСЃРѕРє РїРѕРєР° РїСѓСЃС‚"
+                    text="Р”РѕР±Р°РІСЊ С„РёР»СЊРј С‡РµСЂРµР· РєРЅРѕРїРєСѓ вЂњРЎРјРѕС‚СЂРµС‚СЊ РїРѕР·Р¶РµвЂќ РЅР° РіР»Р°РІРЅРѕР№ СЃС‚СЂР°РЅРёС†Рµ."
                   />
                 )}
               </div>
@@ -1291,36 +1286,36 @@ export default function ProfilePage() {
         {activeTab === "reactions" && (
           <div className="reactions-grid animate-in">
             <SectionCard
-              eyebrow="Реакции"
-              title="Понравилось"
+              eyebrow="Р РµР°РєС†РёРё"
+              title="РџРѕРЅСЂР°РІРёР»РѕСЃСЊ"
               count={likedItems.length}
             >
               <MovieRail
                 items={sortedLikedItems}
-                badge="Лайк"
+                badge="Р›Р°Р№Рє"
                 emptyIcon={
                   <Heart size={24} strokeWidth={2.4} aria-hidden="true" />
                 }
-                emptyTitle="Лайков пока нет"
-                emptyText="Открой фильм на главной странице и нажми сердечко."
+                emptyTitle="Р›Р°Р№РєРѕРІ РїРѕРєР° РЅРµС‚"
+                emptyText="РћС‚РєСЂРѕР№ С„РёР»СЊРј РЅР° РіР»Р°РІРЅРѕР№ СЃС‚СЂР°РЅРёС†Рµ Рё РЅР°Р¶РјРё СЃРµСЂРґРµС‡РєРѕ."
                 onOpen={openItemDetails}
                 onRemove={removeFromLiked}
               />
             </SectionCard>
 
             <SectionCard
-              eyebrow="Фильтр вкуса"
-              title="Не понравилось"
+              eyebrow="Р¤РёР»СЊС‚СЂ РІРєСѓСЃР°"
+              title="РќРµ РїРѕРЅСЂР°РІРёР»РѕСЃСЊ"
               count={dislikedItems.length}
             >
               <MovieRail
                 items={sortedDislikedItems}
-                badge="Дизлайк"
+                badge="Р”РёР·Р»Р°Р№Рє"
                 emptyIcon={
                   <ThumbsDown size={24} strokeWidth={2.4} aria-hidden="true" />
                 }
-                emptyTitle="Дизлайков пока нет"
-                emptyText="Пока профиль никого не осуждает. Редкий случай мирного интернета."
+                emptyTitle="Р”РёР·Р»Р°Р№РєРѕРІ РїРѕРєР° РЅРµС‚"
+                emptyText="РџРѕРєР° РїСЂРѕС„РёР»СЊ РЅРёРєРѕРіРѕ РЅРµ РѕСЃСѓР¶РґР°РµС‚. Р РµРґРєРёР№ СЃР»СѓС‡Р°Р№ РјРёСЂРЅРѕРіРѕ РёРЅС‚РµСЂРЅРµС‚Р°."
                 onOpen={openItemDetails}
                 onRemove={removeFromDisliked}
               />
@@ -1344,8 +1339,8 @@ export default function ProfilePage() {
       )}
 
       <footer className="footer">
-        <p>KinoLuma — Личный кабинет</p>
-        <a href="/">← Вернуться на главную</a>
+        <p>KinoLuma вЂ” Р›РёС‡РЅС‹Р№ РєР°Р±РёРЅРµС‚</p>
+        <a href="/">в†ђ Р’РµСЂРЅСѓС‚СЊСЃСЏ РЅР° РіР»Р°РІРЅСѓСЋ</a>
       </footer>
       {!selectedItem && <MobileBottomNav />}
     </main>
@@ -3531,3 +3526,4 @@ const profileStyles = `
   }
 
 `;
+

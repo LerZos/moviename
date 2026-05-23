@@ -8,7 +8,11 @@ if (!supabaseUrl || !supabasePublishableKey) {
   throw new Error("Не найдены переменные Supabase в .env.local");
 }
 
-export const supabase = createClient(
-  supabaseUrl,
-  supabasePublishableKey,
-);
+export const supabase = createClient(supabaseUrl, supabasePublishableKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storageKey: "kinoluma-supabase-auth",
+  },
+});
