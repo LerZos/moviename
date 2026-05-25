@@ -12,6 +12,8 @@ import {
 } from "../../../lib/seo";
 import CatalogPageClient from "../CatalogPageClient";
 
+export const dynamicParams = true;
+
 type CatalogGenrePageProps = {
   params: Promise<{
     category: string;
@@ -25,18 +27,19 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: CatalogGenrePageProps) {
   const { category, genre } = await params;
-  return getGenreMetadata(category, genre);
+  return getGenreMetadata(category, decodeURIComponent(genre));
 }
 
 export default async function CatalogGenrePage({ params }: CatalogGenrePageProps) {
   const { category, genre } = await params;
+  const decodedGenre = decodeURIComponent(genre);
   const route = getCatalogRoute(category);
 
   if (!route) {
     notFound();
   }
 
-  const genreName = getGenreBySlug(route, genre);
+  const genreName = getGenreBySlug(route, decodedGenre);
 
   if (!genreName) {
     notFound();
@@ -60,7 +63,7 @@ export default async function CatalogGenrePage({ params }: CatalogGenrePageProps
             getBreadcrumbJsonLd([
               { name: "KinoLuma", url: "/" },
               { name: route.label, url: `/catalog/${route.slug}` },
-              { name: genreName, url: `/catalog/${route.slug}/${genre}` },
+              { name: genreName, url: `/catalog/${route.slug}/${decodedGenre}` },
             ]),
           ),
         }}
@@ -73,7 +76,7 @@ export default async function CatalogGenrePage({ params }: CatalogGenrePageProps
         }}
       />
 
-      <CatalogPageClient categorySlug={category} genreSlug={genre} />
+      <CatalogPageClient categorySlug={category} genreSlug={decodedGenre} />
     </>
   );
 }

@@ -10,6 +10,7 @@ import {
   getMovieKeywords,
   getMovieMetaDescription,
   getMovieSeoTitle,
+  getMovieWebPageJsonLd,
   siteUrl,
 } from "../../lib/seo";
 import MoviePageClient from "./MoviePageClient";
@@ -110,6 +111,13 @@ export default async function MoviePage({ params }: MoviePageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify(getMovieJsonLd(movie)),
+        }}
+      />
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(getMovieWebPageJsonLd(movie)),
         }}
       />
 

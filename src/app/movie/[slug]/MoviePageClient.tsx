@@ -193,6 +193,17 @@ export default function MoviePageClient({ movie }: MoviePageClientProps) {
   }, [movie.genres, movie.id, movie.type]);
 
   const cast = movie.cast || [];
+  const contentKind = getContentKind(movie);
+  const relatedSectionTitle =
+    movie.type === "Сериал"
+      ? "Похожие сериалы"
+      : movie.type === "Аниме"
+        ? "Похожее аниме"
+        : movie.type === "Мультфильм" || contentKind === "мультфильм"
+          ? "Похожие мультфильмы"
+          : movie.type === "Документальный"
+            ? "Похожие документальные проекты"
+            : "Похожие фильмы";
 
   const faqItems = useMemo(() => {
     const kind = getContentKind(movie);
@@ -691,7 +702,7 @@ export default function MoviePageClient({ movie }: MoviePageClientProps) {
 
                 <h3>{activePlayer.name}</h3>
 
-                <p></p>
+                <p>Плеер будет здесь после подключения легальной embed-ссылки.</p>
               </div>
             )}
           </div>
@@ -757,7 +768,7 @@ export default function MoviePageClient({ movie }: MoviePageClientProps) {
             </div>
 
             <p>
-              
+              Короткие ответы помогают быстрее понять, что именно открыто на странице и подходит ли это для просмотра.
             </p>
           </div>
 
@@ -776,17 +787,22 @@ export default function MoviePageClient({ movie }: MoviePageClientProps) {
             <div className="section-head similar-head">
               <div>
                 <p className="eyebrow">После этого</p>
-                <h2>Похожие фильмы</h2>
+                <h2>{relatedSectionTitle}</h2>
               </div>
 
               <p>
-                
+                Подборка строится по жанрам и типу контента, чтобы не кидать после космоса внезапно кулинарное шоу. Хотя иногда это тоже сюжетный поворот.
               </p>
             </div>
 
             <div className="similar-grid">
               {similarMovies.map((item) => (
-                <Link key={item.id} href={`/movie/${item.slug}`} className="similar-card">
+                <Link
+                  key={item.id}
+                  href={`/movie/${item.slug}`}
+                  className="similar-card"
+                  title={`${item.title} (${item.year}) смотреть онлайн ${getContentKind(item)}`}
+                >
                   <div className="similar-poster-wrap">
                     <img
                       src={item.poster}

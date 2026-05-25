@@ -5,7 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 
 import { movies as content, type Movie } from "../../data/movies";
-import { slugifyGenre } from "../../lib/seo";
 
 type CatalogCategory = {
   type: string;
@@ -68,6 +67,43 @@ const catalogNavItems = [
   { key: "cartoons", label: "Мультфильмы" },
   { key: "documentaries", label: "Документальные" },
 ];
+
+const cyrillicToLatinMap: Record<string, string> = {
+  а: "a", б: "b", в: "v", г: "g", д: "d", е: "e", ё: "e", ж: "zh", з: "z",
+  и: "i", й: "y", к: "k", л: "l", м: "m", н: "n", о: "o", п: "p", р: "r",
+  с: "s", т: "t", у: "u", ф: "f", х: "h", ц: "ts", ч: "ch", ш: "sh", щ: "shch",
+  ъ: "", ы: "y", ь: "", э: "e", ю: "yu", я: "ya",
+};
+
+function normalizeRouteSlug(slug: string | undefined) {
+  if (!slug) {
+    return "";
+  }
+
+  try {
+    return decodeURIComponent(slug).toLowerCase();
+  } catch {
+    return slug.toLowerCase();
+  }
+}
+
+function legacySlugifyGenre(genre: string) {
+  return genre
+    .toLowerCase()
+    .replaceAll("ё", "е")
+    .replace(/[^a-zа-я0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function clientSlugifyGenre(genre: string) {
+  return genre
+    .toLowerCase()
+    .split("")
+    .map((char) => cyrillicToLatinMap[char] ?? char)
+    .join("")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
 
 function getCategoryKey(category: string | string[] | undefined) {
   if (Array.isArray(category)) {
@@ -388,7 +424,16 @@ export default function CatalogCategoryPage({
       return "Все";
     }
 
-    return genres.find((genre) => slugifyGenre(genre) === activeGenreSlug) ?? "Все";
+    const normalizedActiveGenreSlug = normalizeRouteSlug(activeGenreSlug);
+
+    return (
+      genres.find((genre) => {
+        return (
+          clientSlugifyGenre(genre) === normalizedActiveGenreSlug ||
+          legacySlugifyGenre(genre) === normalizedActiveGenreSlug
+        );
+      }) ?? "Все"
+    );
   }, [activeGenreSlug, genres]);
 
   const filteredItems = useMemo(() => {
@@ -596,7 +641,7 @@ export default function CatalogCategoryPage({
     },
     {
       question: "Можно ли выбрать материал по жанру?",
-      answer: "Да, жанры в каталоге открываются отдельными страницами, поэтому подборки можно сохранять и проверять в поиске.",
+      answer: "Да, жанры в каталоге переключаются прямо на этой странице. Отдельные SEO-страницы жанров остаются доступными для поиска и sitemap.",
     },
   ];
 
@@ -712,22 +757,19 @@ export default function CatalogCategoryPage({
         </div>
 
         <div className="catalog-genre-row" aria-label="Жанры">
-          {genres.map((genre) => {
-            const href =
-              genre === "Все"
-                ? `/catalog/${categoryKey}`
-                : `/catalog/${categoryKey}/${slugifyGenre(genre)}`;
-
-            return (
-              <Link
-                key={genre}
-                href={href}
-                className={selectedGenre === genre ? "is-active" : ""}
-              >
-                {genre}
-              </Link>
-            );
-          })}
+          {genres.map((genre) => (
+            <button
+              key={genre}
+              type="button"
+              onClick={() => {
+                setSelectedGenre(genre);
+                setVisibleCount(INITIAL_VISIBLE_COUNT);
+              }}
+              className={selectedGenre === genre ? "is-active" : ""}
+            >
+              {genre}
+            </button>
+          ))}
         </div>
       </section>
 
@@ -1489,13 +1531,18 @@ const catalogStyles = `
 
   .catalog-genre-row a,
   .catalog-genre-row button {
+    display: inline-flex;
     flex: 0 0 auto;
     min-height: 38px;
+    align-items: center;
+    justify-content: center;
     padding: 0 15px;
     border: 1px solid rgba(255, 255, 255, 0.105);
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.035);
     font-size: 12px;
+    line-height: 1;
+    text-align: center;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.055);
   }
 
@@ -2038,6 +2085,33 @@ const catalogStyles = `
     animation: modalWindowClose 170ms ease-in forwards;
   }
 
+  .details-modal-overlay {
+    align-items: center !important;
+    padding: 24px !important;
+  }
+
+  .details-modal-card {
+    width: min(100%, 980px) !important;
+    max-height: min(86vh, 720px) !important;
+    overflow: hidden !important;
+    border-radius: 28px !important;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.018)),
+      #060606 !important;
+    box-shadow:
+      0 34px 120px rgba(0, 0, 0, 0.88),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .details-modal-poster {
+    height: auto !important;
+    min-height: 100% !important;
+  }
+
+  .details-modal-content {
+    overflow-y: auto !important;
+  }
+
 
   @media (max-width: 1280px) {
     .catalog-grid {
@@ -2187,6 +2261,7 @@ const catalogStyles = `
   }
 
 
+  @media (max-width: 760px) {
     .details-modal-overlay,
     .trailer-modal-overlay {
       align-items: flex-end !important;
@@ -2254,6 +2329,7 @@ const catalogStyles = `
       font-size: 22px;
       line-height: 1.1;
     }
+  }
 
 
   @media (max-width: 430px) {
@@ -2261,4 +2337,124 @@ const catalogStyles = `
       grid-template-columns: 1fr;
     }
   }
+
+  /* Patch: более аккуратная шапка, компактный hero и нормальные жанры */
+  .catalog-header {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 50 !important;
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    gap: 18px !important;
+    min-height: 84px !important;
+    padding: 14px clamp(18px, 4vw, 42px) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.075) !important;
+    background: rgba(0, 0, 0, 0.86) !important;
+    backdrop-filter: blur(18px) !important;
+    -webkit-backdrop-filter: blur(18px) !important;
+  }
+
+  .catalog-brand {
+    min-width: max-content !important;
+  }
+
+  .catalog-header-nav {
+    justify-content: center !important;
+    max-width: 100% !important;
+  }
+
+  .catalog-hero {
+    padding-top: clamp(42px, 5vw, 64px) !important;
+    padding-bottom: clamp(28px, 4vw, 42px) !important;
+  }
+
+  .catalog-hero-inner,
+  .catalog-controls-section,
+  .catalog-grid-section,
+  .catalog-faq-section {
+    width: min(100% - 36px, 1320px) !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .catalog-hero h1 {
+    max-width: 900px !important;
+    font-size: clamp(44px, 6vw, 78px) !important;
+    letter-spacing: -0.065em !important;
+  }
+
+  .catalog-hero h2 {
+    font-size: clamp(22px, 2.5vw, 32px) !important;
+  }
+
+  .catalog-description {
+    max-width: 780px !important;
+  }
+
+  .catalog-controls {
+    align-items: stretch !important;
+    border-radius: 26px !important;
+  }
+
+  .catalog-genre-row {
+    flex-wrap: wrap !important;
+    overflow: visible !important;
+    max-height: none !important;
+    gap: 10px !important;
+    padding: 14px 0 4px !important;
+  }
+
+  .catalog-genre-row a,
+  .catalog-genre-row button {
+    display: inline-flex !important;
+    min-height: 40px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 17px !important;
+    line-height: 1 !important;
+    text-align: center !important;
+    text-decoration: none !important;
+  }
+
+  @media (max-width: 900px) {
+    .catalog-header {
+      grid-template-columns: 1fr !important;
+      gap: 12px !important;
+      min-height: auto !important;
+    }
+
+    .catalog-brand {
+      justify-self: center !important;
+    }
+
+    .catalog-home-button {
+      display: none !important;
+    }
+
+    .catalog-header-nav {
+      justify-content: flex-start !important;
+      width: 100% !important;
+    }
+
+    .catalog-hero-inner {
+      grid-template-columns: 1fr !important;
+    }
+
+    .catalog-hero-panel {
+      display: none !important;
+    }
+
+    .catalog-controls {
+      display: grid !important;
+      grid-template-columns: 1fr !important;
+    }
+
+    .catalog-sort-tabs {
+      justify-content: center !important;
+      width: 100% !important;
+      overflow-x: auto !important;
+    }
+  }
+
 `;

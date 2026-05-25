@@ -81,11 +81,65 @@ export function getCatalogRouteByType(type: ContentType) {
   return catalogRoutes.find((route) => route.type === type) ?? catalogRoutes[0];
 }
 
-export function slugifyGenre(genre: string) {
+const cyrillicToLatinMap: Record<string, string> = {
+  а: "a",
+  б: "b",
+  в: "v",
+  г: "g",
+  д: "d",
+  е: "e",
+  ё: "e",
+  ж: "zh",
+  з: "z",
+  и: "i",
+  й: "y",
+  к: "k",
+  л: "l",
+  м: "m",
+  н: "n",
+  о: "o",
+  п: "p",
+  р: "r",
+  с: "s",
+  т: "t",
+  у: "u",
+  ф: "f",
+  х: "h",
+  ц: "ts",
+  ч: "ch",
+  ш: "sh",
+  щ: "shch",
+  ъ: "",
+  ы: "y",
+  ь: "",
+  э: "e",
+  ю: "yu",
+  я: "ya",
+};
+
+function normalizeGenreSlug(slug: string) {
+  try {
+    return decodeURIComponent(slug);
+  } catch {
+    return slug;
+  }
+}
+
+function legacySlugifyGenre(genre: string) {
   return genre
     .toLowerCase()
     .replaceAll("ё", "е")
     .replace(/[^a-zа-я0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+export function slugifyGenre(genre: string) {
+  return genre
+    .toLowerCase()
+    .split("")
+    .map((char) => cyrillicToLatinMap[char] ?? char)
+    .join("")
+    .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 }
 
@@ -100,7 +154,14 @@ export function getGenresForCatalog(route: CatalogRoute) {
 }
 
 export function getGenreBySlug(route: CatalogRoute, genreSlug: string) {
-  return getGenresForCatalog(route).find((genre) => slugifyGenre(genre) === genreSlug);
+  const normalizedSlug = normalizeGenreSlug(genreSlug).toLowerCase();
+
+  return getGenresForCatalog(route).find((genre) => {
+    return (
+      slugifyGenre(genre) === normalizedSlug ||
+      legacySlugifyGenre(genre) === normalizedSlug
+    );
+  });
 }
 
 export function getCatalogGenreRoutes() {
@@ -145,7 +206,25 @@ export function getSeoContentKind(movie: Movie) {
 }
 
 export function getMovieSeoTitle(movie: Movie) {
-  return `${movie.title} (${movie.year}) смотреть онлайн ${getSeoContentKind(movie)}`;
+  const kind = getSeoContentKind(movie);
+
+  if (movie.type === "Сериал") {
+    return `${movie.title} (${movie.year}) смотреть онлайн сериал`;
+  }
+
+  if (movie.type === "Аниме") {
+    return `${movie.title} (${movie.year}) смотреть онлайн аниме`;
+  }
+
+  if (movie.type === "Мультфильм" || kind === "мультфильм") {
+    return `${movie.title} (${movie.year}) смотреть онлайн мультфильм`;
+  }
+
+  if (movie.type === "Документальный") {
+    return `${movie.title} (${movie.year}) смотреть онлайн документальный фильм`;
+  }
+
+  return `${movie.title} (${movie.year}) смотреть онлайн фильм в хорошем качестве`;
 }
 
 export function getMovieSchemaDescription(movie: Movie) {
@@ -168,11 +247,14 @@ export function trimSeoText(text: string, maxLength = 170) {
 
 export function getMovieMetaDescription(movie: Movie) {
   const kind = getSeoContentKind(movie);
+  const country = getFactValue(movie, ["Страна"]);
+  const genres = movie.genres.slice(0, 5).join(", ").toLowerCase();
   const base = movie.description || movie.longDescription || "описание, рейтинг, жанры и трейлер";
+  const countryPart = country ? ` Страна: ${country}.` : "";
 
   return trimSeoText(
-    `${movie.title} (${movie.year}) смотреть онлайн ${kind}. ${base} Рейтинг, жанры, трейлер и подробная информация на KinoLuma.`,
-    180,
+    `Смотреть онлайн ${kind} «${movie.title}» (${movie.year}) в хорошем качестве. Жанр: ${genres}.${countryPart} ${base} Рейтинг, трейлер и информация на KinoLuma.`,
+    210,
   );
 }
 
@@ -256,6 +338,16 @@ export function getMovieJsonLd(movie: Movie) {
     mainEntityOfPage: {
       "@type": "WebPage",
       "@id": pageUrl,
+      name: getMovieSeoTitle(movie),
+      description: getMovieMetaDescription(movie),
+      primaryImageOfPage: {
+        "@type": "ImageObject",
+        url: posterUrl,
+        contentUrl: posterUrl,
+        width: 500,
+        height: 750,
+        caption: `Постер ${movie.title} (${movie.year})`,
+      },
     },
     name: movie.title,
     alternateName: movie.originalTitle,
@@ -267,6 +359,11 @@ export function getMovieJsonLd(movie: Movie) {
     genre: movie.genres,
     inLanguage: "ru-RU",
     isAccessibleForFree: true,
+    potentialAction: {
+      "@type": "WatchAction",
+      target: pageUrl,
+      name: `Смотреть ${movie.title} онлайн`,
+    },
     countryOfOrigin: country,
     duration,
     productionCompany: studio
@@ -324,6 +421,37 @@ export function getMovieJsonLd(movie: Movie) {
   };
 
   return removeUndefinedValues(jsonLd);
+}
+
+export function getMovieWebPageJsonLd(movie: Movie) {
+  const pageUrl = `${siteUrl}/movie/${movie.slug}`;
+  const posterUrl = absoluteUrl(movie.poster);
+
+  return removeUndefinedValues({
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "@id": `${pageUrl}#webpage`,
+    url: pageUrl,
+    name: getMovieSeoTitle(movie),
+    description: getMovieMetaDescription(movie),
+    inLanguage: "ru-RU",
+    isPartOf: {
+      "@type": "WebSite",
+      name: "KinoLuma",
+      url: siteUrl,
+    },
+    primaryImageOfPage: {
+      "@type": "ImageObject",
+      url: posterUrl,
+      contentUrl: posterUrl,
+      width: 500,
+      height: 750,
+      caption: `Постер ${movie.title} (${movie.year})`,
+    },
+    mainEntity: {
+      "@id": `${pageUrl}#${getMovieSchemaType(movie).toLowerCase()}`,
+    },
+  });
 }
 
 export function getBreadcrumbJsonLd(items: Array<{ name: string; url: string }>) {
