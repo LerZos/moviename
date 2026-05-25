@@ -87,6 +87,74 @@ function getFactValue(facts: MovieFact[], label: string, fallback: string) {
   return facts.find((fact) => fact.label === label)?.value || fallback;
 }
 
+function getContentKind(movie: Movie) {
+  if (movie.type === "Мультфильм") {
+    return "мультфильм";
+  }
+
+  if (movie.type === "Аниме") {
+    return "аниме";
+  }
+
+  if (movie.type === "Сериал") {
+    return "сериал";
+  }
+
+  if (movie.type === "Документальный") {
+    return "документальный фильм";
+  }
+
+  if (movie.type === "Фильм" && movie.genres.includes("Анимация")) {
+    return "мультфильм";
+  }
+
+  return "фильм";
+}
+
+function escapeSvgText(text: string) {
+  return text
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&apos;");
+}
+
+function getGeneratedPosterFallback(title: string) {
+  const safeTitle = escapeSvgText(
+    title
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 4)
+      .join(" ")
+      .toUpperCase(),
+  );
+
+  const svg = `
+    <svg width="500" height="750" viewBox="0 0 500 750" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="bg" x1="0" y1="0" x2="0" y2="750" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#242424"/>
+          <stop offset="48%" stop-color="#090909"/>
+          <stop offset="100%" stop-color="#000000"/>
+        </linearGradient>
+        <radialGradient id="glow" cx="50%" cy="22%" r="60%">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.22"/>
+          <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <rect width="500" height="750" fill="url(#bg)"/>
+      <rect width="500" height="750" fill="url(#glow)"/>
+      <rect x="34" y="34" width="432" height="682" rx="34" stroke="#ffffff" stroke-opacity="0.14" stroke-width="2"/>
+      <circle cx="250" cy="300" r="118" fill="#ffffff" opacity="0.045"/>
+      <text x="250" y="356" text-anchor="middle" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="42" font-weight="900">KinoLuma</text>
+      <text x="250" y="424" text-anchor="middle" fill="#d4d4d4" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="900">${safeTitle}</text>
+    </svg>
+  `;
+
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
 export default function MoviePageClient({ movie }: MoviePageClientProps) {
   const players = useMemo(
     () => (movie.players && movie.players.length > 0 ? movie.players : DEFAULT_PLAYERS),
@@ -125,6 +193,32 @@ export default function MoviePageClient({ movie }: MoviePageClientProps) {
   }, [movie.genres, movie.id, movie.type]);
 
   const cast = movie.cast || [];
+
+  const faqItems = useMemo(() => {
+    const kind = getContentKind(movie);
+    const titleWithYear = `${movie.title} (${movie.year})`;
+    const genres = movie.genres.join(", ");
+
+    return [
+      {
+        question: `О чём ${movie.title}?`,
+        answer:
+          movie.longDescription ||
+          movie.description ||
+          `${titleWithYear} — ${kind} с описанием, рейтингом, жанрами и трейлером на KinoLuma.`,
+      },
+      {
+        question: `К какому жанру относится ${movie.title}?`,
+        answer: `${titleWithYear} — ${kind}. Основные жанры: ${genres}.`,
+      },
+      {
+        question: `Есть ли трейлер ${movie.title}?`,
+        answer: movie.trailerUrl
+          ? `Да, на странице ${movie.title} есть встроенный трейлер, описание, рейтинг и дополнительная информация.`
+          : `На странице ${movie.title} есть описание, рейтинг, жанры и подробная информация. Трейлер можно добавить после подключения embed-ссылки.`,
+      },
+    ];
+  }, [movie]);
 
   const [activePlayerId, setActivePlayerId] = useState(players[0].id);
   const [posterSrc, setPosterSrc] = useState(movie.poster);
@@ -381,10 +475,19 @@ export default function MoviePageClient({ movie }: MoviePageClientProps) {
               alt={`Постер: ${movie.title}`}
               className="poster-image"
               onError={() => {
-                const fallbackPoster = movie.posterFallbacks?.[0];
+                const fallbackPoster = movie.posterFallbacks?.find(
+                  (fallback) => fallback !== posterSrc,
+                );
 
-                if (fallbackPoster && posterSrc !== fallbackPoster) {
+                if (fallbackPoster) {
                   setPosterSrc(fallbackPoster);
+                  return;
+                }
+
+                const generatedFallback = getGeneratedPosterFallback(movie.title);
+
+                if (posterSrc !== generatedFallback) {
+                  setPosterSrc(generatedFallback);
                 }
               }}
             />
@@ -437,7 +540,7 @@ export default function MoviePageClient({ movie }: MoviePageClientProps) {
             </div>
 
             <p className="description">
-              {movie.longDescription || movie.description}
+              {movie.description}
             </p>
 
             <div className="compact-actions">
@@ -588,7 +691,7 @@ export default function MoviePageClient({ movie }: MoviePageClientProps) {
 
                 <h3>{activePlayer.name}</h3>
 
-                <p>Плеер будет здесь после подключения легальной embed-ссылки.</p>
+                <p></p>
               </div>
             )}
           </div>
@@ -646,6 +749,28 @@ export default function MoviePageClient({ movie }: MoviePageClientProps) {
           </section>
         </section>
 
+        <section id="faq" className="section-card faq-section animate-in">
+          <div className="section-head similar-head">
+            <div>
+              <p className="eyebrow">FAQ</p>
+              <h2>Вопросы о материале</h2>
+            </div>
+
+            <p>
+              
+            </p>
+          </div>
+
+          <div className="faq-list">
+            {faqItems.map((item) => (
+              <article key={item.question} className="faq-item">
+                <h3>{item.question}</h3>
+                <p>{item.answer}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
         {similarMovies.length > 0 && (
           <section id="similar" className="section-card similar-section animate-in">
             <div className="section-head similar-head">
@@ -655,7 +780,7 @@ export default function MoviePageClient({ movie }: MoviePageClientProps) {
               </div>
 
               <p>
-                Подборка строится по жанрам и типу контента, чтобы не кидать после космоса внезапно кулинарное шоу. Хотя иногда это тоже сюжетный поворот.
+                
               </p>
             </div>
 
@@ -669,6 +794,13 @@ export default function MoviePageClient({ movie }: MoviePageClientProps) {
                       className="similar-poster"
                       loading="lazy"
                       referrerPolicy="no-referrer"
+                      onError={(event) => {
+                        const fallbackPoster = item.posterFallbacks?.[0];
+
+                        event.currentTarget.onerror = null;
+                        event.currentTarget.src =
+                          fallbackPoster || getGeneratedPosterFallback(item.title);
+                      }}
                     />
 
                     <span className="similar-rating">★ {item.rating}</span>
@@ -1522,6 +1654,37 @@ const moviePageStyles = `
     font-weight: 1000;
   }
 
+
+  .faq-section {
+    margin-top: 24px;
+  }
+
+  .faq-list {
+    display: grid;
+    gap: 12px;
+  }
+
+  .faq-item {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.035);
+    padding: 18px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045);
+  }
+
+  .faq-item h3 {
+    margin: 0 0 8px;
+    font-size: 16px;
+    font-weight: 1000;
+    color: #ffffff;
+  }
+
+  .faq-item p {
+    margin: 0;
+    color: #b5b5b5;
+    font-size: 14px;
+    line-height: 1.7;
+  }
 
   .similar-section {
     margin-top: 22px;

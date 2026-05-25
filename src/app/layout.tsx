@@ -2,10 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
 
 import "./globals.css";
-
-const siteUrl = (
-  process.env.NEXT_PUBLIC_SITE_URL || "https://kinoluma.online"
-).replace(/\/$/, "");
+import { siteUrl } from "./lib/seo";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -16,7 +13,7 @@ export const metadata: Metadata = {
   },
 
   description:
-    "KinoLuma — легальный каталог фильмов, сериалов, аниме, мультфильмов и документалок с описаниями, рейтингами, трейлерами и подборками.",
+    "KinoLuma — каталог фильмов, сериалов, аниме, мультфильмов и документальных проектов с описаниями, рейтингами, трейлерами и подборками.",
 
   applicationName: "KinoLuma",
 
@@ -29,7 +26,7 @@ export const metadata: Metadata = {
     "документальные фильмы",
     "трейлеры",
     "каталог фильмов",
-    "фильмы онлайн легально",
+    "смотреть онлайн",
   ],
 
   authors: [{ name: "KinoLuma" }],
@@ -71,7 +68,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "KinoLuma — каталог фильмов и сериалов",
     description:
-      "Подборки фильмов, сериалов, аниме и мультфильмов: рейтинги, трейлеры, описание и страницы просмотра.",
+      "Подборки фильмов, сериалов, аниме, мультфильмов и документальных проектов: рейтинги, трейлеры, описания и страницы просмотра.",
     url: siteUrl,
     siteName: "KinoLuma",
     images: [
@@ -87,10 +84,10 @@ export const metadata: Metadata = {
   },
 
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "KinoLuma — фильмы, сериалы, аниме и мультфильмы онлайн",
     description:
-      "Каталог фильмов, сериалов, аниме и мультфильмов с подборками, трейлерами и страницами просмотра.",
+      "Каталог фильмов, сериалов, аниме, мультфильмов и документальных проектов с подборками, трейлерами и страницами просмотра.",
     images: ["/kinoluma-icon.png"],
   },
 

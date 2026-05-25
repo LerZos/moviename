@@ -1,20 +1,20 @@
 import type { Metadata } from "next";
 import HomeClient from "./HomeClient";
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://www.kinoluma.online").replace(/\/$/, "");
+import { siteUrl } from "./lib/seo";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: "KinoLuma — фильмы, сериалы, аниме и мультфильмы онлайн",
   description:
-    "KinoLuma — каталог фильмов, сериалов, аниме и мультфильмов с описаниями, рейтингами, трейлерами, подборками и легальными источниками просмотра.",
+    "KinoLuma — каталог фильмов, сериалов, аниме, мультфильмов и документальных проектов с описаниями, рейтингами, трейлерами, подборками и страницами просмотра.",
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    title: "KinoLuma — каталог фильмов и сериалов",
+    title: "KinoLuma — фильмы, сериалы, аниме и мультфильмы онлайн",
     description:
-      "Подборки фильмов, сериалов, аниме и мультфильмов: рейтинги, трейлеры, описание и страницы просмотра.",
+      "Подборки фильмов, сериалов, аниме, мультфильмов и документальных проектов: рейтинги, трейлеры, описания и страницы просмотра.",
     url: "/",
     siteName: "KinoLuma",
     locale: "ru_RU",
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "KinoLuma — фильмы, сериалы, аниме и мультфильмы онлайн",
     description:
-      "Каталог фильмов, сериалов, аниме и мультфильмов с подборками, трейлерами и страницами просмотра.",
+      "Каталог фильмов, сериалов, аниме, мультфильмов и документальных проектов с подборками, трейлерами и страницами просмотра.",
     images: ["/kinoluma-icon.png"],
   },
   robots: {

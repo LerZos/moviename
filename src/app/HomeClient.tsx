@@ -19,6 +19,7 @@ import {
   type Dispatch,
   type FormEvent,
   type ReactNode,
+  type RefObject,
   type SetStateAction,
   useEffect,
   useMemo,
@@ -70,7 +71,22 @@ const featuredBackdropImages: Record<number, string> = {
   30: "https://avatars.mds.yandex.net/get-vthumb/2712510/a88491ea18b5d9d923baa325a2178b94/800x450",
   32: "https://img.championat.com/s/732x488/news/big/w/i/multfilm-super-mario-galakticheskoe-kino-sobral-370-mln-luchshij-start-2026-goda_1775402372732866804.jpg",
   33: "https://images.markus.live/mcswebsites.blob.core.windows.net/1013/Event_9643/landscape_fullhd/PHM_EE_Apollo_EHDh_3840x2160.jpg?width=640&height=360&format=jpg&quality=90",
+
+  93: "https://pluggedin.ru/images/1-bigTopImage_2024_06_24_11_18_09.jpeg",
+  94: "https://img.championat.com/s/732x488/news/big/z/b/sbory-filma-planeta-obezyan-novoe-carstvo-v-mirovom-prokate-prevysili-330-mln_17173434281953548108.jpg",
+  95: "https://img.championat.com/s/732x488/news/big/n/p/film-plohie-parni-do-konca-2024-otzyv_17178361161755895019.jpg",
+  96: "https://kinobugle.ru/wp-content/uploads/2024/05/rajan-goslnig.-emili-blant.-kaskadery_cr.webp",
+  97: "https://s0.rbk.ru/v6_top_pics/media/img/3/88/347138653906883.jpeg",
+  98: "https://i.ytimg.com/vi/6jlyzehOPKI/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLD56-3ugGE6susdFVw1nc_6Nrb2_A",
+  99: "https://itc.ua/wp-content/uploads/2024/06/w1500_52519385.jpg",
+  100: "https://cdn.sortiraparis.com/images/80/66131/1092946-twisters-les-tornades-sont-de-retour-au-cinema-decouvrez-la-bande-annonce.jpg",
+  101: "https://cdn.forbes.ru/forbes-static/new/2024/11/Gladiator-2-673b189977666.jpg",
+  102: "https://ixbt.online/live/images/original/35/79/91/2025/08/25/3404e10115.jpg",
+  103: "https://www.film.ru/sites/default/files/styles/thumb_1024x450/public/filefield_paths/4_55.jpeg",
+  104: "https://www.film.ru/sites/default/files/styles/epsa_1024x450/public/filefield_paths/fantasticfour-firststeps-review-blogroll-1753191165513.jpg",
 };
+
+const FEATURED_ROTATION_INTERVAL_MS = 60 * 60 * 1000;
 
 function getFeaturedBackdropImage(item: ContentItem) {
   return featuredBackdropImages[item.id] ?? item.poster;
@@ -407,6 +423,14 @@ function readNumberArrayFromStorage(key: string) {
 
 const types = ["Все", "Фильм", "Сериал", "Аниме", "Мультфильм", "Документальный"];
 
+const catalogSlugByType: Record<string, string> = {
+  Фильм: "films",
+  Сериал: "series",
+  Аниме: "anime",
+  Мультфильм: "cartoons",
+  Документальный: "documentaries",
+};
+
 function getSearchText(item: ContentItem) {
   return normalizeText(
     [
@@ -727,6 +751,9 @@ type MovieShelfProps = {
   description: string;
   items: ContentItem[];
   watchLaterIds: number[];
+  sectionRef?: RefObject<HTMLElement | null>;
+  openAllLabel?: string;
+  onOpenAll?: () => void;
   onOpenDetails: (item: ContentItem) => void;
   onOpenTrailer: (item: ContentItem) => void;
 };
@@ -737,6 +764,9 @@ function MovieShelf({
   description,
   items,
   watchLaterIds,
+  sectionRef,
+  openAllLabel,
+  onOpenAll,
   onOpenDetails,
   onOpenTrailer,
 }: MovieShelfProps) {
@@ -883,17 +913,29 @@ function MovieShelf({
   }
 
   return (
-    <section className="mobile-section px-8 pb-16">
-      <div className="mb-6">
-        <p className="text-sm font-bold uppercase tracking-[0.35em] text-neutral-500">
-          {label}
-        </p>
+    <section ref={sectionRef} className="mobile-section px-8 pb-16 scroll-mt-28">
+      <div className="mb-6 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-sm font-bold uppercase tracking-[0.35em] text-neutral-500">
+            {label}
+          </p>
 
-        <h3 className="mt-2 text-2xl font-bold">{title}</h3>
+          <h3 className="mt-2 text-2xl font-bold">{title}</h3>
 
-        <p className="mt-2 max-w-2xl text-sm text-neutral-500">
-          {description}
-        </p>
+          <p className="mt-2 max-w-2xl text-sm text-neutral-500">
+            {description}
+          </p>
+        </div>
+
+        {onOpenAll && openAllLabel && (
+          <button
+            type="button"
+            onClick={onOpenAll}
+            className="kinoluma-open-all-button shrink-0"
+          >
+            {openAllLabel}
+          </button>
+        )}
       </div>
 
       <div className="movie-row-area relative">
@@ -934,6 +976,10 @@ function MovieShelf({
 export default function Home() {
   const router = useRouter();
   const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const filmsSectionRef = useRef<HTMLElement | null>(null);
+  const seriesSectionRef = useRef<HTMLElement | null>(null);
+  const animeSectionRef = useRef<HTMLElement | null>(null);
+  const documentarySectionRef = useRef<HTMLElement | null>(null);
 
   const [search, setSearch] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -948,6 +994,8 @@ export default function Home() {
   const [likedItemIds, setLikedItemIds] = useState<number[]>([]);
   const [dislikedItemIds, setDislikedItemIds] = useState<number[]>([]);
   const [isReactionsLoaded, setIsReactionsLoaded] = useState(false);
+  const [popularVisibleRows, setPopularVisibleRows] = useState(4);
+  const [popularGridColumns, setPopularGridColumns] = useState(6);
 
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -983,7 +1031,7 @@ export default function Home() {
   const activeMovieRowRef = useRef<HTMLDivElement | null>(null);
 
   const featuredContentPool = useMemo(() => {
-    const priorityIds = [1, 2, 3, 5, 20, 21, 23, 24, 29, 30, 32, 33];
+    const priorityIds = [93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104];
     const priorityItems = priorityIds
       .map((id) => content.find((item) => item.id === id))
       .filter((item): item is ContentItem => Boolean(item));
@@ -1031,6 +1079,10 @@ export default function Home() {
     return content.filter((item) => item.type === "Сериал");
   }, []);
 
+  const documentaryShelfContent = useMemo(() => {
+    return content.filter((item) => item.type === "Документальный");
+  }, []);
+
   const watchLaterContent = useMemo(() => {
     return content.filter((item) => watchLaterIds.includes(item.id));
   }, [watchLaterIds]);
@@ -1051,6 +1103,10 @@ export default function Home() {
       return matchesSearch && matchesType && matchesGenre;
     });
   }, [search, selectedType, selectedGenre]);
+
+  const popularVisibleCount = popularVisibleRows * popularGridColumns;
+  const popularContent = filteredContent.slice(0, popularVisibleCount);
+  const hasMorePopularContent = popularVisibleCount < filteredContent.length;
 
   const searchSuggestions = useMemo(() => {
     const normalizedSearch = normalizeText(search);
@@ -1461,6 +1517,32 @@ export default function Home() {
     setSelectedGenre("Все");
   }
 
+  function scrollToCategory(sectionRef: RefObject<HTMLElement | null>) {
+    const section = sectionRef.current;
+
+    if (!section) {
+      return;
+    }
+
+    const headerOffset = 92;
+    const targetTop = section.getBoundingClientRect().top + window.scrollY - headerOffset;
+
+    window.scrollTo({
+      top: Math.max(0, targetTop),
+      behavior: "smooth",
+    });
+  }
+
+  function openCatalogPage(type: string) {
+    const slug = catalogSlugByType[type];
+
+    if (!slug) {
+      return;
+    }
+
+    router.push(`/catalog/${slug}`);
+  }
+
   function openDetails(item: ContentItem) {
     setTrailerItem(null);
     setIsTrailerClosing(false);
@@ -1554,6 +1636,40 @@ export default function Home() {
   }
 
   useEffect(() => {
+    function updatePopularGridColumns() {
+      const width = window.innerWidth;
+
+      if (width >= 1280) {
+        setPopularGridColumns(6);
+        return;
+      }
+
+      if (width >= 1024) {
+        setPopularGridColumns(3);
+        return;
+      }
+
+      if (width >= 640) {
+        setPopularGridColumns(2);
+        return;
+      }
+
+      setPopularGridColumns(1);
+    }
+
+    updatePopularGridColumns();
+    window.addEventListener("resize", updatePopularGridColumns);
+
+    return () => {
+      window.removeEventListener("resize", updatePopularGridColumns);
+    };
+  }, []);
+
+  useEffect(() => {
+    setPopularVisibleRows(4);
+  }, [search, selectedType, selectedGenre]);
+
+  useEffect(() => {
     if (
       featuredContentPool.length <= 1 ||
       selectedItem ||
@@ -1567,7 +1683,7 @@ export default function Home() {
       setFeaturedIndex((currentIndex) =>
         (currentIndex + 1) % featuredContentPool.length,
       );
-    }, 30000);
+    }, FEATURED_ROTATION_INTERVAL_MS);
 
     return () => {
       window.clearInterval(intervalId);
@@ -1864,6 +1980,195 @@ export default function Home() {
         .kinoluma-home > section:first-of-type .featured-copy {
           position: relative;
           z-index: 3;
+        }
+
+
+        .kinoluma-more-button-wrap {
+          width: 100%;
+          display: flex;
+          justify-content: center;
+          padding-top: 20px;
+          padding-bottom: 28px;
+        }
+
+        .kinoluma-more-button {
+          position: relative;
+          isolation: isolate;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 13px;
+          min-width: 150px;
+          height: 56px;
+          overflow: hidden;
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          border-radius: 999px;
+          background:
+            radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.18), transparent 48%),
+            linear-gradient(180deg, rgba(255, 255, 255, 0.095), rgba(255, 255, 255, 0.045)),
+            rgba(8, 8, 8, 0.86);
+          color: #ffffff;
+          padding: 0 27px;
+          font-size: 15px;
+          font-weight: 950;
+          letter-spacing: 0.015em;
+          line-height: 1;
+          box-shadow:
+            0 30px 86px rgba(0, 0, 0, 0.8),
+            0 0 0 1px rgba(255, 255, 255, 0.035) inset,
+            0 1px 0 rgba(255, 255, 255, 0.16) inset;
+          backdrop-filter: blur(18px);
+          -webkit-backdrop-filter: blur(18px);
+          cursor: pointer;
+          transition:
+            transform 180ms ease,
+            border-color 180ms ease,
+            background 180ms ease,
+            box-shadow 180ms ease;
+        }
+
+        .kinoluma-more-button::before {
+          content: "";
+          position: absolute;
+          inset: 1px;
+          z-index: -1;
+          border-radius: inherit;
+          background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0));
+          pointer-events: none;
+        }
+
+        .kinoluma-more-button::after {
+          content: "";
+          position: absolute;
+          inset: -28px;
+          z-index: -2;
+          border-radius: inherit;
+          background: radial-gradient(circle, rgba(255, 255, 255, 0.14), transparent 62%);
+          opacity: 0.48;
+          transition: opacity 180ms ease, transform 180ms ease;
+        }
+
+        .kinoluma-more-button:hover {
+          transform: translateY(-3px);
+          border-color: rgba(255, 255, 255, 0.3);
+          background:
+            radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.25), transparent 52%),
+            linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.06)),
+            rgba(14, 14, 14, 0.92);
+          box-shadow:
+            0 36px 100px rgba(0, 0, 0, 0.86),
+            0 0 42px rgba(255, 255, 255, 0.075),
+            0 0 0 1px rgba(255, 255, 255, 0.055) inset,
+            0 1px 0 rgba(255, 255, 255, 0.2) inset;
+        }
+
+        .kinoluma-more-button:hover::after {
+          opacity: 0.82;
+          transform: scale(1.05);
+        }
+
+        .kinoluma-more-button:active {
+          transform: scale(0.97);
+        }
+
+        .kinoluma-more-button-icon {
+          display: flex;
+          width: 28px;
+          height: 28px;
+          align-items: center;
+          justify-content: center;
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.11);
+          color: #ffffff;
+          box-shadow:
+            0 0 0 1px rgba(255, 255, 255, 0.12) inset,
+            0 10px 28px rgba(0, 0, 0, 0.36);
+          transition:
+            transform 180ms ease,
+            background 180ms ease;
+        }
+
+        .kinoluma-more-button:hover .kinoluma-more-button-icon {
+          transform: translateY(2px);
+          background: rgba(255, 255, 255, 0.17);
+        }
+
+        @media (max-width: 768px) {
+          .kinoluma-more-button-wrap {
+            padding-top: 54px;
+            padding-bottom: 24px;
+          }
+
+          .kinoluma-more-button {
+            min-width: 138px;
+            height: 54px;
+            padding: 0 24px;
+          }
+        }
+
+        .kinoluma-open-all-button {
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.6rem;
+          overflow: hidden;
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          border-radius: 999px;
+          background:
+            linear-gradient(135deg, rgba(255, 255, 255, 0.095), rgba(255, 255, 255, 0.035));
+          color: #f7f7f7;
+          padding: 0.76rem 1.16rem;
+          font-size: 0.84rem;
+          font-weight: 900;
+          line-height: 1;
+          letter-spacing: 0.015em;
+          box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.1),
+            0 14px 38px rgba(0, 0, 0, 0.36);
+          backdrop-filter: blur(18px);
+          transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease, background 220ms ease, color 220ms ease;
+        }
+
+        .kinoluma-open-all-button::before {
+          content: "";
+          position: absolute;
+          inset: 1px;
+          border-radius: inherit;
+          background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0) 64%);
+          pointer-events: none;
+        }
+
+        .kinoluma-open-all-button::after {
+          content: "";
+          width: 0.44rem;
+          height: 0.44rem;
+          border-bottom: 2px solid currentColor;
+          border-right: 2px solid currentColor;
+          opacity: 0.76;
+          transform: rotate(-45deg);
+          transition: transform 220ms ease, opacity 220ms ease;
+        }
+
+        .kinoluma-open-all-button:hover {
+          transform: translateY(-2px);
+          border-color: rgba(255, 255, 255, 0.34);
+          background:
+            linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.07));
+          color: #ffffff;
+          box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.18),
+            0 18px 52px rgba(0, 0, 0, 0.44),
+            0 0 28px rgba(255, 255, 255, 0.06);
+        }
+
+        .kinoluma-open-all-button:hover::after {
+          opacity: 1;
+          transform: rotate(-45deg) translate(2px, 2px);
+        }
+
+        .kinoluma-open-all-button:active {
+          transform: translateY(0) scale(0.97);
         }
 
         @keyframes modalOverlayOpen {
@@ -2380,6 +2685,80 @@ export default function Home() {
             box-shadow: none;
           }
 
+          .mobile-header,
+          .mobile-header * {
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+          }
+
+          .mobile-header {
+            min-height: 90px;
+            padding: 0 32px;
+          }
+
+          .mobile-brand-wrap {
+            min-width: 0;
+            gap: 30px;
+          }
+
+          .mobile-logo-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 auto;
+            -webkit-user-drag: none;
+          }
+
+          .mobile-logo-link img {
+            pointer-events: none;
+            -webkit-user-drag: none;
+          }
+
+          .desktop-nav {
+            align-items: center;
+            gap: 26px;
+            line-height: 1;
+            white-space: nowrap;
+          }
+
+          .desktop-nav a,
+          .desktop-nav button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 44px;
+            margin: 0;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            color: rgba(255,255,255,0.66);
+            font: inherit;
+            font-size: 14px;
+            font-weight: 500;
+            line-height: 1;
+            text-decoration: none;
+            white-space: nowrap;
+            cursor: pointer;
+            outline: none;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-user-drag: none;
+            -webkit-touch-callout: none;
+          }
+
+          .desktop-nav a:hover,
+          .desktop-nav button:hover {
+            color: #ffffff;
+          }
+
+          .desktop-nav a:focus-visible,
+          .desktop-nav button:focus-visible {
+            border-radius: 8px;
+            outline: 1px solid rgba(255,255,255,0.45);
+            outline-offset: 6px;
+          }
+
           @media (max-width: 768px) {
           .kinoluma-home {
             background:
@@ -2832,36 +3211,63 @@ export default function Home() {
 
       `}</style>
 
-      <header className="mobile-header fixed left-0 top-0 z-50 flex w-full items-center justify-between border-b border-white/10 bg-black/80 px-8 py-5 backdrop-blur">
-        <div className="mobile-brand-wrap flex items-center gap-8">
-          <a href="/" aria-label="KinoLuma" className="shrink-0">
+      <header className="mobile-header fixed left-0 top-0 z-50 flex w-full items-center justify-between border-b border-white/10 bg-black/80 backdrop-blur">
+        <div className="mobile-brand-wrap flex items-center">
+          <a href="/" aria-label="KinoLuma" className="mobile-logo-link shrink-0" draggable={false}>
             <img
               src="/kinoluma-icon.png"
               alt="KinoLuma"
               className="mobile-logo-image"
+              draggable={false}
             />
           </a>
 
-          <nav className="desktop-nav hidden gap-6 text-sm text-neutral-400 md:flex">
-            <a className="hover:text-white" href="#">
+          <nav className="desktop-nav hidden text-sm text-neutral-400 md:flex" aria-label="Основная навигация">
+            <button
+              type="button"
+              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              className="text-left transition duration-200 hover:text-white"
+              draggable={false}
+            >
               Главная
-            </a>
-            <a className="hover:text-white" href="#">
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollToCategory(filmsSectionRef)}
+              className="text-left transition duration-200 hover:text-white"
+              draggable={false}
+            >
               Фильмы
-            </a>
-            <a className="hover:text-white" href="#">
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollToCategory(seriesSectionRef)}
+              className="text-left transition duration-200 hover:text-white"
+              draggable={false}
+            >
               Сериалы
-            </a>
-            <a className="hover:text-white" href="#">
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollToCategory(animeSectionRef)}
+              className="text-left transition duration-200 hover:text-white"
+              draggable={false}
+            >
               Аниме
-            </a>
-            <a className="hover:text-white" href="#">
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollToCategory(documentarySectionRef)}
+              className="text-left transition duration-200 hover:text-white"
+              draggable={false}
+            >
               Документальные
-            </a>
+            </button>
             <button
               type="button"
               onClick={openRandomPick}
               className="text-left transition duration-200 hover:text-white"
+              draggable={false}
             >
               Случайные фильмы
             </button>
@@ -3253,18 +3659,46 @@ export default function Home() {
         </div>
 
         {filteredContent.length > 0 ? (
-          <div className="mobile-grid grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-            {filteredContent.map((item, index) => (
-              <MovieCard
-                key={item.id}
-                item={item}
-                index={index}
-                isWatchLater={watchLaterIds.includes(item.id)}
-                onOpenDetails={openDetails}
-                onOpenTrailer={openTrailer}
-              />
-            ))}
-          </div>
+          <>
+            <div className="mobile-grid grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+              {popularContent.map((item, index) => (
+                <MovieCard
+                  key={item.id}
+                  item={item}
+                  index={index}
+                  isWatchLater={watchLaterIds.includes(item.id)}
+                  onOpenDetails={openDetails}
+                  onOpenTrailer={openTrailer}
+                />
+              ))}
+            </div>
+
+            {hasMorePopularContent && (
+              <div className="kinoluma-more-button-wrap">
+                <button
+                  type="button"
+                  onClick={() => setPopularVisibleRows((currentRows) => currentRows + 4)}
+                  className="kinoluma-more-button"
+                >
+                  <span>Ещё</span>
+
+                  <span className="kinoluma-more-button-icon" aria-hidden="true">
+                    <svg
+                      viewBox="0 0 24 24"
+                      className="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M7 10L12 15L17 10" />
+                    </svg>
+                  </span>
+                </button>
+              </div>
+            )}
+          </>
         ) : (
           <div className="rounded-xl border border-white/10 bg-neutral-950 p-10 text-center">
             <h4 className="text-xl font-bold">Ничего не найдено</h4>
@@ -3333,6 +3767,9 @@ export default function Home() {
         description="Подборка фильмов для тех случаев, когда хочется включить что-то уверенное: от эпичной фантастики до мощного экшена."
         items={filmShelfContent}
         watchLaterIds={watchLaterIds}
+        sectionRef={filmsSectionRef}
+        openAllLabel="Все фильмы"
+        onOpenAll={() => openCatalogPage("Фильм")}
         onOpenDetails={openDetails}
         onOpenTrailer={openTrailer}
       />
@@ -3343,6 +3780,9 @@ export default function Home() {
         description="Истории с сильными героями, яркими мирами и таким количеством эмоций, что обычный сериал рядом тихо пьёт чай."
         items={animeShelfContent}
         watchLaterIds={watchLaterIds}
+        sectionRef={animeSectionRef}
+        openAllLabel="Все аниме"
+        onOpenAll={() => openCatalogPage("Аниме")}
         onOpenDetails={openDetails}
         onOpenTrailer={openTrailer}
       />
@@ -3353,6 +3793,8 @@ export default function Home() {
         description="Мультфильмы, которые работают и для лёгкого вечера, и для ностальгии, и для проверки: осталось ли сердце на месте."
         items={cartoonShelfContent}
         watchLaterIds={watchLaterIds}
+        openAllLabel="Все мультфильмы"
+        onOpenAll={() => openCatalogPage("Мультфильм")}
         onOpenDetails={openDetails}
         onOpenTrailer={openTrailer}
       />
@@ -3363,6 +3805,22 @@ export default function Home() {
         description="Сериалы, где одна серия легко превращается в три. Ничего необычного, просто классическая ловушка хорошего сюжета."
         items={seriesShelfContent}
         watchLaterIds={watchLaterIds}
+        sectionRef={seriesSectionRef}
+        openAllLabel="Все сериалы"
+        onOpenAll={() => openCatalogPage("Сериал")}
+        onOpenDetails={openDetails}
+        onOpenTrailer={openTrailer}
+      />
+
+      <MovieShelf
+        label="Документальные"
+        title="Документальные истории"
+        description="Факты, расследования и реальные истории — когда хочется, чтобы кино не только развлекало, но и прокачивало кругозор."
+        items={documentaryShelfContent}
+        watchLaterIds={watchLaterIds}
+        sectionRef={documentarySectionRef}
+        openAllLabel="Все документальные"
+        onOpenAll={() => openCatalogPage("Документальный")}
         onOpenDetails={openDetails}
         onOpenTrailer={openTrailer}
       />
