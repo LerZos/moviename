@@ -2,18 +2,22 @@ import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
 
 import "./globals.css";
-import { siteUrl } from "./lib/seo";
+import {
+  getOrganizationJsonLd,
+  getWebSiteJsonLd,
+  siteUrl,
+} from "./lib/seo";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
 
   title: {
-    default: "KinoLuma — фильмы, сериалы, аниме и мультфильмы онлайн",
+    default: "KinoLuma — фильмы, сериалы, аниме и мультфильмы смотреть онлайн",
     template: "%s — KinoLuma",
   },
 
   description:
-    "KinoLuma — каталог фильмов, сериалов, аниме, мультфильмов и документальных проектов с описаниями, рейтингами, трейлерами и подборками.",
+    "KinoLuma — каталог фильмов, сериалов, аниме, мультфильмов и документальных проектов: смотреть онлайн, читать описания, рейтинги, трейлеры и подборки без регистрации.",
 
   applicationName: "KinoLuma",
 
@@ -27,6 +31,12 @@ export const metadata: Metadata = {
     "трейлеры",
     "каталог фильмов",
     "смотреть онлайн",
+    "смотреть онлайн бесплатно",
+    "смотреть онлайн без регистрации",
+    "фильмы смотреть онлайн бесплатно",
+    "сериалы смотреть онлайн бесплатно",
+    "аниме смотреть онлайн бесплатно",
+    "мультфильмы смотреть онлайн бесплатно",
   ],
 
   authors: [{ name: "KinoLuma" }],
@@ -66,9 +76,9 @@ export const metadata: Metadata = {
   },
 
   openGraph: {
-    title: "KinoLuma — каталог фильмов и сериалов",
+    title: "KinoLuma — фильмы, сериалы, аниме и мультфильмы смотреть онлайн",
     description:
-      "Подборки фильмов, сериалов, аниме, мультфильмов и документальных проектов: рейтинги, трейлеры, описания и страницы просмотра.",
+      "Подборки фильмов, сериалов, аниме, мультфильмов и документальных проектов: рейтинги, трейлеры, описания и страницы просмотра без регистрации.",
     url: siteUrl,
     siteName: "KinoLuma",
     images: [
@@ -85,9 +95,9 @@ export const metadata: Metadata = {
 
   twitter: {
     card: "summary_large_image",
-    title: "KinoLuma — фильмы, сериалы, аниме и мультфильмы онлайн",
+    title: "KinoLuma — фильмы, сериалы, аниме и мультфильмы смотреть онлайн",
     description:
-      "Каталог фильмов, сериалов, аниме, мультфильмов и документальных проектов с подборками, трейлерами и страницами просмотра.",
+      "Каталог фильмов, сериалов, аниме, мультфильмов и документальных проектов с подборками, трейлерами и страницами просмотра без регистрации.",
     images: ["/kinoluma-icon.png"],
   },
 
@@ -117,6 +127,18 @@ export default function RootLayout({
   return (
     <html lang="ru" suppressHydrationWarning>
       <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(getOrganizationJsonLd()),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(getWebSiteJsonLd()),
+          }}
+        />
         {children}
         <Analytics />
       </body>

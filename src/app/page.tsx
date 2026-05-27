@@ -1,20 +1,22 @@
 import type { Metadata } from "next";
 import HomeClient from "./HomeClient";
 
-import { siteUrl } from "./lib/seo";
+import { getHomePageJsonLd, siteUrl } from "./lib/seo";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: "KinoLuma — фильмы, сериалы, аниме и мультфильмы онлайн",
+  title: {
+    absolute: "KinoLuma — фильмы, сериалы, аниме и мультфильмы смотреть онлайн",
+  },
   description:
-    "KinoLuma — каталог фильмов, сериалов, аниме, мультфильмов и документальных проектов с описаниями, рейтингами, трейлерами, подборками и страницами просмотра.",
+    "KinoLuma — фильмы, сериалы, аниме, мультфильмы и документальные проекты смотреть онлайн: описания, рейтинги, трейлеры, подборки и страницы просмотра без регистрации.",
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    title: "KinoLuma — фильмы, сериалы, аниме и мультфильмы онлайн",
+    title: "KinoLuma — фильмы, сериалы, аниме и мультфильмы смотреть онлайн",
     description:
-      "Подборки фильмов, сериалов, аниме, мультфильмов и документальных проектов: рейтинги, трейлеры, описания и страницы просмотра.",
+      "Подборки фильмов, сериалов, аниме, мультфильмов и документальных проектов: рейтинги, трейлеры, описания и страницы просмотра без регистрации.",
     url: "/",
     siteName: "KinoLuma",
     locale: "ru_RU",
@@ -30,9 +32,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "KinoLuma — фильмы, сериалы, аниме и мультфильмы онлайн",
+    title: "KinoLuma — фильмы, сериалы, аниме и мультфильмы смотреть онлайн",
     description:
-      "Каталог фильмов, сериалов, аниме, мультфильмов и документальных проектов с подборками, трейлерами и страницами просмотра.",
+      "Каталог фильмов, сериалов, аниме, мультфильмов и документальных проектов с подборками, трейлерами и страницами просмотра без регистрации.",
     images: ["/kinoluma-icon.png"],
   },
   robots: {
@@ -49,5 +51,15 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return <HomeClient />;
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(getHomePageJsonLd()),
+        }}
+      />
+      <HomeClient />
+    </>
+  );
 }

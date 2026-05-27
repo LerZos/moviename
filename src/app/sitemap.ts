@@ -33,7 +33,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: `${siteUrl}/movie/${movie.slug}`,
       lastModified: now,
       changeFrequency: "weekly" as const,
-      priority: 0.86,
+      priority: 0.88,
     })),
   ];
 }

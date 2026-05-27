@@ -11,55 +11,64 @@ export const catalogRoutes = [
     slug: "films",
     type: "Фильм",
     label: "Фильмы",
-    title: "Фильмы смотреть онлайн",
+    title: "Фильмы смотреть онлайн бесплатно",
     description:
-      "Каталог фильмов KinoLuma: подборки кино на вечер, рейтинги, трейлеры, описания, жанры и страницы просмотра.",
+      "Фильмы смотреть онлайн на KinoLuma: каталог кино с описаниями, рейтингами, трейлерами, жанрами и страницами просмотра без регистрации.",
     seoText:
-      "В каталоге фильмов KinoLuma собраны разные жанры: фантастика, драма, триллеры, приключения, экшен и авторское кино. На страницах материалов есть краткое описание, подробный блок о фильме, рейтинг, жанры, актёры, трейлер и похожие подборки.",
+      "В каталоге фильмов KinoLuma собраны разные жанры: фантастика, драма, триллеры, приключения, экшен и авторское кино. На страницах материалов есть краткое описание, подробный блок о фильме, рейтинг, жанры, актёры, трейлер и информация перед просмотром онлайн.",
   },
   {
     slug: "series",
     type: "Сериал",
     label: "Сериалы",
-    title: "Сериалы смотреть онлайн",
+    title: "Сериалы смотреть онлайн бесплатно",
     description:
-      "Каталог сериалов KinoLuma: популярные сериалы, описания сезонов, рейтинги, трейлеры, жанры и страницы просмотра.",
+      "Сериалы смотреть онлайн на KinoLuma: популярные проекты, описания сезонов, рейтинги, трейлеры, жанры и страницы просмотра без регистрации.",
     seoText:
-      "Раздел сериалов помогает выбрать историю на несколько вечеров: от драм и фантастики до криминальных проектов, мистики и приключений. У каждого сериала есть карточка с описанием, рейтингом, жанрами, трейлером и подробной страницей.",
+      "Раздел сериалов помогает выбрать историю на несколько вечеров: от драм и фантастики до криминальных проектов, мистики и приключений. У каждого сериала есть карточка с описанием, рейтингом, жанрами, трейлером и подробной страницей просмотра онлайн.",
   },
   {
     slug: "anime",
     type: "Аниме",
     label: "Аниме",
-    title: "Аниме смотреть онлайн",
+    title: "Аниме смотреть онлайн бесплатно",
     description:
-      "Каталог аниме KinoLuma: культовые тайтлы, новые истории, трейлеры, рейтинги, жанры и подробные описания.",
+      "Аниме смотреть онлайн на KinoLuma: культовые тайтлы, новые истории, трейлеры, рейтинги, жанры и подробные описания без регистрации.",
     seoText:
-      "В разделе аниме собраны тайтлы с сильной атмосферой, яркой визуальной подачей и разными жанрами: экшен, фэнтези, романтика, драма и приключения. Страницы помогают быстро понять сюжет, настроение и формат просмотра.",
+      "В разделе аниме собраны тайтлы с сильной атмосферой, яркой визуальной подачей и разными жанрами: экшен, фэнтези, романтика, драма и приключения. Страницы помогают быстро понять сюжет, настроение и формат просмотра онлайн.",
   },
   {
     slug: "cartoons",
     type: "Мультфильм",
     label: "Мультфильмы",
-    title: "Мультфильмы смотреть онлайн",
+    title: "Мультфильмы смотреть онлайн бесплатно",
     description:
-      "Каталог мультфильмов KinoLuma: семейная анимация, приключения, комедии, описания, рейтинги и трейлеры.",
+      "Мультфильмы смотреть онлайн на KinoLuma: семейная анимация, приключения, комедии, описания, рейтинги и трейлеры без регистрации.",
     seoText:
-      "Мультфильмы KinoLuma — это анимация для лёгкого вечера, семейного просмотра и красивых приключений. В каталоге можно выбрать мультфильм по жанру, рейтингу, году и описанию.",
+      "Мультфильмы KinoLuma — это анимация для лёгкого вечера, семейного просмотра и красивых приключений. В каталоге можно выбрать мультфильм по жанру, рейтингу, году, описанию и странице просмотра онлайн.",
   },
   {
     slug: "documentaries",
     type: "Документальный",
     label: "Документальные",
-    title: "Документальные фильмы смотреть онлайн",
+    title: "Документальные фильмы смотреть онлайн бесплатно",
     description:
-      "Каталог документальных фильмов и проектов KinoLuma: природа, технологии, истории людей, рейтинги, трейлеры и описания.",
+      "Документальные фильмы смотреть онлайн на KinoLuma: природа, технологии, истории людей, рейтинги, трейлеры и описания без регистрации.",
     seoText:
-      "Документальные проекты KinoLuma помогают выбрать материалы о природе, технологиях, обществе, реальных историях и важных темах. У каждого проекта есть описание, жанры, рейтинг и дополнительная информация перед просмотром.",
+      "Документальные проекты KinoLuma помогают выбрать материалы о природе, технологиях, обществе, реальных историях и важных темах. У каждого проекта есть описание, жанры, рейтинг и дополнительная информация перед просмотром онлайн.",
   },
 ] as const;
 
 export type CatalogRoute = (typeof catalogRoutes)[number];
+
+const brandName = "KinoLuma";
+const defaultImage = "/kinoluma-icon.png";
+const seoOnlineSuffix = "смотреть онлайн бесплатно без регистрации";
+
+function compactText(text: string) {
+  return text.replace(/\s+/g, " ").trim();
+}
+
 
 export function absoluteUrl(url: string) {
   if (!url) {
@@ -209,22 +218,22 @@ export function getMovieSeoTitle(movie: Movie) {
   const kind = getSeoContentKind(movie);
 
   if (movie.type === "Сериал") {
-    return `${movie.title} (${movie.year}) смотреть онлайн сериал`;
+    return `${movie.title} (${movie.year}) смотреть онлайн сериал бесплатно`;
   }
 
   if (movie.type === "Аниме") {
-    return `${movie.title} (${movie.year}) смотреть онлайн аниме`;
+    return `${movie.title} (${movie.year}) смотреть онлайн аниме бесплатно`;
   }
 
   if (movie.type === "Мультфильм" || kind === "мультфильм") {
-    return `${movie.title} (${movie.year}) смотреть онлайн мультфильм`;
+    return `${movie.title} (${movie.year}) смотреть онлайн мультфильм бесплатно`;
   }
 
   if (movie.type === "Документальный") {
-    return `${movie.title} (${movie.year}) смотреть онлайн документальный фильм`;
+    return `${movie.title} (${movie.year}) смотреть онлайн документальный фильм бесплатно`;
   }
 
-  return `${movie.title} (${movie.year}) смотреть онлайн фильм в хорошем качестве`;
+  return `${movie.title} (${movie.year}) смотреть онлайн фильм бесплатно`;
 }
 
 export function getMovieSchemaDescription(movie: Movie) {
@@ -236,7 +245,7 @@ export function getMovieSchemaDescription(movie: Movie) {
 }
 
 export function trimSeoText(text: string, maxLength = 170) {
-  const cleanText = text.replace(/\s+/g, " ").trim();
+  const cleanText = compactText(text);
 
   if (cleanText.length <= maxLength) {
     return cleanText;
@@ -250,31 +259,53 @@ export function getMovieMetaDescription(movie: Movie) {
   const country = getFactValue(movie, ["Страна"]);
   const genres = movie.genres.slice(0, 5).join(", ").toLowerCase();
   const base = movie.description || movie.longDescription || "описание, рейтинг, жанры и трейлер";
+  const genrePart = genres ? ` Жанры: ${genres}.` : "";
   const countryPart = country ? ` Страна: ${country}.` : "";
 
   return trimSeoText(
-    `Смотреть онлайн ${kind} «${movie.title}» (${movie.year}) в хорошем качестве. Жанр: ${genres}.${countryPart} ${base} Рейтинг, трейлер и информация на KinoLuma.`,
+    `${movie.title} (${movie.year}) — ${kind} смотреть онлайн на KinoLuma без регистрации.${genrePart}${countryPart} Описание, рейтинг, трейлер и информация перед просмотром. ${base}`,
     210,
   );
 }
 
 export function getMovieKeywords(movie: Movie) {
+  const kind = getSeoContentKind(movie);
+  const titleVariants = [
+    movie.title,
+    movie.originalTitle,
+    ...movie.searchTitles,
+  ].filter(Boolean);
+
   return Array.from(
     new Set(
       [
-        movie.title,
-        movie.originalTitle,
-        ...movie.searchTitles,
-        getSeoContentKind(movie),
+        ...titleVariants,
+        ...titleVariants.flatMap((title) => [
+          `${title} KinoLuma`,
+          `${title} смотреть онлайн`,
+          `${title} смотреть онлайн бесплатно`,
+          `${title} смотреть онлайн без регистрации`,
+          `${title} трейлер`,
+          `${title} описание`,
+          `${title} рейтинг`,
+          `${title} ${movie.year}`,
+          `${title} ${movie.year} смотреть онлайн`,
+        ]),
+        kind,
         movie.type,
-        `${movie.title} смотреть онлайн`,
-        `${movie.title} ${movie.year}`,
-        "KinoLuma",
-        "смотреть онлайн",
+        `${kind} смотреть онлайн`,
+        `${kind} смотреть онлайн бесплатно`,
+        brandName,
+        seoOnlineSuffix,
+        `${brandName} фильмы`,
+        `${brandName} смотреть онлайн`,
         "фильмы онлайн",
         "сериалы онлайн",
-        "трейлер",
-        "описание",
+        "аниме онлайн",
+        "мультфильмы онлайн",
+        "трейлеры фильмов",
+        "описания фильмов",
+        "рейтинги фильмов",
         ...movie.genres,
         String(movie.year),
       ].filter(Boolean),
@@ -321,6 +352,70 @@ function removeUndefinedValues(value: unknown): unknown {
   return value;
 }
 
+export function getOrganizationJsonLd() {
+  return removeUndefinedValues({
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "@id": `${siteUrl}#organization`,
+    name: brandName,
+    url: siteUrl,
+    logo: absoluteUrl(defaultImage),
+    image: absoluteUrl(defaultImage),
+    sameAs: [siteUrl],
+  });
+}
+
+export function getWebSiteJsonLd() {
+  return removeUndefinedValues({
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "@id": `${siteUrl}#website`,
+    name: brandName,
+    alternateName: ["КиноЛума", "Kino Luma"],
+    url: siteUrl,
+    inLanguage: "ru-RU",
+    publisher: {
+      "@id": `${siteUrl}#organization`,
+    },
+    description:
+      "KinoLuma — онлайн-каталог фильмов, сериалов, аниме, мультфильмов и документальных проектов с описаниями, рейтингами, трейлерами и страницами просмотра.",
+  });
+}
+
+export function getHomePageJsonLd() {
+  return removeUndefinedValues({
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "@id": `${siteUrl}#webpage`,
+    url: siteUrl,
+    name: "KinoLuma — фильмы, сериалы, аниме и мультфильмы смотреть онлайн",
+    description:
+      "Онлайн-каталог KinoLuma с фильмами, сериалами, аниме, мультфильмами и документальными проектами: описания, рейтинги, трейлеры, жанры и страницы просмотра.",
+    inLanguage: "ru-RU",
+    isPartOf: {
+      "@id": `${siteUrl}#website`,
+    },
+    primaryImageOfPage: {
+      "@type": "ImageObject",
+      url: absoluteUrl(defaultImage),
+      contentUrl: absoluteUrl(defaultImage),
+      width: 512,
+      height: 512,
+      caption: "KinoLuma",
+    },
+    mainEntity: {
+      "@type": "ItemList",
+      numberOfItems: movies.length,
+      itemListElement: movies.slice(0, 30).map((movie, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        url: `${siteUrl}/movie/${movie.slug}`,
+        name: `${movie.title} (${movie.year})`,
+      })),
+    },
+  });
+}
+
 export function getMovieJsonLd(movie: Movie) {
   const pageUrl = `${siteUrl}/movie/${movie.slug}`;
   const posterUrl = absoluteUrl(movie.poster);
@@ -358,11 +453,17 @@ export function getMovieJsonLd(movie: Movie) {
     datePublished: String(movie.year),
     genre: movie.genres,
     inLanguage: "ru-RU",
+    keywords: getMovieKeywords(movie).join(", "),
+    provider: {
+      "@type": "Organization",
+      name: brandName,
+      url: siteUrl,
+    },
     isAccessibleForFree: true,
     potentialAction: {
       "@type": "WatchAction",
       target: pageUrl,
-      name: `Смотреть ${movie.title} онлайн`,
+      name: `Смотреть ${movie.title} онлайн на KinoLuma`,
     },
     countryOfOrigin: country,
     duration,
@@ -436,9 +537,7 @@ export function getMovieWebPageJsonLd(movie: Movie) {
     description: getMovieMetaDescription(movie),
     inLanguage: "ru-RU",
     isPartOf: {
-      "@type": "WebSite",
-      name: "KinoLuma",
-      url: siteUrl,
+      "@id": `${siteUrl}#website`,
     },
     primaryImageOfPage: {
       "@type": "ImageObject",
@@ -534,6 +633,17 @@ export function getCatalogMetadata(slug: string): Metadata {
     metadataBase: new URL(siteUrl),
     title: route.title,
     description: route.description,
+    keywords: [
+      brandName,
+      route.label,
+      route.title,
+      `${route.label} смотреть онлайн`,
+      `${route.label} смотреть онлайн бесплатно`,
+      `${route.label} смотреть онлайн без регистрации`,
+      "трейлеры",
+      "описания",
+      "рейтинги",
+    ],
     alternates: {
       canonical,
     },
@@ -546,7 +656,7 @@ export function getCatalogMetadata(slug: string): Metadata {
       type: "website",
       images: [
         {
-          url: "/kinoluma-icon.png",
+          url: defaultImage,
           width: 512,
           height: 512,
           alt: "KinoLuma",
@@ -557,7 +667,7 @@ export function getCatalogMetadata(slug: string): Metadata {
       card: "summary_large_image",
       title: route.title,
       description: route.description,
-      images: ["/kinoluma-icon.png"],
+      images: [defaultImage],
     },
     robots: {
       index: true,
@@ -600,10 +710,10 @@ export function getGenreMetadata(categorySlug: string, genreSlug: string): Metad
     };
   }
 
-  const title = `${genre}: ${route.label.toLowerCase()} смотреть онлайн`;
+  const title = `${genre}: ${route.label.toLowerCase()} смотреть онлайн бесплатно`;
   const description = trimSeoText(
-    `${genre}: ${route.label.toLowerCase()} в каталоге KinoLuma. Подборка материалов с описаниями, рейтингами, трейлерами, жанрами и подробными страницами просмотра.`,
-    180,
+    `${genre}: ${route.label.toLowerCase()} смотреть онлайн на KinoLuma без регистрации. Подборка материалов с описаниями, рейтингами, трейлерами, жанрами и подробными страницами просмотра.`,
+    190,
   );
   const canonical = `/catalog/${route.slug}/${slugifyGenre(genre)}`;
 
@@ -611,6 +721,17 @@ export function getGenreMetadata(categorySlug: string, genreSlug: string): Metad
     metadataBase: new URL(siteUrl),
     title,
     description,
+    keywords: [
+      brandName,
+      genre,
+      route.label,
+      `${genre} ${route.label.toLowerCase()} смотреть онлайн`,
+      `${genre} ${route.label.toLowerCase()} смотреть онлайн бесплатно`,
+      `${genre} ${route.label.toLowerCase()} без регистрации`,
+      "трейлеры",
+      "описания",
+      "рейтинги",
+    ],
     alternates: {
       canonical,
     },
@@ -623,7 +744,7 @@ export function getGenreMetadata(categorySlug: string, genreSlug: string): Metad
       type: "website",
       images: [
         {
-          url: "/kinoluma-icon.png",
+          url: defaultImage,
           width: 512,
           height: 512,
           alt: "KinoLuma",
@@ -634,7 +755,7 @@ export function getGenreMetadata(categorySlug: string, genreSlug: string): Metad
       card: "summary_large_image",
       title,
       description,
-      images: ["/kinoluma-icon.png"],
+      images: [defaultImage],
     },
     robots: {
       index: true,
@@ -655,10 +776,10 @@ export function getCollectionPageJsonLd(route: CatalogRoute, items: Movie[], gen
     ? `/catalog/${route.slug}/${slugifyGenre(genre)}`
     : `/catalog/${route.slug}`;
   const title = genre
-    ? `${genre}: ${route.label.toLowerCase()} смотреть онлайн`
+    ? `${genre}: ${route.label.toLowerCase()} смотреть онлайн бесплатно`
     : route.title;
   const description = genre
-    ? `${genre}: ${route.label.toLowerCase()} в каталоге KinoLuma с описаниями, рейтингами, трейлерами и страницами просмотра.`
+    ? `${genre}: ${route.label.toLowerCase()} смотреть онлайн на KinoLuma с описаниями, рейтингами, трейлерами и страницами просмотра.`
     : route.description;
 
   return removeUndefinedValues({
@@ -669,9 +790,7 @@ export function getCollectionPageJsonLd(route: CatalogRoute, items: Movie[], gen
     description,
     url: absoluteUrl(url),
     isPartOf: {
-      "@type": "WebSite",
-      name: "KinoLuma",
-      url: siteUrl,
+      "@id": `${siteUrl}#website`,
     },
     mainEntity: {
       "@type": "ItemList",
@@ -699,7 +818,7 @@ export function getCatalogFaqJsonLd(route: CatalogRoute, genre?: string) {
         acceptedAnswer: {
           "@type": "Answer",
           text: genre
-            ? `В разделе собраны ${route.label.toLowerCase()} жанра «${genre}» с описаниями, рейтингами, трейлерами и подробными страницами.`
+            ? `В разделе собраны ${route.label.toLowerCase()} жанра «${genre}» с описаниями, рейтингами, трейлерами и подробными страницами просмотра онлайн.`
             : route.seoText,
         },
       },
