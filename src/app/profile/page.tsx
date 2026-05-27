@@ -47,6 +47,14 @@ type ProfileTab = "overview" | "watchLater" | "reactions";
 type ProfileSort = "recent" | "rating" | "year" | "title";
 type AuthMode = "login" | "register";
 
+const PROFILE_LOAD_TIMEOUT_MS = 4500;
+
+function waitForProfileFallback<T>(ms: number, value: T) {
+  return new Promise<T>((resolve) => {
+    window.setTimeout(() => resolve(value), ms);
+  });
+}
+
 function escapeSvgText(text: string) {
   return text
     .replaceAll("&", "&amp;")
@@ -626,12 +634,6 @@ export default function ProfilePage() {
     let isMounted = true;
 
 
-    function wait<T>(ms: number, value: T) {
-      return new Promise<T>((resolve) => {
-        window.setTimeout(() => resolve(value), ms);
-      });
-    }
-
     async function initializeProfile() {
       const localActions = loadLocalActions();
       const savedUser = readCurrentUserFromStorage();
@@ -641,7 +643,10 @@ export default function ProfilePage() {
       }
 
       try {
-        const user = await getCurrentSupabaseUser();
+        const user = await Promise.race([
+          getCurrentSupabaseUser(),
+          waitForProfileFallback(PROFILE_LOAD_TIMEOUT_MS, null),
+        ]);
 
         if (!isMounted) {
           return;
@@ -663,7 +668,7 @@ export default function ProfilePage() {
 
         const actions = await Promise.race([
           loadMovieActions().catch(() => localActions),
-          wait(5500, localActions),
+          waitForProfileFallback(PROFILE_LOAD_TIMEOUT_MS, localActions),
         ]);
 
         if (!isMounted) {
@@ -720,7 +725,7 @@ export default function ProfilePage() {
         const localActions = loadLocalActions();
         const actions = await Promise.race([
           loadMovieActions().catch(() => localActions),
-          wait(5500, localActions),
+          waitForProfileFallback(PROFILE_LOAD_TIMEOUT_MS, localActions),
         ]);
 
         if (!isMounted) {
@@ -984,7 +989,10 @@ export default function ProfilePage() {
     setCurrentUser(mappedUser);
     saveCurrentUserToStorage(mappedUser);
 
-    const actions = await loadMovieActions().catch(() => emptyMovieActionState);
+    const actions = await Promise.race([
+      loadMovieActions().catch(() => emptyMovieActionState),
+      waitForProfileFallback(PROFILE_LOAD_TIMEOUT_MS, emptyMovieActionState),
+    ]);
 
     setWatchLaterIds(actions.watchLaterIds);
     setLikedItemIds(actions.likedItemIds);

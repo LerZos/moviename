@@ -24,6 +24,31 @@ export const emptyMovieActionState: MovieActionState = {
   watchingItemIds: [],
 };
 
+const SUPABASE_AUTH_TIMEOUT_MS = 4500;
+const SUPABASE_QUERY_TIMEOUT_MS = 6000;
+
+function withTimeout<T, F>(
+  promise: Promise<T>,
+  ms: number,
+  fallback: F,
+  label: string,
+): Promise<T | F> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+  const timeoutPromise = new Promise<F>((resolve) => {
+    timeoutId = setTimeout(() => {
+      console.warn(`${label} занял больше ${ms} мс. Использую безопасный fallback.`);
+      resolve(fallback);
+    }, ms);
+  });
+
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    if (timeoutId !== undefined) {
+      clearTimeout(timeoutId);
+    }
+  });
+}
+
 function getDisplayName(user: User) {
   const metadataName = user.user_metadata?.name;
 
@@ -61,24 +86,42 @@ export function removeCurrentUserFromStorage() {
 }
 
 export async function getCurrentSupabaseUser() {
-  const { data: sessionData, error: sessionError } =
-    await supabase.auth.getSession();
+  const sessionResponse = await withTimeout(
+    supabase.auth.getSession(),
+    SUPABASE_AUTH_TIMEOUT_MS,
+    null,
+    "Supabase getSession",
+  ).catch((error) => {
+    console.error("Не удалось прочитать сессию Supabase:", error?.message || error);
+    return null;
+  });
 
-  if (sessionData.session?.user) {
-    return sessionData.session.user;
+  if (sessionResponse?.data.session?.user) {
+    return sessionResponse.data.session.user;
   }
 
-  if (sessionError) {
-    console.error("Не удалось прочитать сессию Supabase:", sessionError.message);
+  if (sessionResponse?.error) {
+    console.error(
+      "Не удалось прочитать сессию Supabase:",
+      sessionResponse.error.message,
+    );
   }
 
-  const { data, error } = await supabase.auth.getUser();
+  const userResponse = await withTimeout(
+    supabase.auth.getUser(),
+    SUPABASE_AUTH_TIMEOUT_MS,
+    null,
+    "Supabase getUser",
+  ).catch((error) => {
+    console.error("Не удалось получить пользователя Supabase:", error?.message || error);
+    return null;
+  });
 
-  if (error || !data.user) {
+  if (userResponse?.error || !userResponse?.data.user) {
     return null;
   }
 
-  return data.user;
+  return userResponse.data.user;
 }
 
 export async function loadMovieActions(): Promise<MovieActionState> {
@@ -88,13 +131,27 @@ export async function loadMovieActions(): Promise<MovieActionState> {
     return emptyMovieActionState;
   }
 
-  const { data, error } = await supabase
-    .from("user_movie_actions")
-    .select("movie_id, action")
-    .eq("user_id", user.id);
+  const response = await withTimeout(
+    supabase
+      .from("user_movie_actions")
+      .select("movie_id, action")
+      .eq("user_id", user.id),
+    SUPABASE_QUERY_TIMEOUT_MS,
+    null,
+    "Загрузка действий пользователя",
+  ).catch((error) => {
+    console.error("Не удалось загрузить действия пользователя:", error?.message || error);
+    return null;
+  });
 
-  if (error || !data) {
-    console.error("Не удалось загрузить действия пользователя:", error?.message);
+  if (!response?.data) {
+    if (response?.error) {
+      console.error(
+        "Не удалось загрузить действия пользователя:",
+        response.error.message,
+      );
+    }
+
     return emptyMovieActionState;
   }
 
@@ -105,7 +162,7 @@ export async function loadMovieActions(): Promise<MovieActionState> {
     watchingItemIds: [],
   };
 
-  data.forEach((row) => {
+  response.data.forEach((row) => {
     const movieId = Number(row.movie_id);
 
     if (!Number.isFinite(movieId)) {
