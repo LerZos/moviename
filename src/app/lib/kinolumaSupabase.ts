@@ -28,7 +28,7 @@ const SUPABASE_AUTH_TIMEOUT_MS = 4500;
 const SUPABASE_QUERY_TIMEOUT_MS = 6000;
 
 function withTimeout<T, F>(
-  promise: Promise<T>,
+  promise: PromiseLike<T>,
   ms: number,
   fallback: F,
   label: string,
@@ -42,7 +42,7 @@ function withTimeout<T, F>(
     }, ms);
   });
 
-  return Promise.race([promise, timeoutPromise]).finally(() => {
+  return Promise.race([Promise.resolve(promise), timeoutPromise]).finally(() => {
     if (timeoutId !== undefined) {
       clearTimeout(timeoutId);
     }
