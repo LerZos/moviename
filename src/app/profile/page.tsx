@@ -640,6 +640,10 @@ export default function ProfilePage() {
 
       if (savedUser) {
         setCurrentUser(savedUser);
+        setWatchLaterIds(localActions.watchLaterIds);
+        setLikedItemIds(localActions.likedItemIds);
+        setDislikedItemIds(localActions.dislikedItemIds);
+        setIsLoaded(true);
       }
 
       try {
@@ -653,8 +657,13 @@ export default function ProfilePage() {
         }
 
         if (!user) {
-          setCurrentUser(null);
-          removeCurrentUserFromStorage();
+          if (savedUser) {
+            setCurrentUser(savedUser);
+          } else {
+            setCurrentUser(null);
+            removeCurrentUserFromStorage();
+          }
+
           setWatchLaterIds(localActions.watchLaterIds);
           setLikedItemIds(localActions.likedItemIds);
           setDislikedItemIds(localActions.dislikedItemIds);
