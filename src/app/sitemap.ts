@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 
+import { seoCollections } from "./data/collections";
 import { movies } from "./data/movies";
 import {
   catalogRoutes,
@@ -17,6 +18,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "daily" as const,
       priority: 1,
     },
+    {
+      url: `${siteUrl}/collections`,
+      lastModified: now,
+      changeFrequency: "weekly" as const,
+      priority: 0.86,
+    },
+    ...seoCollections.map((collection) => ({
+      url: `${siteUrl}/collections/${collection.slug}`,
+      lastModified: now,
+      changeFrequency: "weekly" as const,
+      priority: 0.84,
+    })),
     ...catalogRoutes.map((route) => ({
       url: `${siteUrl}/catalog/${route.slug}`,
       lastModified: now,
