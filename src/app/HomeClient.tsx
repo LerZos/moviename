@@ -1252,6 +1252,29 @@ export default function Home() {
     setAuthError("");
   }
 
+  function loadLocalMovieActions() {
+    return {
+      ...emptyMovieActionState,
+      watchLaterIds: readNumberArrayFromStorage("kinoluma-watch-later"),
+      likedItemIds: readNumberArrayFromStorage("kinoluma-liked-items"),
+      dislikedItemIds: readNumberArrayFromStorage("kinoluma-disliked-items"),
+    };
+  }
+
+  function loadActionsAfterAuth() {
+    void loadMovieActions()
+      .catch(() => loadLocalMovieActions())
+      .then((actions) => {
+        setWatchLaterIds(actions.watchLaterIds);
+        setLikedItemIds(actions.likedItemIds);
+        setDislikedItemIds(actions.dislikedItemIds);
+      })
+      .finally(() => {
+        setIsWatchLaterLoaded(true);
+        setIsReactionsLoaded(true);
+      });
+  }
+
   function openAuthModal(mode: AuthMode) {
     setAuthMode(mode);
     setIsAuthModalOpen(true);
@@ -1320,12 +1343,10 @@ export default function Home() {
       const mappedUser = mapSupabaseUser(data.user);
       setCurrentUser(mappedUser);
       saveCurrentUser(mappedUser);
-
-      const actions = await loadMovieActions().catch(() => emptyMovieActionState);
-      setWatchLaterIds(actions.watchLaterIds);
-      setLikedItemIds(actions.likedItemIds);
-      setDislikedItemIds(actions.dislikedItemIds);
+      setIsWatchLaterLoaded(true);
+      setIsReactionsLoaded(true);
       closeAuthModal();
+      loadActionsAfterAuth();
       return;
     }
 
@@ -1342,12 +1363,10 @@ export default function Home() {
     const mappedUser = mapSupabaseUser(data.user);
     setCurrentUser(mappedUser);
     saveCurrentUser(mappedUser);
-
-    const actions = await loadMovieActions().catch(() => emptyMovieActionState);
-    setWatchLaterIds(actions.watchLaterIds);
-    setLikedItemIds(actions.likedItemIds);
-    setDislikedItemIds(actions.dislikedItemIds);
+    setIsWatchLaterLoaded(true);
+    setIsReactionsLoaded(true);
     closeAuthModal();
+    loadActionsAfterAuth();
   }
 
   async function handleLogout() {
