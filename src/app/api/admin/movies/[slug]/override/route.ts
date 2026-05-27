@@ -50,7 +50,7 @@ function cleanObjectArray(value: unknown) {
 }
 
 function buildOverridePayload(body: Record<string, unknown>): MovieOverrideData {
-  const payload: MovieOverrideData = {};
+  const payload: Record<string, unknown> = {};
 
   const stringFields = [
     'title',
@@ -73,7 +73,7 @@ function buildOverridePayload(body: Record<string, unknown>): MovieOverrideData 
   }
 
   const year = cleanNumber(body.year);
-  if (year !== undefined) payload.year = year;
+  if (year !== undefined) payload.year = String(year);
 
   const rating = cleanNumber(body.rating);
   if (rating !== undefined) payload.rating = rating;
@@ -102,7 +102,7 @@ function buildOverridePayload(body: Record<string, unknown>): MovieOverrideData 
   const posterFallbacks = cleanStringArray(body.posterFallbacks);
   if (posterFallbacks) payload.posterFallbacks = posterFallbacks;
 
-  return payload;
+  return payload as MovieOverrideData;
 }
 
 export async function PUT(request: Request, context: RouteContext) {

@@ -1519,7 +1519,11 @@ export default function Home() {
     setSelectedGenre("Все");
   }
 
-  function highlightCategorySection(section: HTMLElement) {
+  function highlightCategorySection(section: HTMLElement | null) {
+    if (!section) {
+      return;
+    }
+
     if (categoryHighlightTimeoutRef.current !== null) {
       window.clearTimeout(categoryHighlightTimeoutRef.current);
       categoryHighlightTimeoutRef.current = null;
