@@ -751,7 +751,7 @@ export default function MoviePageClient({ movie, allMovies = staticAllMovies }: 
 
                 <h3>{activePlayer.name}</h3>
 
-                <p>Плеер будет здесь после подключения легальной embed-ссылки.</p>
+                <p>Технические работы с плеерами, возвращайтесь позже.</p>
               </div>
             )}
           </div>
