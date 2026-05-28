@@ -67,6 +67,7 @@ type Draft = {
   trailer_url: string | null;
   trailer_embed_url: string | null;
   trailer_source: string | null;
+  player_links: string | null;
   trailer_confidence: number | null;
   trailer_status: string | null;
   similar_movie_ids: unknown[] | null;
@@ -98,6 +99,7 @@ type ManualDraftForm = {
   trailer_key: string;
   trailer_status: string;
   trailer_confidence: string;
+  player_links: string;
   moderation_notes: string;
 };
 
@@ -346,6 +348,7 @@ function draftToManualForm(draft: Draft): ManualDraftForm {
     trailer_key: draft.trailer_key ?? '',
     trailer_status: draft.trailer_status ?? '',
     trailer_confidence: draft.trailer_confidence?.toString() ?? '',
+    player_links: draft.player_links ?? '',
     moderation_notes: draft.moderation_notes ?? '',
   };
 }
@@ -495,6 +498,7 @@ export default function ImportDashboardClient() {
       'Черновик создан',
     );
   }
+
 
   function moderateDraft(draftId: string) {
     return runPost('/api/admin/import/moderate', { draftId }, 'Проверка выполнена');
@@ -1172,6 +1176,7 @@ function DraftCard({
             <Info label="Slug" value={draft.slug ?? '—'} />
             <Info label="Trailer" value={`${statusLabel(draft.trailer_status)} · ${draft.trailer_confidence ?? 0}`} />
             <Info label="FAQ" value={Array.isArray(draft.faq) && draft.faq.length ? `${draft.faq.length}` : 'Нет'} />
+            <Info label="Плееры" value={draft.player_links?.trim() ? 'Есть' : 'Нет'} />
           </div>
 
           <div className="quality-card">
@@ -1208,7 +1213,7 @@ function DraftCard({
             type="button"
             onClick={() => onAction(draft.id, 'publish_safe_click')}
             disabled={isWorking || draft.status !== 'ready'}
-            title="Безопасный режим: пока сохраняется только feedback, публичная публикация будет отдельным этапом"
+            title="Публикует черновик вручную: статус станет published, публичная страница и sitemap обновятся"
             className="primary-button"
           >
             <ShieldCheck size={17} strokeWidth={2.4} aria-hidden="true" />
@@ -1337,6 +1342,12 @@ function ManualEditModal({
           <EditField label="Trailer key" value={form.trailer_key} onChange={(value) => onChange('trailer_key', value)} />
           <EditField label="Trailer status" value={form.trailer_status} onChange={(value) => onChange('trailer_status', value)} />
           <EditField label="Trailer confidence" value={form.trailer_confidence} onChange={(value) => onChange('trailer_confidence', value)} />
+          <EditTextarea
+            label="Плееры фильма"
+            value={form.player_links}
+            onChange={(value) => onChange('player_links', value)}
+            placeholder={'Основной | https://...\nЗапасной | https://...'}
+          />
           <EditTextarea label="Описание" value={form.description} onChange={(value) => onChange('description', value)} />
           <EditTextarea label="Long description" value={form.long_description} onChange={(value) => onChange('long_description', value)} />
           <EditTextarea label="FAQ JSON" value={form.faq_json} onChange={(value) => onChange('faq_json', value)} placeholder='[{"question":"...","answer":"..."}]' />

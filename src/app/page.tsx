@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import HomeClient from "./HomeClient";
 
 import { getHomePageJsonLd, siteUrl } from "./lib/seo";
+import { getPublicMovies } from "./lib/movies/movieOverrides";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -50,7 +51,9 @@ export const metadata: Metadata = {
   },
 };
 
-export default function Page() {
+export default async function Page() {
+  const publicMovies = await getPublicMovies();
+
   return (
     <>
       <script
@@ -59,7 +62,7 @@ export default function Page() {
           __html: JSON.stringify(getHomePageJsonLd()),
         }}
       />
-      <HomeClient />
+      <HomeClient initialContent={publicMovies} />
     </>
   );
 }

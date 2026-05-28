@@ -52,6 +52,23 @@ function asObject(value: unknown): Record<string, unknown> {
   return value as Record<string, unknown>;
 }
 
+function getDraftPlayerLinks(rawJson: unknown) {
+  const raw = asObject(rawJson);
+  const kinoluma = asObject(raw.kinoluma);
+  const players = Array.isArray(kinoluma.players) ? kinoluma.players : [];
+
+  return players
+    .map((player) => {
+      const item = asObject(player);
+      const name = typeof item.name === 'string' && item.name.trim() ? item.name.trim() : 'Плеер';
+      const embedUrl = typeof item.embedUrl === 'string' ? item.embedUrl.trim() : '';
+
+      return embedUrl ? `${name} | ${embedUrl}` : '';
+    })
+    .filter(Boolean)
+    .join('\n');
+}
+
 function getCandidatePosterUrl(raw: unknown) {
   const data = asObject(raw) as CandidateRawJson;
 
@@ -217,7 +234,7 @@ export async function GET(request: Request) {
     const { data: drafts, error: draftsError } = await supabaseAdmin
       .from('movie_drafts')
       .select(
-        'id, title, original_title, slug, year, type, genres, poster_url, backdrop_url, tmdb_id, kinopoisk_id, imdb_id, actors, directors, description, long_description, seo_title, seo_description, faq, trailer_provider, trailer_key, trailer_url, trailer_embed_url, trailer_source, trailer_confidence, trailer_status, similar_movie_ids, source, status, quality_score, moderation_notes, created_at, updated_at',
+        'id, title, original_title, slug, year, type, genres, poster_url, backdrop_url, tmdb_id, kinopoisk_id, imdb_id, actors, directors, description, long_description, seo_title, seo_description, faq, trailer_provider, trailer_key, trailer_url, trailer_embed_url, trailer_source, trailer_confidence, trailer_status, similar_movie_ids, source, status, quality_score, moderation_notes, raw_json, created_at, updated_at',
       )
       .order('created_at', { ascending: false })
       .limit(120);
@@ -253,7 +270,14 @@ export async function GET(request: Request) {
         created_at: candidate.created_at,
         updated_at: candidate.updated_at,
       })),
-      drafts: drafts ?? [],
+      drafts: (drafts ?? []).map((draft) => {
+        const { raw_json: rawJson, ...publicDraft } = draft as Record<string, unknown>;
+
+        return {
+          ...publicDraft,
+          player_links: getDraftPlayerLinks(rawJson),
+        };
+      }),
       runs: runs ?? [],
       counts: {
         newCandidates: newCandidatesCount,

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { movies } from "../../data/movies";
-import { getMovieWithOverrides } from "../../lib/movies/movieOverrides";
+import { getMovieWithOverrides, getPublicMovies } from "../../lib/movies/movieOverrides";
 import {
   absoluteUrl,
   getMovieBreadcrumbJsonLd,
@@ -105,6 +105,8 @@ export default async function MoviePage({ params }: MoviePageProps) {
     notFound();
   }
 
+  const publicMovies = await getPublicMovies();
+
   return (
     <>
       <script
@@ -135,7 +137,7 @@ export default async function MoviePage({ params }: MoviePageProps) {
         }}
       />
 
-      <MoviePageClient movie={movie} />
+      <MoviePageClient movie={movie} allMovies={publicMovies} />
     </>
   );
 }

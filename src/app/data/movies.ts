@@ -29,13 +29,52 @@ export type Movie = {
   genres: string[];
   poster: string;
   posterFallbacks?: string[];
+  backdrop?: string;
   description: string;
   trailerUrl: string;
+  tmdbId?: number;
+  imdbId?: string;
+  countries?: string[];
   longDescription?: string;
   facts?: MovieFact[];
   cast?: CastMember[];
   players?: PlayerProvider[];
 };
+
+function createKinoLumaPoster(title: string, originalTitle: string, label = "ФИЛЬМ") {
+  const safeTitle = escapePosterText(title.toUpperCase());
+  const safeOriginalTitle = escapePosterText(originalTitle);
+  const safeLabel = escapePosterText(label);
+
+  const svg = `
+    <svg width="500" height="750" viewBox="0 0 500 750" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="bg" x1="0" y1="0" x2="0" y2="750" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#2f2f35"/>
+          <stop offset="52%" stop-color="#0b0b0b"/>
+          <stop offset="100%" stop-color="#000000"/>
+        </linearGradient>
+        <radialGradient id="glow" cx="50%" cy="20%" r="70%">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.24"/>
+          <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <rect width="500" height="750" fill="url(#bg)"/>
+      <rect width="500" height="750" fill="url(#glow)"/>
+      <rect x="30" y="30" width="440" height="690" rx="36" stroke="#ffffff" stroke-opacity="0.16" stroke-width="2"/>
+      <circle cx="250" cy="270" r="118" fill="#ffffff" opacity="0.055"/>
+      <circle cx="250" cy="270" r="78" stroke="#ffffff" stroke-opacity="0.20" stroke-width="12"/>
+      <path d="M226 222V318L306 270L226 222Z" fill="#ffffff" opacity="0.88"/>
+      <rect x="124" y="394" width="252" height="44" rx="22" fill="#ffffff" fill-opacity="0.92"/>
+      <text x="250" y="423" text-anchor="middle" fill="#000000" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="900" letter-spacing="3">${safeLabel}</text>
+      <text x="250" y="510" text-anchor="middle" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="32" font-weight="900">${safeTitle}</text>
+      <text x="250" y="558" text-anchor="middle" fill="#a3a3a3" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="800">${safeOriginalTitle}</text>
+      <text x="250" y="662" text-anchor="middle" fill="#737373" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="900">KinoLuma</text>
+    </svg>
+  `;
+
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
 
 
 function escapePosterText(text: string) {
@@ -6256,6 +6295,160 @@ export const movies: Movie[] = [
         { id: "player-3", name: "Плеер 3", embedUrl: "" },
       ],
     },
+
+  {
+      id: 105,
+      tmdbId: 64688,
+      imdbId: "tt1232829",
+      slug: "21-jump-street",
+      title: "Мачо и ботан",
+      originalTitle: "21 Jump Street",
+      searchTitles: ["мачо и ботан", "21 jump street", "джамп стрит", "мачо и ботан 1"],
+      type: "Фильм",
+      year: "2012",
+      rating: 7.2,
+      genres: ["Комедия", "Боевик", "Криминал"],
+      countries: ["США"],
+      poster: createKinoLumaPoster("Мачо и ботан", "21 Jump Street"),
+      description: "Два молодых полицейских идут под прикрытием в школу, чтобы раскрыть дело о новой опасной партии наркотиков.",
+      trailerUrl: "",
+      longDescription:
+        "«Мачо и ботан» — комедийный боевик 2012 года о двух напарниках, которым приходится вернуться в школьную среду под прикрытием. Фильм держится на контрасте характеров, быстрых шутках и полицейской истории, где расследование постоянно сталкивается с подростковыми правилами, комплексами и неожиданной сменой ролей. На KinoLuma карточка подготовлена без выдуманных идентификаторов и с нейтральным описанием: если нужны точные внешние ID или плеер, их можно добавить вручную через админку.",
+      facts: [
+        { label: "Год", value: "2012" },
+        { label: "Тип", value: "Фильм" },
+        { label: "Страна", value: "США" },
+        { label: "Длительность", value: "109 мин" },
+        { label: "Режиссёр", value: "Phil Lord, Christopher Miller" },
+      ],
+      cast: [
+        { name: "Jonah Hill", role: "Мортон Шмидт" },
+        { name: "Channing Tatum", role: "Грег Дженко" },
+        { name: "Brie Larson", role: "Молли" },
+        { name: "Dave Franco", role: "Эрик" },
+        { name: "Ice Cube", role: "Капитан Диксон" },
+      ],
+      players: [
+        { id: "player-1", name: "Плеер 1", embedUrl: "" },
+        { id: "player-2", name: "Плеер 2", embedUrl: "" },
+        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+      ],
+    },
+  {
+      id: 106,
+      tmdbId: 187017,
+      imdbId: "tt2294449",
+      slug: "22-jump-street",
+      title: "Мачо и ботан 2",
+      originalTitle: "22 Jump Street",
+      searchTitles: ["мачо и ботан 2", "22 jump street", "джамп стрит 2"],
+      type: "Фильм",
+      year: "2014",
+      rating: 7.0,
+      genres: ["Комедия", "Боевик", "Криминал"],
+      countries: ["США"],
+      poster: createKinoLumaPoster("Мачо и ботан 2", "22 Jump Street"),
+      description: "Шмидт и Дженко снова работают под прикрытием, но теперь расследование переносит их в колледж.",
+      trailerUrl: "",
+      longDescription:
+        "«Мачо и ботан 2» — продолжение комедийного боевика о напарниках Шмидте и Дженко. На этот раз герои отправляются в колледж, где расследование снова смешивается с дружбой, конфликтами, абсурдными ситуациями и пародией на жанр полицейского кино. Карточка KinoLuma оставляет плееры пустыми до ручного добавления embed-ссылок в админке, чтобы не подставлять случайные источники вместо проверенного плеера.",
+      facts: [
+        { label: "Год", value: "2014" },
+        { label: "Тип", value: "Фильм" },
+        { label: "Страна", value: "США" },
+        { label: "Длительность", value: "112 мин" },
+        { label: "Режиссёр", value: "Phil Lord, Christopher Miller" },
+      ],
+      cast: [
+        { name: "Jonah Hill", role: "Мортон Шмидт" },
+        { name: "Channing Tatum", role: "Грег Дженко" },
+        { name: "Ice Cube", role: "Капитан Диксон" },
+        { name: "Peter Stormare", role: "Призрак" },
+        { name: "Jillian Bell", role: "Мерседес" },
+      ],
+      players: [
+        { id: "player-1", name: "Плеер 1", embedUrl: "" },
+        { id: "player-2", name: "Плеер 2", embedUrl: "" },
+        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+      ],
+    },
+  {
+      id: 107,
+      tmdbId: 18785,
+      imdbId: "tt1119646",
+      slug: "the-hangover",
+      title: "Мальчишник в Вегасе",
+      originalTitle: "The Hangover",
+      searchTitles: ["мальчишник в вегасе", "the hangover", "похмелье"],
+      type: "Фильм",
+      year: "2009",
+      rating: 7.7,
+      genres: ["Комедия"],
+      countries: ["США"],
+      poster: createKinoLumaPoster("Мальчишник в Вегасе", "The Hangover"),
+      description: "После бурной ночи в Лас-Вегасе друзья просыпаются без памяти и пытаются найти пропавшего жениха.",
+      trailerUrl: "",
+      longDescription:
+        "«Мальчишник в Вегасе» — комедия 2009 года о компании друзей, чей праздник в Лас-Вегасе превращается в хаотичное расследование собственных вчерашних поступков. Герои собирают события по уликам, пытаются найти жениха и успеть к свадьбе. Описание на KinoLuma сделано нейтрально и без лишних подробностей: карточку можно расширить через редактор фильма, добавив проверенный плеер, постер, факты или дополнительные поля.",
+      facts: [
+        { label: "Год", value: "2009" },
+        { label: "Тип", value: "Фильм" },
+        { label: "Страна", value: "США" },
+        { label: "Длительность", value: "100 мин" },
+        { label: "Режиссёр", value: "Todd Phillips" },
+      ],
+      cast: [
+        { name: "Bradley Cooper", role: "Фил" },
+        { name: "Ed Helms", role: "Стю" },
+        { name: "Zach Galifianakis", role: "Алан" },
+        { name: "Justin Bartha", role: "Даг" },
+        { name: "Heather Graham", role: "Джейд" },
+      ],
+      players: [
+        { id: "player-1", name: "Плеер 1", embedUrl: "" },
+        { id: "player-2", name: "Плеер 2", embedUrl: "" },
+        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+      ],
+    },
+  {
+      id: 108,
+      tmdbId: 193893,
+      imdbId: "tt1924435",
+      slug: "lets-be-cops",
+      title: "Типа копы",
+      originalTitle: "Let's Be Cops",
+      searchTitles: ["типа копы", "let's be cops", "lets be cops"],
+      type: "Фильм",
+      year: "2014",
+      rating: 6.4,
+      genres: ["Комедия", "Боевик", "Криминал"],
+      countries: ["США"],
+      poster: createKinoLumaPoster("Типа копы", "Let's Be Cops"),
+      description: "Два друга случайно становятся местными знаменитостями после вечеринки в полицейской форме, но игра быстро становится опасной.",
+      trailerUrl: "",
+      longDescription:
+        "«Типа копы» — комедийный боевик 2014 года о двух друзьях, которые надевают полицейскую форму для вечеринки и неожиданно оказываются в центре внимания. Когда шутка начинает выглядеть слишком убедительно, героям приходится разбираться с настоящими проблемами и последствиями своей роли. Карточка добавлена в безопасном формате: плееры пустые, а факты не расширяются догадками без проверки.",
+      facts: [
+        { label: "Год", value: "2014" },
+        { label: "Тип", value: "Фильм" },
+        { label: "Страна", value: "США" },
+        { label: "Длительность", value: "104 мин" },
+        { label: "Режиссёр", value: "Luke Greenfield" },
+      ],
+      cast: [
+        { name: "Jake Johnson", role: "Райан" },
+        { name: "Damon Wayans Jr.", role: "Джастин" },
+        { name: "Nina Dobrev", role: "Джози" },
+        { name: "Rob Riggle", role: "Сигарс" },
+        { name: "Keegan-Michael Key", role: "Пупа" },
+      ],
+      players: [
+        { id: "player-1", name: "Плеер 1", embedUrl: "" },
+        { id: "player-2", name: "Плеер 2", embedUrl: "" },
+        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+      ],
+    },
+
 
 ];
 

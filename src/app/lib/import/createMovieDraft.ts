@@ -61,7 +61,15 @@ export async function createMovieDraft(candidate: ImportCandidate) {
       trailer_status: trailer.status,
       similar_movie_ids: [],
       source: facts.source,
-      raw_json: facts.rawJson,
+      raw_json: {
+        ...facts.rawJson,
+        kinoluma: {
+          ...(facts.rawJson.kinoluma && typeof facts.rawJson.kinoluma === 'object' && !Array.isArray(facts.rawJson.kinoluma)
+            ? facts.rawJson.kinoluma
+            : {}),
+          players: [],
+        },
+      },
       status: 'needs_ai_seo',
       quality_score: null,
       moderation_notes: null,

@@ -1,9 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import MobileBottomNav from "./components/MobileBottomNav";
-import { movies as content, type Movie } from "./data/movies";
+import { movies as staticContent, type Movie } from "./data/movies";
 import { supabase } from "./lib/supabase";
 import {
   emptyMovieActionState,
@@ -28,6 +29,10 @@ import {
 } from "react";
 
 type ContentItem = Movie;
+
+type HomeProps = {
+  initialContent?: Movie[];
+};
 
 type MovieCardProps = {
   item: ContentItem;
@@ -973,8 +978,12 @@ function MovieShelf({
   );
 }
 
-export default function Home() {
+export default function Home({ initialContent }: HomeProps) {
   const router = useRouter();
+  const content = useMemo(
+    () => (initialContent && initialContent.length > 0 ? initialContent : staticContent),
+    [initialContent],
+  );
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const filmsSectionRef = useRef<HTMLElement | null>(null);
   const seriesSectionRef = useRef<HTMLElement | null>(null);
@@ -1039,7 +1048,7 @@ export default function Home() {
       .filter((item): item is ContentItem => Boolean(item));
 
     return priorityItems.length > 0 ? priorityItems : content.slice(0, 12);
-  }, []);
+  }, [content]);
 
   const [featuredIndex, setFeaturedIndex] = useState(0);
 
@@ -1051,43 +1060,43 @@ export default function Home() {
 
   const allGenres = useMemo(() => {
     return getGenresForType(selectedType, content);
-  }, [selectedType]);
+  }, [selectedType, content]);
 
   const newReleasesContent = useMemo(() => {
     return content.filter((item) =>
       [32, 33, 34, 35, 36, 37, 38, 39].includes(item.id),
     );
-  }, []);
+  }, [content]);
 
   const curatedContent = useMemo(() => {
     return content.filter((item) =>
       [20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31].includes(item.id),
     );
-  }, []);
+  }, [content]);
 
   const filmShelfContent = useMemo(() => {
     return content.filter((item) => item.type === "Фильм").slice(0, 14);
-  }, []);
+  }, [content]);
 
   const animeShelfContent = useMemo(() => {
     return content.filter((item) => item.type === "Аниме");
-  }, []);
+  }, [content]);
 
   const cartoonShelfContent = useMemo(() => {
     return content.filter((item) => item.type === "Мультфильм");
-  }, []);
+  }, [content]);
 
   const seriesShelfContent = useMemo(() => {
     return content.filter((item) => item.type === "Сериал");
-  }, []);
+  }, [content]);
 
   const documentaryShelfContent = useMemo(() => {
     return content.filter((item) => item.type === "Документальный");
-  }, []);
+  }, [content]);
 
   const watchLaterContent = useMemo(() => {
     return content.filter((item) => watchLaterIds.includes(item.id));
-  }, [watchLaterIds]);
+  }, [content, watchLaterIds]);
 
   const filteredContent = useMemo(() => {
     const normalizedSearch = normalizeText(search);
@@ -1104,7 +1113,7 @@ export default function Home() {
 
       return matchesSearch && matchesType && matchesGenre;
     });
-  }, [search, selectedType, selectedGenre]);
+  }, [content, search, selectedType, selectedGenre]);
 
   const popularVisibleCount = popularVisibleRows * popularGridColumns;
   const popularContent = filteredContent.slice(0, popularVisibleCount);
@@ -3377,38 +3386,34 @@ export default function Home() {
             >
               Главная
             </button>
-            <button
-              type="button"
-              onClick={() => scrollToCategory(filmsSectionRef)}
+            <Link
+              href="/catalog/films"
               className="text-left transition duration-200 hover:text-white"
               draggable={false}
             >
               Фильмы
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollToCategory(seriesSectionRef)}
+            </Link>
+            <Link
+              href="/catalog/series"
               className="text-left transition duration-200 hover:text-white"
               draggable={false}
             >
               Сериалы
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollToCategory(animeSectionRef)}
+            </Link>
+            <Link
+              href="/catalog/anime"
               className="text-left transition duration-200 hover:text-white"
               draggable={false}
             >
               Аниме
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollToCategory(documentarySectionRef)}
+            </Link>
+            <Link
+              href="/catalog/documentaries"
               className="text-left transition duration-200 hover:text-white"
               draggable={false}
             >
               Документальные
-            </button>
+            </Link>
             <button
               type="button"
               onClick={openRandomPick}

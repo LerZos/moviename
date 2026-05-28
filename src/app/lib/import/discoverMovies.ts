@@ -24,6 +24,39 @@ type TmdbListResponse = {
   results: TmdbListItem[];
 };
 
+const MIN_DISCOVERY_VOTE_COUNT = 50;
+const MIN_DISCOVERY_RATING = 5;
+
+function todayDate() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function getReleaseDate(item: TmdbListItem) {
+  return item.release_date ?? item.first_air_date ?? '';
+}
+
+function isReleased(item: TmdbListItem) {
+  const releaseDate = getReleaseDate(item);
+
+  if (!releaseDate) return false;
+
+  return releaseDate <= todayDate();
+}
+
+function hasEnoughRatingData(item: TmdbListItem) {
+  const voteAverage = typeof item.vote_average === 'number' ? item.vote_average : 0;
+  const voteCount = typeof item.vote_count === 'number' ? item.vote_count : 0;
+
+  return voteAverage >= MIN_DISCOVERY_RATING && voteCount >= MIN_DISCOVERY_VOTE_COUNT;
+}
+
+function isGoodImportCandidate(item: TmdbListItem) {
+  const hasTitle = Boolean(item.title ?? item.name ?? item.original_title ?? item.original_name);
+  const hasPoster = Boolean(item.poster_path || item.backdrop_path);
+
+  return hasTitle && hasPoster && isReleased(item) && hasEnoughRatingData(item);
+}
+
 function getYear(value?: string): number | null {
   if (!value) return null;
   const year = Number(value.slice(0, 4));
@@ -83,9 +116,12 @@ export async function discoverMovies() {
   const runId = runInsert.data.id as string;
 
   try {
+    const today = todayDate();
     const endpoints: Array<{ path: string; mediaType: 'movie' | 'tv' }> = [
-      { path: '/trending/movie/day?language=ru-RU&page=1', mediaType: 'movie' },
-      { path: '/trending/tv/day?language=ru-RU&page=1', mediaType: 'tv' },
+      { path: `/trending/movie/day?language=ru-RU&page=1`, mediaType: 'movie' },
+      { path: `/trending/tv/day?language=ru-RU&page=1`, mediaType: 'tv' },
+      { path: `/discover/movie?language=ru-RU&page=1&include_adult=false&include_video=false&sort_by=popularity.desc&primary_release_date.lte=${today}&vote_count.gte=${MIN_DISCOVERY_VOTE_COUNT}&vote_average.gte=${MIN_DISCOVERY_RATING}`, mediaType: 'movie' },
+      { path: `/discover/tv?language=ru-RU&page=1&include_adult=false&sort_by=popularity.desc&first_air_date.lte=${today}&vote_count.gte=${MIN_DISCOVERY_VOTE_COUNT}&vote_average.gte=${MIN_DISCOVERY_RATING}`, mediaType: 'tv' },
       { path: '/movie/popular?language=ru-RU&page=1', mediaType: 'movie' },
       { path: '/tv/popular?language=ru-RU&page=1', mediaType: 'tv' },
     ];
@@ -101,6 +137,8 @@ export async function discoverMovies() {
 
     for (const response of responses) {
       for (const item of response.data.results ?? []) {
+        if (!isGoodImportCandidate(item)) continue;
+
         const candidate = normalizeCandidate(item, response.mediaType);
         if (!candidate.title) continue;
         candidatesByKey.set(`${candidate.source}:${candidate.source_id}`, candidate);

@@ -1,7 +1,7 @@
 import { revalidatePath } from 'next/cache';
 
 import { assertAdminAccess, getAdminUserFromRequest } from '../../../../../lib/import/adminAuth';
-import { getBaseMovieBySlug, saveMovieOverride, type MovieOverrideData } from '../../../../../lib/movies/movieOverrides';
+import { getPublicBaseMovieBySlug, saveMovieOverride, type MovieOverrideData } from '../../../../../lib/movies/movieOverrides';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -113,7 +113,7 @@ export async function PUT(request: Request, context: RouteContext) {
   const params = await context.params;
   const slug = params.slug;
 
-  const baseMovie = getBaseMovieBySlug(slug);
+  const baseMovie = await getPublicBaseMovieBySlug(slug);
 
   if (!baseMovie) {
     return Response.json(

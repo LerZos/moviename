@@ -9,7 +9,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { movies as allMovies, type Movie, type MovieFact, type PlayerProvider } from "../../data/movies";
+import { movies as staticAllMovies, type Movie, type MovieFact, type PlayerProvider } from "../../data/movies";
 import { supabase } from "../../lib/supabase";
 import {
   getCurrentSupabaseUser,
@@ -19,6 +19,7 @@ import {
 
 type MoviePageClientProps = {
   movie: Movie;
+  allMovies?: Movie[];
 };
 
 const WATCH_LATER_KEY = "kinoluma-watch-later";
@@ -86,6 +87,21 @@ function getDefaultFacts(movie: Movie): MovieFact[] {
 
 function getFactValue(facts: MovieFact[], label: string, fallback: string) {
   return facts.find((fact) => fact.label === label)?.value || fallback;
+}
+
+
+const HIDDEN_FACT_LABELS = new Set(["Жанры", "IMDb", "IMDB", "imdb"]);
+
+function isVisibleFact(fact: MovieFact) {
+  return !HIDDEN_FACT_LABELS.has(fact.label.trim());
+}
+
+function formatMovieRating(rating: number) {
+  if (!Number.isFinite(rating) || rating <= 0) {
+    return "—";
+  }
+
+  return `★ ${Number.isInteger(rating) ? rating.toString() : rating.toFixed(1)}`;
 }
 
 function getContentKind(movie: Movie) {
@@ -156,7 +172,7 @@ function getGeneratedPosterFallback(title: string) {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
-export default function MoviePageClient({ movie }: MoviePageClientProps) {
+export default function MoviePageClient({ movie, allMovies = staticAllMovies }: MoviePageClientProps) {
   const players = useMemo(
     () => (movie.players && movie.players.length > 0 ? movie.players : DEFAULT_PLAYERS),
     [movie.players],
@@ -191,7 +207,7 @@ export default function MoviePageClient({ movie }: MoviePageClientProps) {
       })
       .slice(0, 6)
       .map(({ item }) => item);
-  }, [movie.genres, movie.id, movie.type]);
+  }, [allMovies, movie.genres, movie.id, movie.type]);
 
   const cast = movie.cast || [];
   const contentKind = getContentKind(movie);
@@ -245,6 +261,8 @@ export default function MoviePageClient({ movie }: MoviePageClientProps) {
 
   const activePlayer =
     players.find((player) => player.id === activePlayerId) || players[0];
+  const visibleFacts = useMemo(() => facts.filter(isVisibleFact), [facts]);
+  const ratingText = formatMovieRating(movie.rating);
 
   const isWatchLater = watchLaterIds.includes(movie.id);
   const isLiked = likedItemIds.includes(movie.id);
@@ -253,7 +271,7 @@ export default function MoviePageClient({ movie }: MoviePageClientProps) {
 
   const duration = getFactValue(facts, "Длительность", movie.genres[0] || "—");
   const country = getFactValue(facts, "Страна", movie.type);
-  const budget = getFactValue(facts, "Бюджет", `★ ${movie.rating}`);
+  const budget = getFactValue(facts, "Бюджет", ratingText);
   const studio = getFactValue(facts, "Студия", movie.originalTitle);
 
   useEffect(() => {
@@ -531,7 +549,7 @@ export default function MoviePageClient({ movie }: MoviePageClientProps) {
             <div className="poster-footer">
               <div>
                 <span>Рейтинг</span>
-                <strong>★ {movie.rating}</strong>
+                <strong>{ratingText}</strong>
               </div>
 
               <div>
@@ -566,7 +584,7 @@ export default function MoviePageClient({ movie }: MoviePageClientProps) {
                 <p className="original-title">{movie.originalTitle}</p>
               </div>
 
-              <div className="rating-pill">★ {movie.rating}</div>
+              <div className="rating-pill">{ratingText}</div>
             </div>
 
             <div className="genre-row">
@@ -753,7 +771,7 @@ export default function MoviePageClient({ movie }: MoviePageClientProps) {
             </p>
 
             <div className="facts-grid">
-              {facts.map((fact) => (
+              {visibleFacts.map((fact) => (
                 <article key={fact.label} className="fact-card">
                   <span>{fact.label}</span>
                   <strong>{fact.value}</strong>

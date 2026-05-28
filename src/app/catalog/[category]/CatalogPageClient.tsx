@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 
-import { movies as content, type Movie } from "../../data/movies";
+import { movies as staticContent, type Movie } from "../../data/movies";
 
 type CatalogCategory = {
   type: string;
@@ -379,17 +379,23 @@ function CatalogMovieCard({
 type CatalogPageClientProps = {
   categorySlug?: string;
   genreSlug?: string;
+  initialContent?: Movie[];
 };
 
 export default function CatalogCategoryPage({
   categorySlug,
   genreSlug,
+  initialContent,
 }: CatalogPageClientProps) {
   const router = useRouter();
   const params = useParams<{ category?: string | string[]; genre?: string | string[] }>();
   const categoryKey = categorySlug ?? getCategoryKey(params.category);
   const activeGenreSlug = genreSlug ?? getCategoryKey(params.genre);
   const category = catalogCategories[categoryKey];
+  const content = useMemo(
+    () => (initialContent && initialContent.length > 0 ? initialContent : staticContent),
+    [initialContent],
+  );
 
   const [search, setSearch] = useState("");
   const [selectedGenre, setSelectedGenre] = useState("Все");
@@ -410,7 +416,7 @@ export default function CatalogCategoryPage({
     }
 
     return content.filter((item) => item.type === category.type);
-  }, [category]);
+  }, [category, content]);
 
   const genres = useMemo(() => {
     return [

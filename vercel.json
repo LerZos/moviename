@@ -1,8 +1,8 @@
 {
   "crons": [
     {
-      "path": "/api/cron/discover-movies",
-      "schedule": "0 5 * * *"
+      "path": "/api/cron/import-daily",
+      "schedule": "0 3 * * *"
     }
   ]
 }

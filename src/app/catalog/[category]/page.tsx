@@ -4,12 +4,12 @@ import {
   catalogRoutes,
   getBreadcrumbJsonLd,
   getCatalogFaqJsonLd,
-  getCatalogItems,
   getCatalogMetadata,
   getCatalogRoute,
   getCollectionPageJsonLd,
 } from "../../lib/seo";
 import CatalogPageClient from "./CatalogPageClient";
+import { getPublicMovies } from "../../lib/movies/movieOverrides";
 
 type CatalogPageProps = {
   params: Promise<{
@@ -36,7 +36,8 @@ export default async function CatalogCategoryPage({ params }: CatalogPageProps) 
     notFound();
   }
 
-  const items = getCatalogItems(route);
+  const publicMovies = await getPublicMovies();
+  const items = publicMovies.filter((movie) => movie.type === route.type);
 
   return (
     <>
@@ -66,7 +67,7 @@ export default async function CatalogCategoryPage({ params }: CatalogPageProps) 
         }}
       />
 
-      <CatalogPageClient categorySlug={category} />
+      <CatalogPageClient categorySlug={category} initialContent={publicMovies} />
     </>
   );
 }

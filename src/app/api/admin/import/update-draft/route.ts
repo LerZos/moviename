@@ -53,6 +53,65 @@ function cleanGenres(value: unknown) {
     .filter(Boolean);
 }
 
+function asRecord(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  return value as Record<string, unknown>;
+}
+
+function parsePlayerLinks(value: unknown) {
+  if (Array.isArray(value)) {
+    return value
+      .map((player, index) => {
+        const item = asRecord(player);
+        const embedUrl = cleanText(item.embedUrl);
+        if (!embedUrl) return null;
+
+        return {
+          id: cleanText(item.id) || `player-${index + 1}`,
+          name: cleanText(item.name) || `Плеер ${index + 1}`,
+          embedUrl,
+        };
+      })
+      .filter(Boolean);
+  }
+
+  if (typeof value !== 'string') return [];
+
+  return value
+    .split('\n')
+    .map((line, index) => {
+      const trimmed = line.trim();
+      if (!trimmed) return null;
+
+      const [namePart, ...urlParts] = trimmed.split('|');
+      const name = namePart?.trim() || `Плеер ${index + 1}`;
+      const embedUrl = urlParts.join('|').trim() || trimmed;
+
+      if (!embedUrl) return null;
+
+      return {
+        id: `player-${index + 1}`,
+        name,
+        embedUrl,
+      };
+    })
+    .filter(Boolean);
+}
+
+function mergePlayerLinksIntoRawJson(rawJson: unknown, playerLinks: unknown) {
+  const base = asRecord(rawJson);
+  const kinoluma = asRecord(base.kinoluma);
+
+  return {
+    ...base,
+    kinoluma: {
+      ...kinoluma,
+      players: parsePlayerLinks(playerLinks),
+      players_updated_at: new Date().toISOString(),
+    },
+  };
+}
+
 function parseFaq(value: unknown) {
   if (Array.isArray(value)) return value;
 
@@ -82,7 +141,7 @@ function parseFaq(value: unknown) {
     .filter(Boolean);
 }
 
-function buildUpdate(values: ManualDraftValues): UpdatePayload {
+function buildUpdate(values: ManualDraftValues, beforeDraft: Record<string, unknown>): UpdatePayload {
   const update: UpdatePayload = {
     updated_at: new Date().toISOString(),
   };
@@ -138,6 +197,10 @@ function buildUpdate(values: ManualDraftValues): UpdatePayload {
     update.faq = parseFaq(values.faq);
   }
 
+  if ('player_links' in values) {
+    update.raw_json = mergePlayerLinksIntoRawJson(beforeDraft.raw_json, values.player_links);
+  }
+
   return update;
 }
 
@@ -164,7 +227,7 @@ export async function POST(request: Request) {
 
     if (beforeError) throw beforeError;
 
-    const update = buildUpdate(values);
+    const update = buildUpdate(values, beforeDraft as Record<string, unknown>);
 
     const { data: updatedDraft, error: updateError } = await supabaseAdmin
       .from('movie_drafts')

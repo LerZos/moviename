@@ -1,3 +1,4 @@
+import { movies } from '../../data/movies';
 import { supabaseAdmin } from '../supabase/admin';
 
 type DuplicateInput = {
@@ -13,7 +14,35 @@ export type DuplicateResult = {
   draftId: string | null;
 };
 
+function normalizeString(value: unknown) {
+  return typeof value === 'string' ? value.trim().toLowerCase() : '';
+}
+
+function isDuplicateInStaticMovies(input: DuplicateInput) {
+  const slug = normalizeString(input.slug);
+  const imdbId = normalizeString(input.imdbId);
+
+  return movies.some((movie) => {
+    const movieRecord = movie as typeof movie & { tmdbId?: number; imdbId?: string };
+
+    if (slug && normalizeString(movie.slug) === slug) return true;
+    if (input.kinopoiskId && movie.kinopoiskId === input.kinopoiskId) return true;
+    if (input.tmdbId && movieRecord.tmdbId === input.tmdbId) return true;
+    if (imdbId && normalizeString(movieRecord.imdbId) === imdbId) return true;
+
+    return false;
+  });
+}
+
 export async function checkDuplicates(input: DuplicateInput): Promise<DuplicateResult> {
+  if (isDuplicateInStaticMovies(input)) {
+    return {
+      isDuplicate: true,
+      reason: 'Duplicate in src/app/data/movies.ts',
+      draftId: null,
+    };
+  }
+
   const checks: Array<{ column: string; value: string | number | null | undefined; label: string }> = [
     { column: 'tmdb_id', value: input.tmdbId, label: 'tmdb_id' },
     { column: 'kinopoisk_id', value: input.kinopoiskId, label: 'kinopoisk_id' },

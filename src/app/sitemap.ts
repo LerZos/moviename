@@ -1,15 +1,16 @@
 import type { MetadataRoute } from "next";
 
 import { seoCollections } from "./data/collections";
-import { movies } from "./data/movies";
+import { getPublicMovies } from "./lib/movies/movieOverrides";
 import {
   catalogRoutes,
   getCatalogGenreRoutes,
   siteUrl,
 } from "./lib/seo";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
+  const publicMovies = await getPublicMovies();
 
   return [
     {
@@ -42,7 +43,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "weekly" as const,
       priority: 0.76,
     })),
-    ...movies.map((movie) => ({
+    ...publicMovies.map((movie) => ({
       url: `${siteUrl}/movie/${movie.slug}`,
       lastModified: now,
       changeFrequency: "weekly" as const,
