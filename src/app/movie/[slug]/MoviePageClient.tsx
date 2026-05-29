@@ -92,6 +92,44 @@ function normalizePlayerButtonNames(players: PlayerProvider[]) {
   });
 }
 
+function getPlayerUniqueKey(player: PlayerProvider) {
+  const record = getPlayerRecord(player);
+  const type = String(record.type || record.provider || "iframe").toLowerCase();
+  const embedUrl = String(player.embedUrl || "").trim();
+  const contentKind = String(record.contentKind || record.contentType || "").trim();
+  const contentId = String(record.contentId || record.rendexVideoId || "").trim();
+
+  if (type === "rendex" && contentId) return `rendex:${contentId}`;
+  if ((type === "collapse" || type === "collaps") && contentId) {
+    return `collapse:${contentKind}:${contentId}`;
+  }
+  if ((type === "vibix" || type === "vibix-iframe" || record.provider === "vibix") && embedUrl) {
+    return `vibix:${embedUrl}`;
+  }
+
+  return embedUrl ? `${type}:${embedUrl}` : `${type}:${player.id}`;
+}
+
+function mergeGeneratedAndManualPlayers(
+  generatedPlayers: PlayerProvider[],
+  realPlayers: PlayerProvider[],
+) {
+  const seen = new Set<string>();
+  const merged: PlayerProvider[] = [];
+
+  for (const player of [...generatedPlayers, ...realPlayers]) {
+    if (!hasPlayablePlayer(player)) continue;
+
+    const key = getPlayerUniqueKey(player);
+    if (seen.has(key)) continue;
+
+    seen.add(key);
+    merged.push(player);
+  }
+
+  return merged;
+}
+
 function getRendexContentId(player: PlayerProvider) {
   const record = getPlayerRecord(player);
   return String(record.contentId || record.rendexVideoId || "").trim();
@@ -299,15 +337,9 @@ export default function MoviePageClient({
     const realPlayers = (movie.players || []).filter(hasPlayablePlayer);
 
     if (realPlayers.length > 0) {
-      const hasCollapse = realPlayers.some(isCollapsePlayer);
-      const generatedCollapsePlayers =
-        generatedPlayers.filter(isCollapsePlayer);
-      const mergedPlayers =
-        hasCollapse || generatedCollapsePlayers.length === 0
-          ? realPlayers
-          : [...generatedCollapsePlayers, ...realPlayers];
-
-      return normalizePlayerButtonNames(mergedPlayers);
+      return normalizePlayerButtonNames(
+        mergeGeneratedAndManualPlayers(generatedPlayers, realPlayers),
+      );
     }
 
     if (generatedPlayers.length > 0)

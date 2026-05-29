@@ -265,6 +265,27 @@ function statusTone(status: string | null) {
   return "neutral";
 }
 
+
+async function readJsonResponse(response: Response) {
+  const text = await response.text();
+
+  if (!text.trim()) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(text) as Record<string, unknown>;
+  } catch {
+    const shortText = text.length > 700 ? `${text.slice(0, 700)}...` : text;
+
+    throw new Error(
+      shortText.startsWith("Internal Server Error")
+        ? "Сервер вернул Internal Server Error. Посмотри терминал с npm run dev и пришли полный лог ошибки route.ts — браузер получил не JSON, а текст ошибки Next.js."
+        : shortText,
+    );
+  }
+}
+
 function shortText(value: string | null, limit = 210) {
   if (!value) return "—";
   if (value.length <= limit) return value;
@@ -578,7 +599,7 @@ export default function ImportDashboardClient() {
         },
       });
 
-      const payload = (await response.json()) as ImportListResponse;
+      const payload = (await readJsonResponse(response)) as ImportListResponse;
 
       if (!response.ok || !payload.ok) {
         throw new Error(payload.error || "Не удалось загрузить импорт");
@@ -622,7 +643,7 @@ export default function ImportDashboardClient() {
         body: JSON.stringify(body),
       });
 
-      const payload = await response.json();
+      const payload = (await readJsonResponse(response)) as { ok?: boolean; error?: string; message?: string };
 
       if (!response.ok || !payload.ok) {
         throw new Error(payload.error || "Запрос не выполнен");
@@ -658,6 +679,14 @@ export default function ImportDashboardClient() {
       type === "movie"
         ? "Vibix: фильмы добавлены в кандидаты"
         : "Vibix: сериалы добавлены в кандидаты",
+    );
+  }
+
+  function syncSiteWithVibix() {
+    return runPost(
+      "/api/admin/import/vibix/sync-site",
+      { mode: "missing", limit: 1000, makePrimary: false },
+      "Vibix подключён к фильмам сайта",
     );
   }
 
@@ -879,6 +908,15 @@ export default function ImportDashboardClient() {
                 >
                   <Layers3 size={18} strokeWidth={2.4} aria-hidden="true" />
                   Vibix: сериалы
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void syncSiteWithVibix()}
+                  disabled={isLoading || isWorking}
+                  className="secondary-button"
+                >
+                  <PlayCircle size={18} strokeWidth={2.4} aria-hidden="true" />
+                  Vibix: подключить сайт
                 </button>
                 <button
                   type="button"

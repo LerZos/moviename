@@ -40,24 +40,34 @@ function getMovieRatingFromRawJson(rawJson: unknown) {
   const tmdb = asRecord(raw.tmdb);
   const kinopoisk = asRecord(raw.kinopoisk);
   const candidate = asRecord(raw.candidate);
+  const kinoluma = asRecord(raw.kinoluma);
   const kinopoiskRating = asRecord(kinopoisk.rating);
   const kpRating = getNumber(kinopoiskRating.kp);
   const imdbRating = getNumber(kinopoiskRating.imdb);
   const tmdbRating = getNumber(tmdb.vote_average) ?? getNumber(candidate.vote_average);
   const tmdbVoteCount = getNumber(tmdb.vote_count) ?? getNumber(candidate.vote_count) ?? 0;
+  const manualRating =
+    getNumber(kinoluma.manual_rating) ??
+    getNumber(kinoluma.manual_movie_rating) ??
+    getNumber(kinoluma.movie_rating);
 
   if (kpRating && kpRating > 0) return kpRating;
   if (imdbRating && imdbRating > 0) return imdbRating;
   if (tmdbRating && tmdbRating > 0 && tmdbVoteCount > 0) return tmdbRating;
+  if (manualRating && manualRating > 0) return manualRating;
 
   return 0;
+}
+
+function getPublishRating(draft: PublishDraftCheckRow) {
+  return getMovieRatingFromRawJson(draft.raw_json);
 }
 
 function getPublishBlockReason(draft: PublishDraftCheckRow) {
   const title = typeof draft.title === 'string' ? draft.title : 'черновик';
   const year = getNumber(draft.year);
   const currentYear = new Date().getFullYear();
-  const rating = getMovieRatingFromRawJson(draft.raw_json);
+  const rating = getPublishRating(draft);
 
   if (!draft.poster_url && !draft.backdrop_url) {
     return `Нельзя опубликовать «${title}»: нет постера или backdrop.`;
@@ -68,7 +78,7 @@ function getPublishBlockReason(draft: PublishDraftCheckRow) {
   }
 
   if (!rating || rating <= 0) {
-    return `Нельзя опубликовать «${title}»: нет настоящего рейтинга из TMDB/Kinopoisk. Лучше оставить на проверке, а не выпускать пустую карточку.`;
+    return `Нельзя опубликовать «${title}»: нет рейтинга. Добавь рейтинг вручную или оставь карточку на проверке.`;
   }
 
   return null;

@@ -10,7 +10,7 @@ export const COLLAPSE_ACTUALIZE_SCRIPT_SRC =
 export const COLLAPSE_EMBED_BASE_URL = "https://api.ortified.ws/embed";
 
 export type KinoLumaPlayer = PlayerProvider & {
-  type?: "iframe" | "rendex" | "collapse" | "collapse-iframe";
+  type?: "iframe" | "rendex" | "collapse" | "collapse-iframe" | "vibix-iframe";
   provider?: string;
   publisherId?: string;
   contentType?: string;
@@ -205,6 +205,23 @@ function buildCollapseIframePlayer(
     name,
     type: "collapse-iframe",
     provider: "collapse",
+    embedUrl,
+  };
+}
+
+function buildVibixIframePlayer(
+  name: string,
+  url: unknown,
+  index = 0,
+): KinoLumaPlayer | null {
+  const embedUrl = cleanString(url);
+  if (!embedUrl) return null;
+
+  return {
+    id: `vibix-iframe-${index + 1}`,
+    name,
+    type: "vibix-iframe",
+    provider: "vibix",
     embedUrl,
   };
 }
@@ -789,6 +806,15 @@ function normalizePlayer(
     return player ? { ...player, id: cleanString(item.id) || player.id } : null;
   }
 
+  if (type === "vibix" || type === "vibix-iframe") {
+    const player = buildVibixIframePlayer(
+      name,
+      item.embedUrl || item.embed_url || item.url || item.iframe_url,
+      index,
+    );
+    return player ? { ...player, id: cleanString(item.id) || player.id } : null;
+  }
+
   if (
     type === "rendex" ||
     type === "graphicslab" ||
@@ -840,7 +866,8 @@ function normalizePlayer(
   return {
     id: cleanString(item.id) || `player-${index + 1}`,
     name,
-    type: "iframe",
+    type: type === "vibix" || type === "vibix-iframe" ? "vibix-iframe" : "iframe",
+    provider: cleanString(item.provider),
     embedUrl,
   };
 }
@@ -893,6 +920,14 @@ export function parsePlayerText(value: unknown): KinoLumaPlayer[] {
 
       if (type === "collapse-iframe" || type === "collaps-iframe") {
         return buildCollapseIframePlayer(
+          name,
+          parts.slice(2).join("|").trim(),
+          index,
+        );
+      }
+
+      if (type === "vibix" || type === "vibix-iframe") {
+        return buildVibixIframePlayer(
           name,
           parts.slice(2).join("|").trim(),
           index,
@@ -968,6 +1003,12 @@ export function playersToText(players: unknown) {
       if (player.type === "collapse-iframe") {
         return player.embedUrl
           ? `${player.name} | collapse-iframe | ${player.embedUrl}`
+          : "";
+      }
+
+      if (player.type === "vibix-iframe" || player.provider === "vibix") {
+        return player.embedUrl
+          ? `${player.name} | vibix | ${player.embedUrl}`
           : "";
       }
 

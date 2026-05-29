@@ -36,11 +36,17 @@ function cleanNumber(value: unknown) {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (typeof value !== "string") return null;
 
-  const trimmed = value.trim();
+  const trimmed = value.trim().replace(",", ".");
   if (!trimmed) return null;
 
   const parsed = Number(trimmed);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function cleanRating(value: unknown) {
+  const rating = cleanNumber(value);
+  if (rating === null) return null;
+  return Math.max(0, Math.min(10, Math.round(rating * 10) / 10));
 }
 
 function cleanGenres(value: unknown) {
@@ -335,6 +341,21 @@ function mergePlayerLinksIntoRawJson(
   };
 }
 
+function mergeManualRatingIntoRawJson(rawJson: unknown, rating: number | null) {
+  const base = asRecord(rawJson);
+  const kinoluma = asRecord(base.kinoluma);
+
+  return {
+    ...base,
+    kinoluma: {
+      ...kinoluma,
+      manual_rating: rating,
+      manual_movie_rating: rating,
+      manual_rating_updated_at: new Date().toISOString(),
+    },
+  };
+}
+
 function parseFaq(value: unknown) {
   if (Array.isArray(value)) return value;
 
@@ -433,6 +454,18 @@ function buildUpdate(
       beforeDraft.raw_json,
       values.player_links,
       beforeDraft.type,
+    );
+  }
+
+  if ("rating" in values || "movie_rating" in values) {
+    const ratingSource = "rating" in values ? values.rating : values.movie_rating;
+    const rating = cleanRating(ratingSource);
+
+    // Не пишем в отдельную колонку movie_rating: в текущей схеме KinoLuma
+    // рейтинг для админки и публикации считается из raw_json. Так фикс не требует миграции Supabase.
+    update.raw_json = mergeManualRatingIntoRawJson(
+      "raw_json" in update ? update.raw_json : beforeDraft.raw_json,
+      rating,
     );
   }
 
