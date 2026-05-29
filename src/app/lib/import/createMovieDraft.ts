@@ -1,21 +1,21 @@
-import { supabaseAdmin } from '../supabase/admin';
-import { checkDuplicates } from './checkDuplicates';
-import { fetchMovieFacts } from './fetchMovieFacts';
-import { findTrailer } from './findTrailer';
-import { generateSlug } from './generateSlug';
-import { mergeAutoPlayersIntoRawJson } from '../players';
-import type { ImportCandidate } from './types';
+import { supabaseAdmin } from "../supabase/admin";
+import { checkDuplicates } from "./checkDuplicates";
+import { fetchMovieFacts } from "./fetchMovieFacts";
+import { findTrailer } from "./findTrailer";
+import { generateSlug } from "./generateSlug";
+import { mergeAutoPlayersIntoRawJson } from "../players";
+import type { ImportCandidate } from "./types";
 
 function asRecord(value: unknown): Record<string, unknown> {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
   return value as Record<string, unknown>;
 }
 
 export async function createMovieDraft(candidate: ImportCandidate) {
   await supabaseAdmin
-    .from('import_candidates')
-    .update({ status: 'processing' })
-    .eq('id', candidate.id);
+    .from("import_candidates")
+    .update({ status: "processing" })
+    .eq("id", candidate.id);
 
   const facts = await fetchMovieFacts(candidate);
   const slug = generateSlug(facts.title, facts.year);
@@ -31,9 +31,9 @@ export async function createMovieDraft(candidate: ImportCandidate) {
 
   if (duplicate.isDuplicate) {
     await supabaseAdmin
-      .from('import_candidates')
+      .from("import_candidates")
       .update({
-        status: 'duplicate',
+        status: "duplicate",
         raw_json: {
           ...asRecord(candidate.raw_json),
           kinoluma_duplicate: {
@@ -43,7 +43,7 @@ export async function createMovieDraft(candidate: ImportCandidate) {
         },
         updated_at: new Date().toISOString(),
       })
-      .eq('id', candidate.id);
+      .eq("id", candidate.id);
 
     return { created: false, duplicate };
   }
@@ -51,11 +51,12 @@ export async function createMovieDraft(candidate: ImportCandidate) {
   const trailer = findTrailer(facts);
   const rawJsonWithPlayers = mergeAutoPlayersIntoRawJson(facts.rawJson, {
     kinopoiskId: facts.kinopoiskId,
+    imdbId: facts.imdbId,
     movieType: facts.type,
   });
 
   const { data, error } = await supabaseAdmin
-    .from('movie_drafts')
+    .from("movie_drafts")
     .insert({
       title: facts.title,
       original_title: facts.originalTitle,
@@ -85,26 +86,26 @@ export async function createMovieDraft(candidate: ImportCandidate) {
       similar_movie_ids: [],
       source: facts.source,
       raw_json: rawJsonWithPlayers,
-      status: 'needs_ai_seo',
+      status: "needs_ai_seo",
       quality_score: null,
       moderation_notes: null,
     })
-    .select('*')
+    .select("*")
     .single();
 
   if (error) {
     await supabaseAdmin
-      .from('import_candidates')
-      .update({ status: 'failed', updated_at: new Date().toISOString() })
-      .eq('id', candidate.id);
+      .from("import_candidates")
+      .update({ status: "failed", updated_at: new Date().toISOString() })
+      .eq("id", candidate.id);
 
     throw error;
   }
 
   await supabaseAdmin
-    .from('import_candidates')
-    .update({ status: 'drafted', updated_at: new Date().toISOString() })
-    .eq('id', candidate.id);
+    .from("import_candidates")
+    .update({ status: "drafted", updated_at: new Date().toISOString() })
+    .eq("id", candidate.id);
 
   return { created: true, draft: data };
 }

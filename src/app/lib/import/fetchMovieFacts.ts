@@ -1,4 +1,5 @@
 import { tmdbFetch, tmdbImage } from './tmdb';
+import { fetchVibixByImdbId, fetchVibixByKinopoiskId, unwrapVibixVideo } from './vibixApi';
 import type { ImportCandidate, MovieFacts, MovieType } from './types';
 
 type TmdbGenre = { id: number; name: string };
@@ -160,9 +161,33 @@ function detectVibixType(value: unknown): MovieType {
   return 'film';
 }
 
-function getVibixMovieFacts(candidate: ImportCandidate): MovieFacts {
+async function getVibixMovieFacts(candidate: ImportCandidate): Promise<MovieFacts> {
   const raw = asRecord(candidate.raw_json);
-  const vibix = asRecord(raw.vibix || raw);
+  let vibix = asRecord(raw.vibix || raw);
+  const initialKinopoiskId = cleanInt(vibix.kp_id) ?? cleanInt(vibix.kinopoisk_id) ?? cleanInt(raw.kp_id) ?? cleanInt(raw.kinopoisk_id);
+  const initialImdbId = cleanString(vibix.imdb_id) || cleanString(raw.imdb_id) || null;
+
+  if (!cleanString(vibix.poster_url) && !cleanString(vibix.backdrop_url)) {
+    try {
+      const payload = initialKinopoiskId
+        ? await fetchVibixByKinopoiskId(initialKinopoiskId)
+        : initialImdbId
+          ? await fetchVibixByImdbId(initialImdbId)
+          : null;
+      const fullVideo = unwrapVibixVideo(payload);
+
+      if (fullVideo) {
+        vibix = { ...vibix, ...fullVideo };
+      }
+    } catch (error) {
+      console.warn('[KinoLuma import] Vibix full video enrichment failed:', {
+        kinopoiskId: initialKinopoiskId,
+        imdbId: initialImdbId,
+        error: error instanceof Error ? error.message : error,
+      });
+    }
+  }
+
   const kinoluma = asRecord(raw.kinoluma);
   const title = cleanString(vibix.name_rus) || cleanString(vibix.name) || cleanString(candidate.title) || `Vibix ${cleanString(vibix.id)}`;
   const originalTitle = cleanString(vibix.name_original) || cleanString(vibix.name_eng) || candidate.original_title || null;

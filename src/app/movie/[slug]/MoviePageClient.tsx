@@ -3,21 +3,24 @@
 import Link from "next/link";
 import Script from "next/script";
 import MobileBottomNav from "../../components/MobileBottomNav";
+import { type MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
-  type MouseEvent,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import { movies as staticAllMovies, type Movie, type MovieFact, type PlayerProvider } from "../../data/movies";
+  movies as staticAllMovies,
+  type Movie,
+  type MovieFact,
+  type PlayerProvider,
+} from "../../data/movies";
 import { supabase } from "../../lib/supabase";
 import {
   getCurrentSupabaseUser,
   loadMovieActions,
   syncMovieAction,
 } from "../../lib/kinolumaSupabase";
-import { buildAutoPlayers, isAnimeAutoPlayerInput } from "../../lib/players";
+import {
+  buildAutoPlayers,
+  COLLAPSE_ACTUALIZE_SCRIPT_SRC,
+  isAnimeAutoPlayerInput,
+} from "../../lib/players";
 
 type MoviePageClientProps = {
   movie: Movie;
@@ -35,39 +38,103 @@ const DEFAULT_PLAYERS: PlayerProvider[] = [
   { id: "player-3", name: "Плеер 3", embedUrl: "" },
 ];
 
-
 const RENDEX_SCRIPT_SRC = "https://graphicslab.io/sdk/v2/rendex-sdk.min.js";
 
-function getPlayerRecord(player: PlayerProvider): PlayerProvider & Record<string, unknown> {
+function getPlayerRecord(
+  player: PlayerProvider,
+): PlayerProvider & Record<string, unknown> {
   return player as PlayerProvider & Record<string, unknown>;
 }
 
 function isRendexPlayer(player: PlayerProvider) {
   const record = getPlayerRecord(player);
-  return String(record.type || record.provider || '').toLowerCase() === 'rendex';
+  return (
+    String(record.type || record.provider || "").toLowerCase() === "rendex"
+  );
+}
+
+function isCollapsePlayer(player: PlayerProvider) {
+  const record = getPlayerRecord(player);
+  const type = String(record.type || record.provider || "").toLowerCase();
+  const embedUrl = String(player.embedUrl || "").trim();
+
+  return (
+    type === "collapse" ||
+    type === "collaps" ||
+    type === "collapse-iframe" ||
+    type === "collaps-iframe" ||
+    embedUrl.includes("api.ortified.ws/embed")
+  );
+}
+
+function hasPlayablePlayer(player: PlayerProvider) {
+  if (isRendexPlayer(player)) {
+    return Boolean(getRendexContentId(player));
+  }
+
+  return Boolean(player.embedUrl?.trim());
+}
+
+function normalizePlayerButtonNames(players: PlayerProvider[]) {
+  return players.map((player, index) => {
+    const record = getPlayerRecord(player);
+    const currentName = String(record.name || "").trim();
+
+    if (index === 0) {
+      return { ...record, name: currentName || "Основной" } as PlayerProvider;
+    }
+
+    if (!currentName || currentName.toLowerCase() === "основной") {
+      return { ...record, name: `Запасной ${index}` } as PlayerProvider;
+    }
+
+    return player;
+  });
 }
 
 function getRendexContentId(player: PlayerProvider) {
   const record = getPlayerRecord(player);
-  return String(record.contentId || record.rendexVideoId || '').trim();
+  return String(record.contentId || record.rendexVideoId || "").trim();
 }
 
 function getRendexPublisherId(player: PlayerProvider) {
   const record = getPlayerRecord(player);
-  return String(record.publisherId || '678053396').trim();
+  return String(record.publisherId || "678053396").trim();
 }
 
 function getRendexContentType(player: PlayerProvider, movie: Movie) {
   const record = getPlayerRecord(player);
-  const explicitType = String(record.contentType || '').trim();
+  const explicitType = String(record.contentType || "").trim();
   if (explicitType) return explicitType;
-  return movie.type === 'Сериал' ? 'series' : 'movie';
+  return movie.type === "Сериал" ? "series" : "movie";
 }
 
 function getRendexColor(player: PlayerProvider, key: string, fallback: string) {
   const record = getPlayerRecord(player);
   const value = record[key];
-  return typeof value === 'string' && value.trim() ? value.trim() : fallback;
+  return typeof value === "string" && value.trim() ? value.trim() : fallback;
+}
+
+
+function escapeHtmlAttribute(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
+function buildPlayerIframeHtml(player: PlayerProvider, movie: Movie) {
+  const src = escapeHtmlAttribute(player.embedUrl || "");
+  const title = escapeHtmlAttribute(`${player.name} — ${movie.title}`);
+  const allow = escapeHtmlAttribute(
+    isCollapsePlayer(player)
+      ? "autoplay *; fullscreen *; encrypted-media; picture-in-picture"
+      : "autoplay; fullscreen; encrypted-media; picture-in-picture",
+  );
+
+  return `<iframe src="${src}" title="${title}" class="player-iframe" allow="${allow}" allowfullscreen="" referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
 }
 
 function getInitials(name: string) {
@@ -126,7 +193,6 @@ function getFactValue(facts: MovieFact[], label: string, fallback: string) {
   return facts.find((fact) => fact.label === label)?.value || fallback;
 }
 
-
 const HIDDEN_FACT_LABELS = new Set(["Жанры", "IMDb", "IMDB", "imdb"]);
 
 function isVisibleFact(fact: MovieFact) {
@@ -176,12 +242,7 @@ function escapeSvgText(text: string) {
 
 function getGeneratedPosterFallback(title: string) {
   const safeTitle = escapeSvgText(
-    title
-      .split(" ")
-      .filter(Boolean)
-      .slice(0, 4)
-      .join(" ")
-      .toUpperCase(),
+    title.split(" ").filter(Boolean).slice(0, 4).join(" ").toUpperCase(),
   );
 
   const svg = `
@@ -209,32 +270,51 @@ function getGeneratedPosterFallback(title: string) {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
-export default function MoviePageClient({ movie, allMovies = staticAllMovies }: MoviePageClientProps) {
+export default function MoviePageClient({
+  movie,
+  allMovies = staticAllMovies,
+}: MoviePageClientProps) {
   const generatedPlayers = useMemo(
     () =>
       buildAutoPlayers({
         slug: movie.slug,
         kinopoiskId: movie.kinopoiskId,
+        imdbId: movie.imdbId,
         movieType: movie.type,
         genres: movie.genres,
       }),
-    [movie.genres, movie.kinopoiskId, movie.slug, movie.type],
+    [movie.genres, movie.imdbId, movie.kinopoiskId, movie.slug, movie.type],
   );
 
   const players = useMemo(() => {
-    const realPlayers = (movie.players || []).filter((player) => {
-      if (isRendexPlayer(player)) {
-        return Boolean(getRendexContentId(player));
-      }
+    if (
+      isAnimeAutoPlayerInput({
+        movieType: movie.type,
+        genres: movie.genres,
+      })
+    ) {
+      return DEFAULT_PLAYERS;
+    }
 
-      return Boolean(player.embedUrl?.trim());
-    });
+    const realPlayers = (movie.players || []).filter(hasPlayablePlayer);
 
-    if (realPlayers.length > 0) return realPlayers;
-    if (generatedPlayers.length > 0) return generatedPlayers;
+    if (realPlayers.length > 0) {
+      const hasCollapse = realPlayers.some(isCollapsePlayer);
+      const generatedCollapsePlayers =
+        generatedPlayers.filter(isCollapsePlayer);
+      const mergedPlayers =
+        hasCollapse || generatedCollapsePlayers.length === 0
+          ? realPlayers
+          : [...generatedCollapsePlayers, ...realPlayers];
+
+      return normalizePlayerButtonNames(mergedPlayers);
+    }
+
+    if (generatedPlayers.length > 0)
+      return normalizePlayerButtonNames(generatedPlayers);
 
     return DEFAULT_PLAYERS;
-  }, [generatedPlayers, movie.players]);
+  }, [generatedPlayers, movie.genres, movie.players, movie.type]);
 
   const isAnimePlayerUnavailable = useMemo(
     () =>
@@ -246,7 +326,10 @@ export default function MoviePageClient({ movie, allMovies = staticAllMovies }: 
   );
 
   const facts = useMemo(
-    () => (movie.facts && movie.facts.length > 0 ? movie.facts : getDefaultFacts(movie)),
+    () =>
+      movie.facts && movie.facts.length > 0
+        ? movie.facts
+        : getDefaultFacts(movie),
     [movie],
   );
 
@@ -256,7 +339,9 @@ export default function MoviePageClient({ movie, allMovies = staticAllMovies }: 
     return allMovies
       .filter((item) => item.id !== movie.id)
       .map((item) => {
-        const sharedGenres = item.genres.filter((genre) => currentGenres.has(genre));
+        const sharedGenres = item.genres.filter((genre) =>
+          currentGenres.has(genre),
+        );
         const score =
           sharedGenres.length * 4 +
           (item.type === movie.type ? 2 : 0) +
@@ -264,7 +349,10 @@ export default function MoviePageClient({ movie, allMovies = staticAllMovies }: 
 
         return { item, sharedGenres, score };
       })
-      .filter(({ item, sharedGenres }) => sharedGenres.length > 0 || item.type === movie.type)
+      .filter(
+        ({ item, sharedGenres }) =>
+          sharedGenres.length > 0 || item.type === movie.type,
+      )
       .sort((firstItem, secondItem) => {
         if (secondItem.score !== firstItem.score) {
           return secondItem.score - firstItem.score;
@@ -514,7 +602,8 @@ export default function MoviePageClient({ movie, allMovies = staticAllMovies }: 
       window.scrollTo(0, startY + distance * easedProgress);
 
       if (progress < 1) {
-        smoothScrollFrameRef.current = window.requestAnimationFrame(animateScroll);
+        smoothScrollFrameRef.current =
+          window.requestAnimationFrame(animateScroll);
         return;
       }
 
@@ -572,7 +661,10 @@ export default function MoviePageClient({ movie, allMovies = staticAllMovies }: 
             </Link>
 
             {isAdmin && (
-              <Link href={`/admin/movies/${movie.slug}/edit`} className="ghost-button admin-edit-button">
+              <Link
+                href={`/admin/movies/${movie.slug}/edit`}
+                className="ghost-button admin-edit-button"
+              >
                 Редактировать
               </Link>
             )}
@@ -605,7 +697,9 @@ export default function MoviePageClient({ movie, allMovies = staticAllMovies }: 
                   return;
                 }
 
-                const generatedFallback = getGeneratedPosterFallback(movie.title);
+                const generatedFallback = getGeneratedPosterFallback(
+                  movie.title,
+                );
 
                 if (posterSrc !== generatedFallback) {
                   setPosterSrc(generatedFallback);
@@ -660,9 +754,7 @@ export default function MoviePageClient({ movie, allMovies = staticAllMovies }: 
               ))}
             </div>
 
-            <p className="description">
-              {movie.description}
-            </p>
+            <p className="description">{movie.description}</p>
 
             <div className="compact-actions">
               <a
@@ -682,7 +774,10 @@ export default function MoviePageClient({ movie, allMovies = staticAllMovies }: 
               </a>
 
               {isAdmin && (
-                <Link href={`/admin/movies/${movie.slug}/edit`} className="secondary-button admin-edit-inline">
+                <Link
+                  href={`/admin/movies/${movie.slug}/edit`}
+                  className="secondary-button admin-edit-inline"
+                >
                   Редактировать
                 </Link>
               )}
@@ -798,35 +893,70 @@ export default function MoviePageClient({ movie, allMovies = staticAllMovies }: 
           </div>
 
           <div className="player-box">
-            {isRendexPlayer(activePlayer) && getRendexContentId(activePlayer) ? (
+            {isRendexPlayer(activePlayer) &&
+            getRendexContentId(activePlayer) ? (
               <>
-                <Script id="rendex-sdk" src={RENDEX_SCRIPT_SRC} strategy="afterInteractive" />
-                <div key={`${activePlayer.id}-${getRendexContentId(activePlayer)}`} className="rendex-player-frame">
+                <Script
+                  id="rendex-sdk"
+                  src={RENDEX_SCRIPT_SRC}
+                  strategy="afterInteractive"
+                />
+                <div
+                  key={`${activePlayer.id}-${getRendexContentId(activePlayer)}`}
+                  className="rendex-player-frame"
+                >
                   <ins
                     data-publisher-id={getRendexPublisherId(activePlayer)}
                     data-type={getRendexContentType(activePlayer, movie)}
                     data-id={getRendexContentId(activePlayer)}
                     data-design="1"
-                    data-color1={getRendexColor(activePlayer, 'color1', '#56CEAA')}
-                    data-color2={getRendexColor(activePlayer, 'color2', '#FFFFFF')}
-                    data-color3={getRendexColor(activePlayer, 'color3', '#AEC7BC')}
-                    data-color4={getRendexColor(activePlayer, 'color4', '#42BD88')}
-                    data-color5={getRendexColor(activePlayer, 'color5', '#000000')}
+                    data-color1={getRendexColor(
+                      activePlayer,
+                      "color1",
+                      "#56CEAA",
+                    )}
+                    data-color2={getRendexColor(
+                      activePlayer,
+                      "color2",
+                      "#FFFFFF",
+                    )}
+                    data-color3={getRendexColor(
+                      activePlayer,
+                      "color3",
+                      "#AEC7BC",
+                    )}
+                    data-color4={getRendexColor(
+                      activePlayer,
+                      "color4",
+                      "#42BD88",
+                    )}
+                    data-color5={getRendexColor(
+                      activePlayer,
+                      "color5",
+                      "#000000",
+                    )}
                     data-width="100%"
                     data-height="100%"
                   />
                 </div>
               </>
             ) : activePlayer.embedUrl ? (
-              <iframe
-                key={activePlayer.id}
-                src={activePlayer.embedUrl}
-                title={`${activePlayer.name} — ${movie.title}`}
-                className="player-iframe"
-                allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
-                allowFullScreen
-                referrerPolicy="strict-origin-when-cross-origin"
-              />
+              <>
+                {isCollapsePlayer(activePlayer) ? (
+                  <Script
+                    id="collapse-actualize"
+                    src={COLLAPSE_ACTUALIZE_SCRIPT_SRC}
+                    strategy="afterInteractive"
+                  />
+                ) : null}
+                <div
+                  key={`${activePlayer.id}-${activePlayer.embedUrl}`}
+                  className="player-iframe-shell"
+                  dangerouslySetInnerHTML={{
+                    __html: buildPlayerIframeHtml(activePlayer, movie),
+                  }}
+                />
+              </>
             ) : isAnimePlayerUnavailable ? (
               <div className="player-placeholder">
                 <div className="play-icon">
@@ -837,7 +967,10 @@ export default function MoviePageClient({ movie, allMovies = staticAllMovies }: 
 
                 <h3>Аниме временно недоступно</h3>
 
-                <p>Просмотр аниме сейчас временно недоступен из-за недостатка плеера.</p>
+                <p>
+                  Просмотр аниме сейчас временно недоступен из-за недостатка
+                  плеера.
+                </p>
               </div>
             ) : (
               <div className="player-placeholder">
@@ -895,7 +1028,9 @@ export default function MoviePageClient({ movie, allMovies = staticAllMovies }: 
                       <p>{person.role}</p>
                     </div>
 
-                    <div className="cast-avatar">{getInitials(person.name)}</div>
+                    <div className="cast-avatar">
+                      {getInitials(person.name)}
+                    </div>
                   </article>
                 ))}
               </div>
@@ -914,9 +1049,7 @@ export default function MoviePageClient({ movie, allMovies = staticAllMovies }: 
               <h2>Вопросы о материале</h2>
             </div>
 
-            <p>
-              
-            </p>
+            <p></p>
           </div>
 
           <div className="faq-list">
@@ -930,16 +1063,17 @@ export default function MoviePageClient({ movie, allMovies = staticAllMovies }: 
         </section>
 
         {similarMovies.length > 0 && (
-          <section id="similar" className="section-card similar-section animate-in">
+          <section
+            id="similar"
+            className="section-card similar-section animate-in"
+          >
             <div className="section-head similar-head">
               <div>
                 <p className="eyebrow">После этого</p>
                 <h2>{relatedSectionTitle}</h2>
               </div>
 
-              <p>
-                
-              </p>
+              <p></p>
             </div>
 
             <div className="similar-grid">
@@ -962,7 +1096,8 @@ export default function MoviePageClient({ movie, allMovies = staticAllMovies }: 
 
                         event.currentTarget.onerror = null;
                         event.currentTarget.src =
-                          fallbackPoster || getGeneratedPosterFallback(item.title);
+                          fallbackPoster ||
+                          getGeneratedPosterFallback(item.title);
                       }}
                     />
 
@@ -970,7 +1105,9 @@ export default function MoviePageClient({ movie, allMovies = staticAllMovies }: 
                   </div>
 
                   <div className="similar-info">
-                    <span>{item.year} · {item.type}</span>
+                    <span>
+                      {item.year} · {item.type}
+                    </span>
                     <h3>{item.title}</h3>
                     <p>{item.genres.slice(0, 2).join(" · ")}</p>
                   </div>
@@ -1643,6 +1780,7 @@ const moviePageStyles = `
   .player-box {
     position: relative;
     overflow: hidden;
+    aspect-ratio: 16 / 9;
     border-radius: 26px;
     border: 1px solid rgba(255,255,255,0.10);
     background:
@@ -1651,12 +1789,24 @@ const moviePageStyles = `
   }
 
   .player-box::before {
-    content: "";
-    display: block;
-    padding-top: 46%;
+    content: none;
+    display: none;
+    padding-top: 0;
   }
 
+  .rendex-player-frame,
+  .player-iframe-shell,
   .player-iframe {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: #000000;
+  }
+
+  .player-iframe-shell > iframe {
     position: absolute;
     inset: 0;
     display: block;
@@ -2161,7 +2311,9 @@ const moviePageStyles = `
     }
 
     .player-box::before {
-      padding-top: 62%;
+      content: none;
+      display: none;
+      padding-top: 0;
     }
 
     .player-placeholder h3 {
@@ -2433,7 +2585,9 @@ const moviePageStyles = `
     }
 
     .player-box::before {
-      padding-top: 64%;
+      content: none;
+      display: none;
+      padding-top: 0;
     }
 
     .player-placeholder {

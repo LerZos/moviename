@@ -38,6 +38,8 @@ export type VibixVideo = {
   uploaded_at?: string | null;
 };
 
+export type VibixSingleVideoResponse = VibixVideo | { data?: VibixVideo; success?: boolean; message?: string } | null;
+
 type VibixLinksResponse = {
   data?: VibixVideo[];
   links?: Record<string, unknown>;
@@ -120,6 +122,18 @@ export async function vibixFetch<T>(path: string): Promise<T> {
   return payload as T;
 }
 
+
+export function unwrapVibixVideo(payload: VibixSingleVideoResponse): VibixVideo | null {
+  if (!payload || typeof payload !== 'object') return null;
+
+  if ('data' in payload) {
+    const data = payload.data;
+    return data && typeof data === 'object' && !Array.isArray(data) ? (data as VibixVideo) : null;
+  }
+
+  return payload as VibixVideo;
+}
+
 export async function fetchVibixLinks(options: FetchVibixLinksOptions) {
   const page = Math.max(1, Math.trunc(options.page || 1));
   const limit = Math.max(1, Math.min(100, Math.trunc(options.limit || 30)));
@@ -133,5 +147,9 @@ export async function fetchVibixLinks(options: FetchVibixLinksOptions) {
 }
 
 export async function fetchVibixByKinopoiskId(kpId: number) {
-  return vibixFetch<VibixVideo>(`/api/v1/publisher/videos/kp/${kpId}`);
+  return vibixFetch<VibixSingleVideoResponse>(`/api/v1/publisher/videos/kp/${kpId}`);
+}
+
+export async function fetchVibixByImdbId(imdbId: string) {
+  return vibixFetch<VibixSingleVideoResponse>(`/api/v1/publisher/videos/imdb/${encodeURIComponent(imdbId)}`);
 }

@@ -1,34 +1,40 @@
-import { supabaseAdmin } from '../../../../lib/supabase/admin';
-import { assertAdminSecret } from '../../../../lib/import/adminAuth';
+import { supabaseAdmin } from "../../../../lib/supabase/admin";
+import { assertAdminSecret } from "../../../../lib/import/adminAuth";
 
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 type ManualDraftValues = Record<string, unknown>;
 
 type UpdatePayload = Record<string, unknown>;
 
 const allowedStatuses = new Set([
-  'draft',
-  'needs_ai_seo',
-  'needs_moderation',
-  'needs_review',
-  'ready',
-  'published',
-  'rejected',
+  "draft",
+  "needs_ai_seo",
+  "needs_moderation",
+  "needs_review",
+  "ready",
+  "published",
+  "rejected",
 ]);
 
-const allowedTypes = new Set(['film', 'series', 'anime', 'cartoon', 'documentary']);
+const allowedTypes = new Set([
+  "film",
+  "series",
+  "anime",
+  "cartoon",
+  "documentary",
+]);
 
 function cleanText(value: unknown) {
-  if (typeof value !== 'string') return null;
+  if (typeof value !== "string") return null;
   const trimmed = value.trim();
   return trimmed ? trimmed : null;
 }
 
 function cleanNumber(value: unknown) {
-  if (typeof value === 'number' && Number.isFinite(value)) return value;
-  if (typeof value !== 'string') return null;
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value !== "string") return null;
 
   const trimmed = value.trim();
   if (!trimmed) return null;
@@ -40,21 +46,21 @@ function cleanNumber(value: unknown) {
 function cleanGenres(value: unknown) {
   if (Array.isArray(value)) {
     return value
-      .filter((item): item is string => typeof item === 'string')
+      .filter((item): item is string => typeof item === "string")
       .map((item) => item.trim())
       .filter(Boolean);
   }
 
-  if (typeof value !== 'string') return [];
+  if (typeof value !== "string") return [];
 
   return value
-    .split(',')
+    .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
 }
 
 function asRecord(value: unknown): Record<string, unknown> {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
   return value as Record<string, unknown>;
 }
 
@@ -64,83 +70,258 @@ function extractRendexVideoId(value: string) {
   if (fromDataId) return fromDataId.trim();
 
   const digits = trimmed.match(/\d+/)?.[0];
-  return digits || '';
+  return digits || "";
 }
 
-function buildRendexPlayer(name: string, rawId: string, index: number) {
+function getRendexContentType(value: unknown) {
+  const type = typeof value === "string" ? value.trim().toLowerCase() : "";
+  if (
+    type === "series" ||
+    type === "serial" ||
+    type === "tv" ||
+    type.includes("сериал")
+  )
+    return "series";
+  return "movie";
+}
+
+function buildRendexPlayer(
+  name: string,
+  rawId: string,
+  index: number,
+  contentTypeSource?: unknown,
+) {
   const contentId = extractRendexVideoId(rawId);
   if (!contentId) return null;
 
   return {
     id: `rendex-${contentId}`,
     name: name || `Плеер ${index + 1}`,
-    type: 'rendex',
-    provider: 'rendex',
-    publisherId: process.env.RENDEX_PUBLISHER_ID || process.env.VIBIX_PUBLISHER_ID || '678053396',
-    contentType: 'movie',
+    type: "rendex",
+    provider: "rendex",
+    publisherId:
+      process.env.RENDEX_PUBLISHER_ID ||
+      process.env.VIBIX_PUBLISHER_ID ||
+      "678053396",
+    contentType: getRendexContentType(contentTypeSource),
     contentId,
     rendexVideoId: contentId,
-    design: '1',
-    color1: '#56CEAA',
-    color2: '#FFFFFF',
-    color3: '#AEC7BC',
-    color4: '#42BD88',
-    color5: '#000000',
-    embedUrl: '',
+    design: "1",
+    color1: "#56CEAA",
+    color2: "#FFFFFF",
+    color3: "#AEC7BC",
+    color4: "#42BD88",
+    color5: "#000000",
+    embedUrl: "",
   };
 }
 
-function parsePlayerLinks(value: unknown) {
+function buildCollapseKinopoiskUrl(kinopoiskId: string) {
+  const id = kinopoiskId.trim().match(/\d+/)?.[0] || "";
+  return id
+    ? `https://api.ortified.ws/embed/kp/${id}?sharing=false&episodesOpen=false`
+    : "";
+}
+
+function buildCollapseMovieUrl(contentId: string) {
+  const id = contentId.trim().match(/\d+/)?.[0] || "";
+  return id
+    ? `https://api.ortified.ws/embed/movie/${id}?sharing=false&episodesOpen=false`
+    : "";
+}
+
+function buildCollapseImdbUrl(imdbId: string) {
+  const match = imdbId.trim().match(/tt\d+|\d+/i)?.[0] || "";
+  if (!match) return "";
+
+  const id = match.toLowerCase().startsWith("tt")
+    ? match.toLowerCase()
+    : `tt${match}`;
+  return `https://api.ortified.ws/embed/imdb/${id}?sharing=false&episodesOpen=false`;
+}
+
+function buildCollapsePlayer(
+  name: string,
+  kind: string,
+  rawId: string,
+  index: number,
+) {
+  const normalizedKind = kind.trim().toLowerCase() || "movie";
+  const embedUrl =
+    normalizedKind === "kp" || normalizedKind === "kinopoisk"
+      ? buildCollapseKinopoiskUrl(rawId)
+      : normalizedKind === "imdb"
+        ? buildCollapseImdbUrl(rawId)
+        : buildCollapseMovieUrl(rawId);
+
+  if (!embedUrl) return null;
+
+  const contentId =
+    normalizedKind === "imdb"
+      ? rawId.trim()
+      : rawId.trim().match(/\d+/)?.[0] || rawId.trim();
+
+  return {
+    id: `collapse-${normalizedKind}-${contentId || index + 1}`,
+    name: name || `Плеер ${index + 1}`,
+    type: "collapse",
+    provider: "collapse",
+    contentKind: normalizedKind,
+    contentType: normalizedKind,
+    contentId,
+    embedUrl,
+  };
+}
+
+function parsePlayerLinks(value: unknown, beforeDraftType?: unknown) {
   if (Array.isArray(value)) {
     return value
       .map((player, index) => {
         const item = asRecord(player);
         const name = cleanText(item.name) || `Плеер ${index + 1}`;
-        const type = (cleanText(item.type) || '').toLowerCase();
-        const contentId = cleanText(item.contentId) || cleanText(item.rendexVideoId) || '';
+        const type = (cleanText(item.type) || "").toLowerCase();
+        const contentId =
+          cleanText(item.contentId) || cleanText(item.rendexVideoId) || "";
+        const contentKind =
+          cleanText(item.contentKind) ||
+          cleanText(item.content_kind) ||
+          cleanText(item.contentType) ||
+          cleanText(item.content_type) ||
+          "movie";
         const embedUrl = cleanText(item.embedUrl);
 
-        if (type === 'rendex') return buildRendexPlayer(name, contentId, index);
+        if (type === "collapse" || type === "collaps") {
+          if (embedUrl) {
+            return {
+              id: cleanText(item.id) || `collapse-iframe-${index + 1}`,
+              name,
+              type: "collapse-iframe",
+              provider: "collapse",
+              embedUrl,
+            };
+          }
+
+          return buildCollapsePlayer(name, contentKind, contentId, index);
+        }
+
+        if (type === "collapse-iframe" || type === "collaps-iframe") {
+          if (!embedUrl) return null;
+
+          return {
+            id: cleanText(item.id) || `collapse-iframe-${index + 1}`,
+            name,
+            type: "collapse-iframe",
+            provider: "collapse",
+            embedUrl,
+          };
+        }
+
+        if (type === "rendex")
+          return buildRendexPlayer(
+            name,
+            contentId,
+            index,
+            item.contentType || item.content_type || beforeDraftType,
+          );
         if (!embedUrl) return null;
 
         return {
           id: cleanText(item.id) || `player-${index + 1}`,
           name,
-          type: type || 'iframe',
+          type: type || "iframe",
           embedUrl,
         };
       })
       .filter(Boolean);
   }
 
-  if (typeof value !== 'string') return [];
+  if (typeof value !== "string") return [];
 
   return value
-    .split('\n')
+    .split("\n")
     .map((line, index) => {
       const trimmed = line.trim();
       if (!trimmed) return null;
 
-      const parts = trimmed.split('|').map((part) => part.trim()).filter(Boolean);
+      const parts = trimmed
+        .split("|")
+        .map((part) => part.trim())
+        .filter(Boolean);
       const name = parts[0] || `Плеер ${index + 1}`;
-      const type = (parts[1] || '').toLowerCase();
+      const type = (parts[1] || "").toLowerCase();
 
-      if (type === 'rendex') return buildRendexPlayer(name, parts.slice(2).join('|'), index);
+      if (type === "collapse" || type === "collaps") {
+        const possibleUrl = parts.slice(2).join("|").trim();
 
-      const embedUrl = type === 'iframe' ? parts.slice(2).join('|').trim() : parts.slice(1).join('|').trim() || trimmed;
+        if (/^https?:\/\//i.test(possibleUrl)) {
+          return {
+            id: `collapse-iframe-${index + 1}`,
+            name,
+            type: "collapse-iframe",
+            provider: "collapse",
+            embedUrl: possibleUrl,
+          };
+        }
+
+        const knownKind = ["movie", "film", "kp", "kinopoisk", "imdb"].includes(
+          (parts[2] || "").toLowerCase(),
+        );
+        const contentKind = knownKind ? parts[2] : "movie";
+        const contentId = knownKind
+          ? parts.slice(3).join("|").trim()
+          : parts.slice(2).join("|").trim();
+        return buildCollapsePlayer(name, contentKind, contentId, index);
+      }
+
+      if (type === "collapse-iframe" || type === "collaps-iframe") {
+        const embedUrl = parts.slice(2).join("|").trim();
+        if (!embedUrl) return null;
+
+        return {
+          id: `collapse-iframe-${index + 1}`,
+          name,
+          type: "collapse-iframe",
+          provider: "collapse",
+          embedUrl,
+        };
+      }
+
+      if (type === "rendex") {
+        const explicitContentType =
+          parts[2] &&
+          ["movie", "film", "series", "serial", "tv"].includes(
+            parts[2].toLowerCase(),
+          )
+            ? parts[2]
+            : beforeDraftType;
+        const rawId =
+          explicitContentType === parts[2]
+            ? parts.slice(3).join("|")
+            : parts.slice(2).join("|");
+        return buildRendexPlayer(name, rawId, index, explicitContentType);
+      }
+
+      const embedUrl =
+        type === "iframe"
+          ? parts.slice(2).join("|").trim()
+          : parts.slice(1).join("|").trim() || trimmed;
       if (!embedUrl) return null;
 
       return {
         id: `player-${index + 1}`,
         name,
-        type: 'iframe',
+        type: "iframe",
         embedUrl,
       };
     })
     .filter(Boolean);
 }
 
-function mergePlayerLinksIntoRawJson(rawJson: unknown, playerLinks: unknown) {
+function mergePlayerLinksIntoRawJson(
+  rawJson: unknown,
+  playerLinks: unknown,
+  beforeDraftType?: unknown,
+) {
   const base = asRecord(rawJson);
   const kinoluma = asRecord(base.kinoluma);
 
@@ -148,7 +329,7 @@ function mergePlayerLinksIntoRawJson(rawJson: unknown, playerLinks: unknown) {
     ...base,
     kinoluma: {
       ...kinoluma,
-      players: parsePlayerLinks(playerLinks),
+      players: parsePlayerLinks(playerLinks, beforeDraftType || base.type),
       players_updated_at: new Date().toISOString(),
     },
   };
@@ -157,7 +338,7 @@ function mergePlayerLinksIntoRawJson(rawJson: unknown, playerLinks: unknown) {
 function parseFaq(value: unknown) {
   if (Array.isArray(value)) return value;
 
-  if (typeof value !== 'string') return [];
+  if (typeof value !== "string") return [];
 
   const trimmed = value.trim();
   if (!trimmed) return [];
@@ -165,12 +346,12 @@ function parseFaq(value: unknown) {
   const parsed = JSON.parse(trimmed) as unknown;
 
   if (!Array.isArray(parsed)) {
-    throw new Error('FAQ must be a JSON array');
+    throw new Error("FAQ must be a JSON array");
   }
 
   return parsed
     .map((item) => {
-      if (!item || typeof item !== 'object' || Array.isArray(item)) return null;
+      if (!item || typeof item !== "object" || Array.isArray(item)) return null;
 
       const record = item as Record<string, unknown>;
       const question = cleanText(record.question);
@@ -183,25 +364,28 @@ function parseFaq(value: unknown) {
     .filter(Boolean);
 }
 
-function buildUpdate(values: ManualDraftValues, beforeDraft: Record<string, unknown>): UpdatePayload {
+function buildUpdate(
+  values: ManualDraftValues,
+  beforeDraft: Record<string, unknown>,
+): UpdatePayload {
   const update: UpdatePayload = {
     updated_at: new Date().toISOString(),
   };
 
   const textFields = [
-    'title',
-    'original_title',
-    'slug',
-    'description',
-    'long_description',
-    'seo_title',
-    'seo_description',
-    'trailer_url',
-    'trailer_embed_url',
-    'trailer_provider',
-    'trailer_key',
-    'trailer_status',
-    'moderation_notes',
+    "title",
+    "original_title",
+    "slug",
+    "description",
+    "long_description",
+    "seo_title",
+    "seo_description",
+    "trailer_url",
+    "trailer_embed_url",
+    "trailer_provider",
+    "trailer_key",
+    "trailer_status",
+    "moderation_notes",
   ];
 
   textFields.forEach((field) => {
@@ -210,41 +394,46 @@ function buildUpdate(values: ManualDraftValues, beforeDraft: Record<string, unkn
     }
   });
 
-  if ('year' in values) {
+  if ("year" in values) {
     update.year = cleanNumber(values.year);
   }
 
-  if ('kinopoisk_id' in values) {
+  if ("kinopoisk_id" in values) {
     update.kinopoisk_id = cleanNumber(values.kinopoisk_id);
   }
 
-  if ('trailer_confidence' in values) {
+  if ("trailer_confidence" in values) {
     const value = cleanNumber(values.trailer_confidence);
-    update.trailer_confidence = value === null ? null : Math.max(0, Math.min(100, value));
+    update.trailer_confidence =
+      value === null ? null : Math.max(0, Math.min(100, value));
   }
 
-  if ('type' in values) {
+  if ("type" in values) {
     const type = cleanText(values.type);
     update.type = type && allowedTypes.has(type) ? type : type;
   }
 
-  if ('status' in values) {
+  if ("status" in values) {
     const status = cleanText(values.status);
     update.status = status && allowedStatuses.has(status) ? status : status;
   }
 
-  if ('genres' in values) {
+  if ("genres" in values) {
     update.genres = cleanGenres(values.genres);
   }
 
-  if ('faq_json' in values) {
+  if ("faq_json" in values) {
     update.faq = parseFaq(values.faq_json);
-  } else if ('faq' in values) {
+  } else if ("faq" in values) {
     update.faq = parseFaq(values.faq);
   }
 
-  if ('player_links' in values) {
-    update.raw_json = mergePlayerLinksIntoRawJson(beforeDraft.raw_json, values.player_links);
+  if ("player_links" in values) {
+    update.raw_json = mergePlayerLinksIntoRawJson(
+      beforeDraft.raw_json,
+      values.player_links,
+      beforeDraft.type,
+    );
   }
 
   return update;
@@ -256,19 +445,25 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const draftId = typeof body.draftId === 'string' ? body.draftId : null;
-    const values = body.values && typeof body.values === 'object' && !Array.isArray(body.values)
-      ? (body.values as ManualDraftValues)
-      : null;
+    const draftId = typeof body.draftId === "string" ? body.draftId : null;
+    const values =
+      body.values &&
+      typeof body.values === "object" &&
+      !Array.isArray(body.values)
+        ? (body.values as ManualDraftValues)
+        : null;
 
     if (!draftId || !values) {
-      return Response.json({ ok: false, error: 'draftId and values are required' }, { status: 400 });
+      return Response.json(
+        { ok: false, error: "draftId and values are required" },
+        { status: 400 },
+      );
     }
 
     const { data: beforeDraft, error: beforeError } = await supabaseAdmin
-      .from('movie_drafts')
-      .select('*')
-      .eq('id', draftId)
+      .from("movie_drafts")
+      .select("*")
+      .eq("id", draftId)
       .single();
 
     if (beforeError) throw beforeError;
@@ -276,35 +471,40 @@ export async function POST(request: Request) {
     const update = buildUpdate(values, beforeDraft as Record<string, unknown>);
 
     const { data: updatedDraft, error: updateError } = await supabaseAdmin
-      .from('movie_drafts')
+      .from("movie_drafts")
       .update(update)
-      .eq('id', draftId)
-      .select('*')
+      .eq("id", draftId)
+      .select("*")
       .single();
 
     if (updateError) throw updateError;
 
-    const { error: feedbackError } = await supabaseAdmin.from('agent_feedback').insert({
-      draft_id: draftId,
-      agent_name: 'admin_dashboard',
-      decision: 'manual_edit',
-      reason: 'Manual draft fields were edited in the import admin panel.',
-      before_value: beforeDraft,
-      after_value: update,
-    });
+    const { error: feedbackError } = await supabaseAdmin
+      .from("agent_feedback")
+      .insert({
+        draft_id: draftId,
+        agent_name: "admin_dashboard",
+        decision: "manual_edit",
+        reason: "Manual draft fields were edited in the import admin panel.",
+        before_value: beforeDraft,
+        after_value: update,
+      });
 
     if (feedbackError) throw feedbackError;
 
     return Response.json({
       ok: true,
       draft: updatedDraft,
-      message: 'Черновик обновлён вручную',
+      message: "Черновик обновлён вручную",
     });
   } catch (error) {
     return Response.json(
       {
         ok: false,
-        error: error instanceof Error ? error.message : 'Unknown manual draft update error',
+        error:
+          error instanceof Error
+            ? error.message
+            : "Unknown manual draft update error",
       },
       { status: 500 },
     );

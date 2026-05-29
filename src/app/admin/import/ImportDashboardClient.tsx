@@ -1,6 +1,12 @@
-'use client';
+"use client";
 
-import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from 'react';
+import {
+  type FormEvent,
+  type ReactNode,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import {
   Activity,
   AlertTriangle,
@@ -25,7 +31,7 @@ import {
   Trash2,
   Wand2,
   X,
-} from 'lucide-react';
+} from "lucide-react";
 
 type Candidate = {
   id: string;
@@ -69,6 +75,7 @@ type Draft = {
   trailer_embed_url: string | null;
   trailer_source: string | null;
   player_links: string | null;
+  rendex_video_id: string | null;
   trailer_confidence: number | null;
   trailer_status: string | null;
   similar_movie_ids: unknown[] | null;
@@ -79,7 +86,6 @@ type Draft = {
   created_at: string | null;
   updated_at: string | null;
 };
-
 
 type ManualDraftForm = {
   title: string;
@@ -103,6 +109,7 @@ type ManualDraftForm = {
   trailer_status: string;
   trailer_confidence: string;
   player_links: string;
+  rendex_video_id: string;
   moderation_notes: string;
 };
 
@@ -137,34 +144,62 @@ type ImportListResponse = {
 };
 
 type TabId =
-  | 'new_candidates'
-  | 'drafts'
-  | 'needs_review'
-  | 'ready'
-  | 'published'
-  | 'errors'
-  | 'runs';
+  | "new_candidates"
+  | "drafts"
+  | "needs_review"
+  | "ready"
+  | "published"
+  | "errors"
+  | "runs";
 
 const tabs: { id: TabId; label: string; icon: ReactNode }[] = [
-  { id: 'new_candidates', label: 'Кандидаты', icon: <Search size={17} strokeWidth={2.4} aria-hidden="true" /> },
-  { id: 'drafts', label: 'Черновики', icon: <Film size={17} strokeWidth={2.4} aria-hidden="true" /> },
-  { id: 'needs_review', label: 'Проверка', icon: <Eye size={17} strokeWidth={2.4} aria-hidden="true" /> },
-  { id: 'ready', label: 'Готово', icon: <CheckCircle2 size={17} strokeWidth={2.4} aria-hidden="true" /> },
-  { id: 'published', label: 'Опубликовано', icon: <ShieldCheck size={17} strokeWidth={2.4} aria-hidden="true" /> },
-  { id: 'errors', label: 'Ошибки', icon: <AlertTriangle size={17} strokeWidth={2.4} aria-hidden="true" /> },
-  { id: 'runs', label: 'Запуски', icon: <Activity size={17} strokeWidth={2.4} aria-hidden="true" /> },
+  {
+    id: "new_candidates",
+    label: "Кандидаты",
+    icon: <Search size={17} strokeWidth={2.4} aria-hidden="true" />,
+  },
+  {
+    id: "drafts",
+    label: "Черновики",
+    icon: <Film size={17} strokeWidth={2.4} aria-hidden="true" />,
+  },
+  {
+    id: "needs_review",
+    label: "Проверка",
+    icon: <Eye size={17} strokeWidth={2.4} aria-hidden="true" />,
+  },
+  {
+    id: "ready",
+    label: "Готово",
+    icon: <CheckCircle2 size={17} strokeWidth={2.4} aria-hidden="true" />,
+  },
+  {
+    id: "published",
+    label: "Опубликовано",
+    icon: <ShieldCheck size={17} strokeWidth={2.4} aria-hidden="true" />,
+  },
+  {
+    id: "errors",
+    label: "Ошибки",
+    icon: <AlertTriangle size={17} strokeWidth={2.4} aria-hidden="true" />,
+  },
+  {
+    id: "runs",
+    label: "Запуски",
+    icon: <Activity size={17} strokeWidth={2.4} aria-hidden="true" />,
+  },
 ];
 
 function formatDate(value: string | null) {
-  if (!value) return '—';
+  if (!value) return "—";
 
   try {
-    return new Intl.DateTimeFormat('ru-RU', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+    return new Intl.DateTimeFormat("ru-RU", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     }).format(new Date(value));
   } catch {
     return value;
@@ -172,9 +207,9 @@ function formatDate(value: string | null) {
 }
 
 function formatLog(value: unknown) {
-  if (!value) return '';
+  if (!value) return "";
 
-  if (typeof value === 'string') return value;
+  if (typeof value === "string") return value;
 
   try {
     return JSON.stringify(value, null, 2);
@@ -184,44 +219,54 @@ function formatLog(value: unknown) {
 }
 
 function statusLabel(status: string | null) {
-  if (!status) return '—';
+  if (!status) return "—";
 
   const labels: Record<string, string> = {
-    new: 'Новый',
-    processed: 'Обработан',
-    failed: 'Ошибка',
-    draft: 'Черновик',
-    needs_ai_seo: 'Нужен SEO',
-    needs_moderation: 'Нужна модерация',
-    needs_review: 'Нужна проверка',
-    ready: 'Готово',
-    published: 'Опубликовано',
-    rejected: 'Отклонено',
-    missing: 'Нет трейлера',
-    accepted: 'Принят',
+    new: "Новый",
+    processed: "Обработан",
+    failed: "Ошибка",
+    draft: "Черновик",
+    needs_ai_seo: "Нужен SEO",
+    needs_moderation: "Нужна модерация",
+    needs_review: "Нужна проверка",
+    ready: "Готово",
+    published: "Опубликовано",
+    rejected: "Отклонено",
+    missing: "Нет трейлера",
+    accepted: "Принят",
   };
 
   return labels[status] ?? status;
 }
 
 function statusTone(status: string | null) {
-  if (status === 'ready' || status === 'published' || status === 'processed' || status === 'accepted') {
-    return 'good';
+  if (
+    status === "ready" ||
+    status === "published" ||
+    status === "processed" ||
+    status === "accepted"
+  ) {
+    return "good";
   }
 
-  if (status === 'needs_review' || status === 'needs_ai_seo' || status === 'needs_moderation' || status === 'missing') {
-    return 'warn';
+  if (
+    status === "needs_review" ||
+    status === "needs_ai_seo" ||
+    status === "needs_moderation" ||
+    status === "missing"
+  ) {
+    return "warn";
   }
 
-  if (status === 'rejected' || status === 'failed') {
-    return 'bad';
+  if (status === "rejected" || status === "failed") {
+    return "bad";
   }
 
-  return 'neutral';
+  return "neutral";
 }
 
 function shortText(value: string | null, limit = 210) {
-  if (!value) return '—';
+  if (!value) return "—";
   if (value.length <= limit) return value;
   return `${value.slice(0, limit).trim()}…`;
 }
@@ -231,27 +276,33 @@ function getDraftCount(data: ImportListResponse | null, status: string) {
 }
 
 function getInitials(value: string) {
-  return value
-    .split(' ')
-    .map((part) => part[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase() || 'KL';
+  return (
+    value
+      .split(" ")
+      .map((part) => part[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "KL"
+  );
 }
 
 function escapeSvgText(text: string) {
   return text
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&apos;');
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&apos;");
 }
 
-function createGeneratedPoster(title: string, originalTitle: string, type: string) {
-  const safeTitle = escapeSvgText(title || 'KinoLuma');
-  const safeOriginalTitle = escapeSvgText(originalTitle || 'Draft');
-  const safeType = escapeSvgText(type || 'movie');
+function createGeneratedPoster(
+  title: string,
+  originalTitle: string,
+  type: string,
+) {
+  const safeTitle = escapeSvgText(title || "KinoLuma");
+  const safeOriginalTitle = escapeSvgText(originalTitle || "Draft");
+  const safeType = escapeSvgText(type || "movie");
 
   const svg = `
     <svg width="500" height="750" viewBox="0 0 500 750" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -277,32 +328,32 @@ function createGeneratedPoster(title: string, originalTitle: string, type: strin
 
 function isFeatureReady(value: unknown) {
   if (Array.isArray(value)) return value.length > 0;
-  if (typeof value === 'string') return value.trim().length > 0;
-  if (typeof value === 'number') return value > 0;
+  if (typeof value === "string") return value.trim().length > 0;
+  if (typeof value === "number") return value > 0;
   return Boolean(value);
 }
 
 function getTrailerEmbedUrl(draft: Draft) {
   if (draft.trailer_embed_url) return draft.trailer_embed_url;
 
-  if (draft.trailer_provider === 'youtube' && draft.trailer_key) {
+  if (draft.trailer_provider === "youtube" && draft.trailer_key) {
     return `https://www.youtube.com/embed/${draft.trailer_key}`;
   }
 
-  if (draft.trailer_url?.includes('youtube.com/watch')) {
+  if (draft.trailer_url?.includes("youtube.com/watch")) {
     try {
       const url = new URL(draft.trailer_url);
-      const videoId = url.searchParams.get('v');
+      const videoId = url.searchParams.get("v");
       return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
     } catch {
       return null;
     }
   }
 
-  if (draft.trailer_url?.includes('youtu.be/')) {
+  if (draft.trailer_url?.includes("youtu.be/")) {
     try {
       const url = new URL(draft.trailer_url);
-      const videoId = url.pathname.replace('/', '').trim();
+      const videoId = url.pathname.replace("/", "").trim();
       return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
     } catch {
       return null;
@@ -315,13 +366,13 @@ function getTrailerEmbedUrl(draft: Draft) {
 function getTrailerExternalUrl(draft: Draft) {
   if (draft.trailer_url) return draft.trailer_url;
 
-  if (draft.trailer_provider === 'youtube' && draft.trailer_key) {
+  if (draft.trailer_provider === "youtube" && draft.trailer_key) {
     return `https://www.youtube.com/watch?v=${draft.trailer_key}`;
   }
 
   const embedUrl = getTrailerEmbedUrl(draft);
-  if (embedUrl?.includes('/embed/')) {
-    const videoId = embedUrl.split('/embed/')[1]?.split('?')[0];
+  if (embedUrl?.includes("/embed/")) {
+    const videoId = embedUrl.split("/embed/")[1]?.split("?")[0];
     return videoId ? `https://www.youtube.com/watch?v=${videoId}` : embedUrl;
   }
 
@@ -334,47 +385,115 @@ function hasTrailer(draft: Draft) {
 
 function draftToManualForm(draft: Draft): ManualDraftForm {
   return {
-    title: draft.title ?? '',
-    original_title: draft.original_title ?? '',
-    slug: draft.slug ?? '',
-    year: draft.year?.toString() ?? '',
-    kinopoisk_id: draft.kinopoisk_id?.toString() ?? '',
-    rating: draft.movie_rating?.toString() ?? '',
-    type: draft.type ?? '',
-    status: draft.status ?? '',
-    genres: (draft.genres ?? []).join(', '),
-    description: draft.description ?? '',
-    long_description: draft.long_description ?? '',
-    seo_title: draft.seo_title ?? '',
-    seo_description: draft.seo_description ?? '',
-    faq_json: Array.isArray(draft.faq) && draft.faq.length ? JSON.stringify(draft.faq, null, 2) : '',
-    trailer_url: draft.trailer_url ?? '',
-    trailer_embed_url: draft.trailer_embed_url ?? '',
-    trailer_provider: draft.trailer_provider ?? '',
-    trailer_key: draft.trailer_key ?? '',
-    trailer_status: draft.trailer_status ?? '',
-    trailer_confidence: draft.trailer_confidence?.toString() ?? '',
-    player_links: draft.player_links ?? '',
-    moderation_notes: draft.moderation_notes ?? '',
+    title: draft.title ?? "",
+    original_title: draft.original_title ?? "",
+    slug: draft.slug ?? "",
+    year: draft.year?.toString() ?? "",
+    kinopoisk_id: draft.kinopoisk_id?.toString() ?? "",
+    rating: draft.movie_rating?.toString() ?? "",
+    type: draft.type ?? "",
+    status: draft.status ?? "",
+    genres: (draft.genres ?? []).join(", "),
+    description: draft.description ?? "",
+    long_description: draft.long_description ?? "",
+    seo_title: draft.seo_title ?? "",
+    seo_description: draft.seo_description ?? "",
+    faq_json:
+      Array.isArray(draft.faq) && draft.faq.length
+        ? JSON.stringify(draft.faq, null, 2)
+        : "",
+    trailer_url: draft.trailer_url ?? "",
+    trailer_embed_url: draft.trailer_embed_url ?? "",
+    trailer_provider: draft.trailer_provider ?? "",
+    trailer_key: draft.trailer_key ?? "",
+    trailer_status: draft.trailer_status ?? "",
+    trailer_confidence: draft.trailer_confidence?.toString() ?? "",
+    player_links: draft.player_links ?? "",
+    rendex_video_id: draft.rendex_video_id ?? "",
+    moderation_notes: draft.moderation_notes ?? "",
   };
 }
 
+function extractRendexVideoIdFromText(value: string) {
+  const trimmed = value.trim();
+  const fromDataId = trimmed.match(/data-id=["']?([^"'\s>]+)/i)?.[1];
+  if (fromDataId) return fromDataId.trim();
+
+  const fromRendexLine = trimmed
+    .split("\n")
+    .map((line) => line.trim())
+    .find((line) => line.toLowerCase().includes("| rendex |"));
+
+  if (fromRendexLine) {
+    const parts = fromRendexLine
+      .split("|")
+      .map((part) => part.trim())
+      .filter(Boolean);
+    const lastPart = parts.at(-1) || "";
+    const digits = lastPart.match(/\d+/)?.[0];
+    if (digits) return digits;
+  }
+
+  return trimmed.match(/\d+/)?.[0] || "";
+}
+
+function getRendexContentTypeFromDraftType(type: string) {
+  const normalized = type.trim().toLowerCase();
+  return normalized === "series" ||
+    normalized === "serial" ||
+    normalized === "tv" ||
+    normalized.includes("сериал")
+    ? "series"
+    : "movie";
+}
+
+function buildCollapsePlayerLineFromKinopoiskId(kinopoiskInput: string) {
+  const kinopoiskId = kinopoiskInput.trim().match(/\d+/)?.[0] || "";
+  return kinopoiskId ? `Основной | collapse | kp | ${kinopoiskId}` : "";
+}
+
+function buildAutoPlayerLinksForDraft(form: ManualDraftForm) {
+  const rendexId = extractRendexVideoIdFromText(form.rendex_video_id);
+  const kinopoiskId = form.kinopoisk_id.trim().match(/\d+/)?.[0] || "";
+  const rendexType = getRendexContentTypeFromDraftType(form.type);
+  const lines: string[] = [];
+  const collapseLine = buildCollapsePlayerLineFromKinopoiskId(kinopoiskId);
+
+  if (collapseLine) {
+    lines.push(collapseLine);
+  }
+
+  if (rendexId) {
+    lines.push(
+      `${kinopoiskId ? "Запасной 1" : "Основной"} | rendex | ${rendexType} | ${rendexId}`,
+    );
+  }
+
+  if (kinopoiskId) {
+    lines.push(
+      `${rendexId ? "Запасной 2" : "Запасной 1"} | iframe | https://tarantino.factorios.live/show/kinopoisk/${kinopoiskId}`,
+    );
+  }
+
+  return lines.join("\n");
+}
 
 export default function ImportDashboardClient() {
-  const [adminSecret, setAdminSecret] = useState('');
-  const [activeTab, setActiveTab] = useState<TabId>('new_candidates');
+  const [adminSecret, setAdminSecret] = useState("");
+  const [activeTab, setActiveTab] = useState<TabId>("new_candidates");
   const [data, setData] = useState<ImportListResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isWorking, setIsWorking] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [candidateSearch, setCandidateSearch] = useState('');
+  const [candidateSearch, setCandidateSearch] = useState("");
   const [trailerDraft, setTrailerDraft] = useState<Draft | null>(null);
   const [editingDraft, setEditingDraft] = useState<Draft | null>(null);
   const [editForm, setEditForm] = useState<ManualDraftForm | null>(null);
 
   useEffect(() => {
-    const savedSecret = window.localStorage.getItem('kinoluma_admin_secret') ?? '';
+    const savedSecret =
+      window.localStorage.getItem("kinoluma_admin_secret") ?? "";
     setAdminSecret(savedSecret);
 
     if (savedSecret) {
@@ -385,50 +504,65 @@ export default function ImportDashboardClient() {
   const visibleDrafts = useMemo(() => {
     const drafts = data?.drafts ?? [];
 
-    if (activeTab === 'drafts') {
-      return drafts.filter((draft) => ['draft', 'needs_ai_seo', 'needs_moderation'].includes(draft.status ?? ''));
+    if (activeTab === "drafts") {
+      return drafts.filter((draft) =>
+        ["draft", "needs_ai_seo", "needs_moderation"].includes(
+          draft.status ?? "",
+        ),
+      );
     }
 
-    if (activeTab === 'needs_review') {
-      return drafts.filter((draft) => draft.status === 'needs_review');
+    if (activeTab === "needs_review") {
+      return drafts.filter((draft) => draft.status === "needs_review");
     }
 
-    if (activeTab === 'ready') {
-      return drafts.filter((draft) => draft.status === 'ready');
+    if (activeTab === "ready") {
+      return drafts.filter((draft) => draft.status === "ready");
     }
 
-    if (activeTab === 'published') {
-      return drafts.filter((draft) => draft.status === 'published');
+    if (activeTab === "published") {
+      return drafts.filter((draft) => draft.status === "published");
     }
 
-    if (activeTab === 'errors') {
-      return drafts.filter((draft) => draft.status === 'rejected');
+    if (activeTab === "errors") {
+      return drafts.filter((draft) => draft.status === "rejected");
     }
 
     return [];
   }, [activeTab, data?.drafts]);
 
-  const newCandidates = data?.candidates.filter((candidate) => candidate.status === 'new') ?? [];
-  const failedCandidates = data?.candidates.filter((candidate) => candidate.status === 'failed') ?? [];
+  const newCandidates =
+    data?.candidates.filter((candidate) => candidate.status === "new") ?? [];
+  const failedCandidates =
+    data?.candidates.filter((candidate) => candidate.status === "failed") ?? [];
   const filteredNewCandidates = useMemo(() => {
     const query = candidateSearch.trim().toLowerCase();
 
     if (!query) return newCandidates;
 
     return newCandidates.filter((candidate) =>
-      [candidate.title, candidate.original_title, candidate.year?.toString(), candidate.source_id, candidate.type]
+      [
+        candidate.title,
+        candidate.original_title,
+        candidate.year?.toString(),
+        candidate.source_id,
+        candidate.type,
+      ]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(query)),
     );
   }, [candidateSearch, newCandidates]);
   const totalDrafts = data?.drafts.length ?? 0;
-  const readyCount = getDraftCount(data, 'ready');
+  const readyCount = getDraftCount(data, "ready");
   const profileLevel = Math.max(1, Math.min(99, totalDrafts + 1));
-  const progressWidth = Math.min(100, Math.max(6, Math.round((readyCount / Math.max(totalDrafts, 1)) * 100)));
+  const progressWidth = Math.min(
+    100,
+    Math.max(6, Math.round((readyCount / Math.max(totalDrafts, 1)) * 100)),
+  );
 
   async function loadData(secret = adminSecret) {
     if (!secret.trim()) {
-      setError('Введи KINOLUMA_ADMIN_SECRET');
+      setError("Введи KINOLUMA_ADMIN_SECRET");
       return;
     }
 
@@ -437,32 +571,40 @@ export default function ImportDashboardClient() {
     setMessage(null);
 
     try {
-      const response = await fetch('/api/admin/import/list', {
-        cache: 'no-store',
+      const response = await fetch("/api/admin/import/list", {
+        cache: "no-store",
         headers: {
-          'x-kinoluma-admin-secret': secret.trim(),
+          "x-kinoluma-admin-secret": secret.trim(),
         },
       });
 
       const payload = (await response.json()) as ImportListResponse;
 
       if (!response.ok || !payload.ok) {
-        throw new Error(payload.error || 'Не удалось загрузить импорт');
+        throw new Error(payload.error || "Не удалось загрузить импорт");
       }
 
-      window.localStorage.setItem('kinoluma_admin_secret', secret.trim());
+      window.localStorage.setItem("kinoluma_admin_secret", secret.trim());
       setData(payload);
-      setMessage('Данные обновлены');
+      setMessage("Данные обновлены");
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : 'Неизвестная ошибка загрузки');
+      setError(
+        loadError instanceof Error
+          ? loadError.message
+          : "Неизвестная ошибка загрузки",
+      );
     } finally {
       setIsLoading(false);
     }
   }
 
-  async function runPost(path: string, body: Record<string, unknown>, successMessage: string) {
+  async function runPost(
+    path: string,
+    body: Record<string, unknown>,
+    successMessage: string,
+  ) {
     if (!adminSecret.trim()) {
-      setError('Введи KINOLUMA_ADMIN_SECRET');
+      setError("Введи KINOLUMA_ADMIN_SECRET");
       return;
     }
 
@@ -472,10 +614,10 @@ export default function ImportDashboardClient() {
 
     try {
       const response = await fetch(path, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'x-kinoluma-admin-secret': adminSecret.trim(),
+          "Content-Type": "application/json",
+          "x-kinoluma-admin-secret": adminSecret.trim(),
         },
         body: JSON.stringify(body),
       });
@@ -483,14 +625,18 @@ export default function ImportDashboardClient() {
       const payload = await response.json();
 
       if (!response.ok || !payload.ok) {
-        throw new Error(payload.error || 'Запрос не выполнен');
+        throw new Error(payload.error || "Запрос не выполнен");
       }
 
       setMessage(payload.message || successMessage);
       await loadData(adminSecret);
       return true;
     } catch (actionError) {
-      setError(actionError instanceof Error ? actionError.message : 'Неизвестная ошибка действия');
+      setError(
+        actionError instanceof Error
+          ? actionError.message
+          : "Неизвестная ошибка действия",
+      );
       return false;
     } finally {
       setIsWorking(false);
@@ -499,40 +645,57 @@ export default function ImportDashboardClient() {
 
   function processNext(candidateId?: string) {
     return runPost(
-      '/api/admin/import/process-next',
+      "/api/admin/import/process-next",
       candidateId ? { candidateId } : {},
-      'Черновик создан',
+      "Черновик создан",
     );
   }
 
-  function importVibix(type: 'movie' | 'serial') {
+  function importVibix(type: "movie" | "serial") {
     return runPost(
-      '/api/admin/import/vibix',
+      "/api/admin/import/vibix",
       { type, page: 1, limit: 30 },
-      type === 'movie' ? 'Vibix: фильмы добавлены в кандидаты' : 'Vibix: сериалы добавлены в кандидаты',
+      type === "movie"
+        ? "Vibix: фильмы добавлены в кандидаты"
+        : "Vibix: сериалы добавлены в кандидаты",
     );
   }
-
 
   function moderateDraft(draftId: string) {
-    return runPost('/api/admin/import/moderate', { draftId }, 'Проверка выполнена');
+    return runPost(
+      "/api/admin/import/moderate",
+      { draftId },
+      "Проверка выполнена",
+    );
   }
 
   function generateSeo(draftId: string) {
-    return runPost('/api/admin/import/generate-seo', { draftId }, 'AI SEO сгенерировано');
+    return runPost(
+      "/api/admin/import/generate-seo",
+      { draftId },
+      "AI SEO сгенерировано",
+    );
   }
 
   function generateTemplateSeo(draftId: string) {
-    return runPost('/api/admin/import/generate-template-seo', { draftId }, 'SEO по шаблону создано');
+    return runPost(
+      "/api/admin/import/generate-template-seo",
+      { draftId },
+      "SEO по шаблону создано",
+    );
   }
 
   function draftAction(draftId: string, action: string, reason?: string) {
-    return runPost('/api/admin/import/draft-action', { draftId, action, reason }, 'Действие сохранено');
+    return runPost(
+      "/api/admin/import/draft-action",
+      { draftId, action, reason },
+      "Действие сохранено",
+    );
   }
 
   function openTrailer(draft: Draft) {
     if (!hasTrailer(draft)) {
-      setError('У этого черновика нет трейлера для просмотра.');
+      setError("У этого черновика нет трейлера для просмотра.");
       return;
     }
 
@@ -545,7 +708,9 @@ export default function ImportDashboardClient() {
   }
 
   function updateEditField(field: keyof ManualDraftForm, value: string) {
-    setEditForm((current) => (current ? { ...current, [field]: value } : current));
+    setEditForm((current) =>
+      current ? { ...current, [field]: value } : current,
+    );
   }
 
   async function saveManualEdit(event: FormEvent<HTMLFormElement>) {
@@ -554,9 +719,9 @@ export default function ImportDashboardClient() {
     if (!editingDraft || !editForm) return;
 
     const ok = await runPost(
-      '/api/admin/import/update-draft',
+      "/api/admin/import/update-draft",
       { draftId: editingDraft.id, values: editForm },
-      'Черновик обновлён вручную',
+      "Черновик обновлён вручную",
     );
 
     if (ok) {
@@ -568,7 +733,7 @@ export default function ImportDashboardClient() {
   async function deleteEditingDraft() {
     if (!editingDraft) return;
 
-    const title = editingDraft.title || editingDraft.slug || 'этот фильм';
+    const title = editingDraft.title || editingDraft.slug || "этот фильм";
     const confirmed = window.confirm(
       `Удалить «${title}» из импортированных фильмов?\n\nФильм пропадёт с сайта и из вкладок импорта. Запись останется в Supabase со статусом deleted, чтобы можно было восстановить её вручную.`,
     );
@@ -576,9 +741,9 @@ export default function ImportDashboardClient() {
     if (!confirmed) return;
 
     const ok = await runPost(
-      '/api/admin/import/delete-draft',
+      "/api/admin/import/delete-draft",
       { draftId: editingDraft.id },
-      'Фильм удалён из импорта',
+      "Фильм удалён из импорта",
     );
 
     if (ok) {
@@ -599,7 +764,11 @@ export default function ImportDashboardClient() {
       <header className="topbar">
         <div className="topbar-inner">
           <a href="/" className="brand" aria-label="KinoLuma">
-            <img src="/kinoluma-icon.png" alt="KinoLuma" className="logo-mark" />
+            <img
+              src="/kinoluma-icon.png"
+              alt="KinoLuma"
+              className="logo-mark"
+            />
             <div>
               <p className="logo-title">KinoLuma</p>
               <p className="logo-subtitle">Import Admin</p>
@@ -607,13 +776,17 @@ export default function ImportDashboardClient() {
           </a>
 
           <div className="top-actions">
-            <button type="button" onClick={() => void loadData()} disabled={isLoading || isWorking} className="ghost-button">
+            <button
+              type="button"
+              onClick={() => void loadData()}
+              disabled={isLoading || isWorking}
+              className="ghost-button"
+            >
               <RefreshCcw size={17} strokeWidth={2.4} aria-hidden="true" />
               Обновить
             </button>
             <a href="/" className="ghost-button">
-              <Film size={17} strokeWidth={2.4} aria-hidden="true" />
-              В каталог
+              <Film size={17} strokeWidth={2.4} aria-hidden="true" />В каталог
             </a>
           </div>
         </div>
@@ -623,7 +796,7 @@ export default function ImportDashboardClient() {
         <section className="hero-grid">
           <aside className="identity-card animate-in">
             <div className="avatar-row">
-              <div className="avatar">{getInitials('KinoLuma Import')}</div>
+              <div className="avatar">{getInitials("KinoLuma Import")}</div>
               <div className="user-meta">
                 <p className="eyebrow">Пульт</p>
                 <h1>Импорт</h1>
@@ -637,10 +810,17 @@ export default function ImportDashboardClient() {
                   <p>Готовность импорта</p>
                   <strong>{progressWidth}%</strong>
                 </div>
-                <span>{totalDrafts ? `${readyCount}/${totalDrafts} ready` : 'ожидает данных'}</span>
+                <span>
+                  {totalDrafts
+                    ? `${readyCount}/${totalDrafts} ready`
+                    : "ожидает данных"}
+                </span>
               </div>
               <div className="progress-track">
-                <div className="progress-fill" style={{ width: `${progressWidth}%` }} />
+                <div
+                  className="progress-fill"
+                  style={{ width: `${progressWidth}%` }}
+                />
               </div>
             </div>
 
@@ -665,29 +845,47 @@ export default function ImportDashboardClient() {
               <p className="eyebrow">KinoLuma Admin</p>
               <h2>Красивый контроль черновиков</h2>
               <p>
-                Здесь фильмы проходят путь от найденного кандидата до проверенного черновика. Публичный сайт не меняется,
-                пока ты сам не подтвердил публикацию.
+                Здесь фильмы проходят путь от найденного кандидата до
+                проверенного черновика. Публичный сайт не меняется, пока ты сам
+                не подтвердил публикацию.
               </p>
 
               <div className="dashboard-actions">
                 <button
                   type="button"
                   onClick={() => void processNext()}
-                  disabled={isLoading || isWorking || !data?.counts.newCandidates}
+                  disabled={
+                    isLoading || isWorking || !data?.counts.newCandidates
+                  }
                   className="primary-button"
                 >
                   <Sparkles size={18} strokeWidth={2.4} aria-hidden="true" />
                   Создать следующий черновик
                 </button>
-                <button type="button" onClick={() => void importVibix('movie')} disabled={isLoading || isWorking} className="secondary-button">
+                <button
+                  type="button"
+                  onClick={() => void importVibix("movie")}
+                  disabled={isLoading || isWorking}
+                  className="secondary-button"
+                >
                   <Database size={18} strokeWidth={2.4} aria-hidden="true" />
                   Vibix: фильмы
                 </button>
-                <button type="button" onClick={() => void importVibix('serial')} disabled={isLoading || isWorking} className="secondary-button">
+                <button
+                  type="button"
+                  onClick={() => void importVibix("serial")}
+                  disabled={isLoading || isWorking}
+                  className="secondary-button"
+                >
                   <Layers3 size={18} strokeWidth={2.4} aria-hidden="true" />
                   Vibix: сериалы
                 </button>
-                <button type="button" onClick={() => void loadData()} disabled={isLoading || isWorking} className="secondary-button">
+                <button
+                  type="button"
+                  onClick={() => void loadData()}
+                  disabled={isLoading || isWorking}
+                  className="secondary-button"
+                >
                   <RefreshCcw size={18} strokeWidth={2.4} aria-hidden="true" />
                   Обновить данные
                 </button>
@@ -714,8 +912,13 @@ export default function ImportDashboardClient() {
                 />
               </label>
 
-              <button type="button" onClick={saveSecretAndLoad} disabled={isLoading} className="primary-button secret-button">
-                {isLoading ? 'Загрузка...' : 'Войти'}
+              <button
+                type="button"
+                onClick={saveSecretAndLoad}
+                disabled={isLoading}
+                className="primary-button secret-button"
+              >
+                {isLoading ? "Загрузка..." : "Войти"}
               </button>
             </div>
           </section>
@@ -731,17 +934,19 @@ export default function ImportDashboardClient() {
           <StatCard
             icon={<Wand2 size={21} strokeWidth={2.4} aria-hidden="true" />}
             title="Нужен SEO"
-            value={getDraftCount(data, 'needs_ai_seo')}
+            value={getDraftCount(data, "needs_ai_seo")}
             text="Бесплатный шаблон заполнит SEO без API-токенов."
           />
           <StatCard
             icon={<Eye size={21} strokeWidth={2.4} aria-hidden="true" />}
             title="Нужна проверка"
-            value={getDraftCount(data, 'needs_review')}
+            value={getDraftCount(data, "needs_review")}
             text="Черновики с сомнениями и низкой уверенностью."
           />
           <StatCard
-            icon={<CheckCircle2 size={21} strokeWidth={2.4} aria-hidden="true" />}
+            icon={
+              <CheckCircle2 size={21} strokeWidth={2.4} aria-hidden="true" />
+            }
             title="Готово"
             value={readyCount}
             text="Даже готовое публикуется только вручную."
@@ -750,11 +955,33 @@ export default function ImportDashboardClient() {
 
         {data ? (
           <section className="integration-grid">
-            <ConfigBadge icon={<Database size={18} strokeWidth={2.4} aria-hidden="true" />} label="TMDB" active={data.config.hasTMDB} />
-            <ConfigBadge icon={<Layers3 size={18} strokeWidth={2.4} aria-hidden="true" />} label="Kinopoisk.dev" active={data.config.hasKinopoisk} />
-            <ConfigBadge icon={<Sparkles size={18} strokeWidth={2.4} aria-hidden="true" />} label="Template SEO" active={data.config.hasTemplateSeo} />
-            <ConfigBadge icon={<Bot size={18} strokeWidth={2.4} aria-hidden="true" />} label="OpenAI SEO" active={data.config.hasOpenAI} />
-            <ConfigBadge icon={<PlayCircle size={18} strokeWidth={2.4} aria-hidden="true" />} label="Vibix API" active={data.config.hasVibix} />
+            <ConfigBadge
+              icon={<Database size={18} strokeWidth={2.4} aria-hidden="true" />}
+              label="TMDB"
+              active={data.config.hasTMDB}
+            />
+            <ConfigBadge
+              icon={<Layers3 size={18} strokeWidth={2.4} aria-hidden="true" />}
+              label="Kinopoisk.dev"
+              active={data.config.hasKinopoisk}
+            />
+            <ConfigBadge
+              icon={<Sparkles size={18} strokeWidth={2.4} aria-hidden="true" />}
+              label="Template SEO"
+              active={data.config.hasTemplateSeo}
+            />
+            <ConfigBadge
+              icon={<Bot size={18} strokeWidth={2.4} aria-hidden="true" />}
+              label="OpenAI SEO"
+              active={data.config.hasOpenAI}
+            />
+            <ConfigBadge
+              icon={
+                <PlayCircle size={18} strokeWidth={2.4} aria-hidden="true" />
+              }
+              label="Vibix API"
+              active={data.config.hasVibix}
+            />
           </section>
         ) : null}
 
@@ -764,7 +991,11 @@ export default function ImportDashboardClient() {
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id)}
-              className={activeTab === tab.id ? 'tab-button tab-button-active' : 'tab-button'}
+              className={
+                activeTab === tab.id
+                  ? "tab-button tab-button-active"
+                  : "tab-button"
+              }
             >
               {tab.icon}
               {tab.label}
@@ -781,10 +1012,17 @@ export default function ImportDashboardClient() {
               <p className="eyebrow">{getTabEyebrow(activeTab)}</p>
               <h2>{getTabTitle(activeTab)}</h2>
             </div>
-            <span className="count-pill">{getActiveCount(activeTab, data, filteredNewCandidates, visibleDrafts)}</span>
+            <span className="count-pill">
+              {getActiveCount(
+                activeTab,
+                data,
+                filteredNewCandidates,
+                visibleDrafts,
+              )}
+            </span>
           </div>
 
-          {activeTab === 'new_candidates' ? (
+          {activeTab === "new_candidates" ? (
             <CandidateList
               candidates={filteredNewCandidates}
               totalCount={newCandidates.length}
@@ -795,9 +1033,9 @@ export default function ImportDashboardClient() {
             />
           ) : null}
 
-          {activeTab === 'runs' ? <RunList runs={data?.runs ?? []} /> : null}
+          {activeTab === "runs" ? <RunList runs={data?.runs ?? []} /> : null}
 
-          {activeTab === 'errors' ? (
+          {activeTab === "errors" ? (
             <>
               <DraftList
                 drafts={visibleDrafts}
@@ -817,15 +1055,23 @@ export default function ImportDashboardClient() {
                       <p className="eyebrow">Кандидаты</p>
                       <h2>Ошибки кандидатов</h2>
                     </div>
-                    <span className="count-pill">{failedCandidates.length}</span>
+                    <span className="count-pill">
+                      {failedCandidates.length}
+                    </span>
                   </div>
-                  <CandidateList candidates={failedCandidates} isWorking={isWorking} onProcess={processNext} />
+                  <CandidateList
+                    candidates={failedCandidates}
+                    isWorking={isWorking}
+                    onProcess={processNext}
+                  />
                 </div>
               ) : null}
             </>
           ) : null}
 
-          {['drafts', 'needs_review', 'ready', 'published'].includes(activeTab) ? (
+          {["drafts", "needs_review", "ready", "published"].includes(
+            activeTab,
+          ) ? (
             <DraftList
               drafts={visibleDrafts}
               configHasOpenAI={Boolean(data?.config.hasOpenAI)}
@@ -842,7 +1088,10 @@ export default function ImportDashboardClient() {
       </div>
 
       {trailerDraft ? (
-        <TrailerModal draft={trailerDraft} onClose={() => setTrailerDraft(null)} />
+        <TrailerModal
+          draft={trailerDraft}
+          onClose={() => setTrailerDraft(null)}
+        />
       ) : null}
 
       {editingDraft && editForm ? (
@@ -865,13 +1114,13 @@ export default function ImportDashboardClient() {
 
 function getTabEyebrow(tab: TabId) {
   const map: Record<TabId, string> = {
-    new_candidates: 'Очередь',
-    drafts: 'Draft board',
-    needs_review: 'Контроль качества',
-    ready: 'Финальный этап',
-    published: 'История',
-    errors: 'Диагностика',
-    runs: 'Cron',
+    new_candidates: "Очередь",
+    drafts: "Draft board",
+    needs_review: "Контроль качества",
+    ready: "Финальный этап",
+    published: "История",
+    errors: "Диагностика",
+    runs: "Cron",
   };
 
   return map[tab];
@@ -879,26 +1128,46 @@ function getTabEyebrow(tab: TabId) {
 
 function getTabTitle(tab: TabId) {
   const map: Record<TabId, string> = {
-    new_candidates: 'Новые кандидаты',
-    drafts: 'Черновики',
-    needs_review: 'Нужна проверка',
-    ready: 'Готово к публикации',
-    published: 'Опубликовано',
-    errors: 'Ошибки',
-    runs: 'Запуски импорта',
+    new_candidates: "Новые кандидаты",
+    drafts: "Черновики",
+    needs_review: "Нужна проверка",
+    ready: "Готово к публикации",
+    published: "Опубликовано",
+    errors: "Ошибки",
+    runs: "Запуски импорта",
   };
 
   return map[tab];
 }
 
-function getActiveCount(tab: TabId, data: ImportListResponse | null, candidates: Candidate[], drafts: Draft[]) {
-  if (tab === 'new_candidates') return candidates.length;
-  if (tab === 'runs') return data?.runs.length ?? 0;
-  if (tab === 'errors') return drafts.length + (data?.candidates.filter((candidate) => candidate.status === 'failed').length ?? 0);
+function getActiveCount(
+  tab: TabId,
+  data: ImportListResponse | null,
+  candidates: Candidate[],
+  drafts: Draft[],
+) {
+  if (tab === "new_candidates") return candidates.length;
+  if (tab === "runs") return data?.runs.length ?? 0;
+  if (tab === "errors")
+    return (
+      drafts.length +
+      (data?.candidates.filter((candidate) => candidate.status === "failed")
+        .length ?? 0)
+    );
   return drafts.length;
 }
 
-function StatCard({ title, value, text, icon }: { title: string; value: number; text: string; icon: ReactNode }) {
+function StatCard({
+  title,
+  value,
+  text,
+  icon,
+}: {
+  title: string;
+  value: number;
+  text: string;
+  icon: ReactNode;
+}) {
   return (
     <article className="stat-card">
       <div className="stat-icon">{icon}</div>
@@ -909,15 +1178,23 @@ function StatCard({ title, value, text, icon }: { title: string; value: number; 
   );
 }
 
-function ConfigBadge({ label, active, icon }: { label: string; active: boolean; icon: ReactNode }) {
+function ConfigBadge({
+  label,
+  active,
+  icon,
+}: {
+  label: string;
+  active: boolean;
+  icon: ReactNode;
+}) {
   return (
     <article className="config-card">
       <div className="config-icon">{icon}</div>
       <div>
         <p>{label}</p>
-        <span>{active ? 'Подключён' : 'Не подключён'}</span>
+        <span>{active ? "Подключён" : "Не подключён"}</span>
       </div>
-      <StatusPill status={active ? 'ready' : 'needs_review'} />
+      <StatusPill status={active ? "ready" : "needs_review"} />
     </article>
   );
 }
@@ -930,10 +1207,18 @@ function StatusPill({ status }: { status: string | null }) {
   );
 }
 
-function Notice({ tone, text }: { tone: 'success' | 'error'; text: string }) {
+function Notice({ tone, text }: { tone: "success" | "error"; text: string }) {
   return (
-    <div className={tone === 'success' ? 'notice notice-success' : 'notice notice-error'}>
-      {tone === 'success' ? <Check size={17} strokeWidth={2.4} aria-hidden="true" /> : <X size={17} strokeWidth={2.4} aria-hidden="true" />}
+    <div
+      className={
+        tone === "success" ? "notice notice-success" : "notice notice-error"
+      }
+    >
+      {tone === "success" ? (
+        <Check size={17} strokeWidth={2.4} aria-hidden="true" />
+      ) : (
+        <X size={17} strokeWidth={2.4} aria-hidden="true" />
+      )}
       <span>{text}</span>
     </div>
   );
@@ -942,7 +1227,7 @@ function Notice({ tone, text }: { tone: 'success' | 'error'; text: string }) {
 function CandidateList({
   candidates,
   totalCount,
-  searchValue = '',
+  searchValue = "",
   onSearchChange,
   isWorking,
   onProcess,
@@ -963,7 +1248,9 @@ function CandidateList({
           <div>
             <p className="eyebrow">Поиск</p>
             <strong>Найти кандидата по названию</strong>
-            <span>Показано {candidates.length} из {totalCount ?? candidates.length}</span>
+            <span>
+              Показано {candidates.length} из {totalCount ?? candidates.length}
+            </span>
           </div>
 
           <label className="candidate-search-field">
@@ -980,13 +1267,22 @@ function CandidateList({
       {!candidates.length ? (
         <EmptyState
           icon={<Search size={24} strokeWidth={2.4} aria-hidden="true" />}
-          title={isFiltering ? 'Ничего не найдено' : 'Новых кандидатов нет'}
-          text={isFiltering ? 'Попробуй другое название, год или original title.' : 'Запусти cron discover-movies или вернись позже, когда очередь пополнится.'}
+          title={isFiltering ? "Ничего не найдено" : "Новых кандидатов нет"}
+          text={
+            isFiltering
+              ? "Попробуй другое название, год или original title."
+              : "Запусти cron discover-movies или вернись позже, когда очередь пополнится."
+          }
         />
       ) : (
         <div className="candidate-grid">
           {candidates.map((candidate) => (
-            <CandidateCard key={candidate.id} candidate={candidate} isWorking={isWorking} onProcess={onProcess} />
+            <CandidateCard
+              key={candidate.id}
+              candidate={candidate}
+              isWorking={isWorking}
+              onProcess={onProcess}
+            />
           ))}
         </div>
       )}
@@ -1006,24 +1302,33 @@ function CandidateCard({
   const poster =
     candidate.poster_url ||
     candidate.backdrop_url ||
-    createGeneratedPoster(candidate.title || 'KinoLuma', candidate.original_title || 'Candidate', candidate.type || 'movie');
+    createGeneratedPoster(
+      candidate.title || "KinoLuma",
+      candidate.original_title || "Candidate",
+      candidate.type || "movie",
+    );
 
   return (
     <article className="candidate-card">
-      <img src={candidate.backdrop_url || poster} alt="" className="candidate-backdrop" aria-hidden="true" />
+      <img
+        src={candidate.backdrop_url || poster}
+        alt=""
+        className="candidate-backdrop"
+        aria-hidden="true"
+      />
 
       <div className="candidate-main">
         <div className="candidate-poster-wrap">
           <img
             src={poster}
-            alt={candidate.title || 'Постер кандидата'}
+            alt={candidate.title || "Постер кандидата"}
             className="candidate-poster"
             onError={(event) => {
               event.currentTarget.onerror = null;
               event.currentTarget.src = createGeneratedPoster(
-                candidate.title || 'KinoLuma',
-                candidate.original_title || 'Candidate',
-                candidate.type || 'movie',
+                candidate.title || "KinoLuma",
+                candidate.original_title || "Candidate",
+                candidate.type || "movie",
               );
             }}
           />
@@ -1032,21 +1337,26 @@ function CandidateCard({
         <div className="candidate-content">
           <div className="candidate-head">
             <div>
-              <p className="eyebrow">{candidate.source || 'source'}</p>
-              <h3>{candidate.title || 'Без названия'}</h3>
-              <p>{candidate.original_title || '—'}</p>
+              <p className="eyebrow">{candidate.source || "source"}</p>
+              <h3>{candidate.title || "Без названия"}</h3>
+              <p>{candidate.original_title || "—"}</p>
             </div>
             <StatusPill status={candidate.status} />
           </div>
 
           <div className="info-grid candidate-info">
-            <Info label="Год" value={candidate.year?.toString() ?? '—'} />
-            <Info label="Тип" value={candidate.type ?? '—'} />
-            <Info label="ID" value={candidate.source_id ?? '—'} />
+            <Info label="Год" value={candidate.year?.toString() ?? "—"} />
+            <Info label="Тип" value={candidate.type ?? "—"} />
+            <Info label="ID" value={candidate.source_id ?? "—"} />
             <Info label="Создан" value={formatDate(candidate.created_at)} />
           </div>
 
-          <button type="button" onClick={() => onProcess(candidate.id)} disabled={isWorking} className="primary-button card-button">
+          <button
+            type="button"
+            onClick={() => onProcess(candidate.id)}
+            disabled={isWorking}
+            className="primary-button card-button"
+          >
             <Sparkles size={17} strokeWidth={2.4} aria-hidden="true" />
             Создать черновик
           </button>
@@ -1078,7 +1388,13 @@ function DraftList({
   onAction: (draftId: string, action: string, reason?: string) => void;
 }) {
   if (!drafts.length) {
-    return <EmptyState icon={<Film size={24} strokeWidth={2.4} aria-hidden="true" />} title="Здесь пока пусто" text="Когда появятся подходящие черновики, они будут показаны здесь красивыми карточками, а не таблицей из подвала." />;
+    return (
+      <EmptyState
+        icon={<Film size={24} strokeWidth={2.4} aria-hidden="true" />}
+        title="Здесь пока пусто"
+        text="Когда появятся подходящие черновики, они будут показаны здесь красивыми карточками, а не таблицей из подвала."
+      />
+    );
   }
 
   return (
@@ -1122,31 +1438,50 @@ function DraftCard({
   onManualEdit: (draft: Draft) => void;
   onAction: (draftId: string, action: string, reason?: string) => void;
 }) {
-  const poster = draft.poster_url || createGeneratedPoster(draft.title || 'KinoLuma', draft.original_title || 'Draft', draft.type || 'movie');
-  const backdrop = draft.backdrop_url || draft.poster_url || '';
+  const poster =
+    draft.poster_url ||
+    createGeneratedPoster(
+      draft.title || "KinoLuma",
+      draft.original_title || "Draft",
+      draft.type || "movie",
+    );
+  const backdrop = draft.backdrop_url || draft.poster_url || "";
   const score = Math.max(0, Math.min(100, draft.quality_score ?? 0));
   const checklist = [
-    { label: 'SEO title', ready: isFeatureReady(draft.seo_title) },
-    { label: 'Long description', ready: isFeatureReady(draft.long_description) },
-    { label: 'FAQ', ready: isFeatureReady(draft.faq) },
-    { label: 'Трейлер', ready: draft.trailer_status === 'accepted' || Boolean(draft.trailer_key) },
-    { label: 'Жанры', ready: isFeatureReady(draft.genres) },
+    { label: "SEO title", ready: isFeatureReady(draft.seo_title) },
+    {
+      label: "Long description",
+      ready: isFeatureReady(draft.long_description),
+    },
+    { label: "FAQ", ready: isFeatureReady(draft.faq) },
+    {
+      label: "Трейлер",
+      ready: draft.trailer_status === "accepted" || Boolean(draft.trailer_key),
+    },
+    { label: "Жанры", ready: isFeatureReady(draft.genres) },
   ];
 
   return (
     <article className="draft-card">
-      {backdrop ? <img src={backdrop} alt="" className="draft-backdrop" aria-hidden="true" /> : null}
+      {backdrop ? (
+        <img
+          src={backdrop}
+          alt=""
+          className="draft-backdrop"
+          aria-hidden="true"
+        />
+      ) : null}
       <div className="draft-poster-wrap">
         <img
           src={poster}
-          alt={draft.title || 'Постер'}
+          alt={draft.title || "Постер"}
           className="draft-poster"
           onError={(event) => {
             event.currentTarget.onerror = null;
             event.currentTarget.src = createGeneratedPoster(
-              draft.title || 'KinoLuma',
-              draft.original_title || 'Draft',
-              draft.type || 'movie',
+              draft.title || "KinoLuma",
+              draft.original_title || "Draft",
+              draft.type || "movie",
             );
           }}
         />
@@ -1156,9 +1491,12 @@ function DraftCard({
       <div className="draft-content">
         <div className="draft-topline">
           <div className="draft-title-block">
-            <p className="eyebrow">{draft.source || 'draft'}</p>
-            <h3>{draft.title || 'Без названия'}</h3>
-            <p>{draft.original_title || '—'} · {draft.year || '—'} · {draft.type || '—'}</p>
+            <p className="eyebrow">{draft.source || "draft"}</p>
+            <h3>{draft.title || "Без названия"}</h3>
+            <p>
+              {draft.original_title || "—"} · {draft.year || "—"} ·{" "}
+              {draft.type || "—"}
+            </p>
           </div>
           <StatusPill status={draft.status} />
         </div>
@@ -1167,7 +1505,11 @@ function DraftCard({
           <button
             type="button"
             onClick={() => onGenerateTemplateSeo(draft.id)}
-            disabled={isWorking || draft.status === 'published' || draft.status === 'rejected'}
+            disabled={
+              isWorking ||
+              draft.status === "published" ||
+              draft.status === "rejected"
+            }
             title="Бесплатно заполнить long description, SEO title, SEO description и FAQ по шаблону. Факты не меняются."
             className="primary-button compact-action"
           >
@@ -1177,14 +1519,28 @@ function DraftCard({
           <button
             type="button"
             onClick={() => onGenerateSeo(draft.id)}
-            disabled={!configHasOpenAI || isWorking || draft.status === 'published' || draft.status === 'rejected'}
-            title={configHasOpenAI ? 'Сгенерировать SEO через OpenAI, если когда-нибудь подключишь API' : 'OPENAI_API_KEY не подключён. Используй бесплатное SEO по шаблону.'}
+            disabled={
+              !configHasOpenAI ||
+              isWorking ||
+              draft.status === "published" ||
+              draft.status === "rejected"
+            }
+            title={
+              configHasOpenAI
+                ? "Сгенерировать SEO через OpenAI, если когда-нибудь подключишь API"
+                : "OPENAI_API_KEY не подключён. Используй бесплатное SEO по шаблону."
+            }
             className="secondary-button compact-action"
           >
             <Wand2 size={16} strokeWidth={2.4} aria-hidden="true" />
             AI SEO
           </button>
-          <button type="button" onClick={() => onModerate(draft.id)} disabled={isWorking} className="secondary-button compact-action">
+          <button
+            type="button"
+            onClick={() => onModerate(draft.id)}
+            disabled={isWorking}
+            className="secondary-button compact-action"
+          >
             <Eye size={16} strokeWidth={2.4} aria-hidden="true" />
             Проверить
           </button>
@@ -1192,13 +1548,22 @@ function DraftCard({
             type="button"
             onClick={() => onOpenTrailer(draft)}
             disabled={isWorking || !hasTrailer(draft)}
-            title={hasTrailer(draft) ? 'Открыть трейлер в админке' : 'Трейлер не найден'}
+            title={
+              hasTrailer(draft)
+                ? "Открыть трейлер в админке"
+                : "Трейлер не найден"
+            }
             className="secondary-button compact-action"
           >
             <PlayCircle size={16} strokeWidth={2.4} aria-hidden="true" />
             Открыть трейлер
           </button>
-          <button type="button" disabled title="Перепоиск трейлера добавим отдельным endpoint" className="secondary-button compact-action muted-action">
+          <button
+            type="button"
+            disabled
+            title="Перепоиск трейлера добавим отдельным endpoint"
+            className="secondary-button compact-action muted-action"
+          >
             <RefreshCcw size={16} strokeWidth={2.4} aria-hidden="true" />
             Найти трейлер заново
           </button>
@@ -1208,7 +1573,9 @@ function DraftCard({
 
         <div className="genre-row">
           {(draft.genres ?? []).length ? (
-            draft.genres?.slice(0, 8).map((genre) => <span key={genre}>{genre}</span>)
+            draft.genres
+              ?.slice(0, 8)
+              .map((genre) => <span key={genre}>{genre}</span>)
           ) : (
             <span className="genre-warning">Жанры не найдены</span>
           )}
@@ -1216,14 +1583,33 @@ function DraftCard({
 
         <div className="draft-layout-grid">
           <div className="info-grid">
-            <Info label="TMDB" value={draft.tmdb_id?.toString() ?? '—'} />
-            <Info label="IMDb" value={draft.imdb_id ?? '—'} />
-            <Info label="Кинопоиск" value={draft.kinopoisk_id?.toString() ?? '—'} />
-            <Info label="Рейтинг" value={draft.movie_rating ? draft.movie_rating.toString() : '—'} />
-            <Info label="Slug" value={draft.slug ?? '—'} />
-            <Info label="Trailer" value={`${statusLabel(draft.trailer_status)} · ${draft.trailer_confidence ?? 0}`} />
-            <Info label="FAQ" value={Array.isArray(draft.faq) && draft.faq.length ? `${draft.faq.length}` : 'Нет'} />
-            <Info label="Плееры" value={draft.player_links?.trim() ? 'Есть' : 'Нет'} />
+            <Info label="TMDB" value={draft.tmdb_id?.toString() ?? "—"} />
+            <Info label="IMDb" value={draft.imdb_id ?? "—"} />
+            <Info
+              label="Кинопоиск"
+              value={draft.kinopoisk_id?.toString() ?? "—"}
+            />
+            <Info
+              label="Рейтинг"
+              value={draft.movie_rating ? draft.movie_rating.toString() : "—"}
+            />
+            <Info label="Slug" value={draft.slug ?? "—"} />
+            <Info
+              label="Trailer"
+              value={`${statusLabel(draft.trailer_status)} · ${draft.trailer_confidence ?? 0}`}
+            />
+            <Info
+              label="FAQ"
+              value={
+                Array.isArray(draft.faq) && draft.faq.length
+                  ? `${draft.faq.length}`
+                  : "Нет"
+              }
+            />
+            <Info
+              label="Плееры"
+              value={draft.player_links?.trim() ? "Есть" : "Нет"}
+            />
           </div>
 
           <div className="quality-card">
@@ -1231,16 +1617,30 @@ function DraftCard({
               <Gauge size={18} strokeWidth={2.4} aria-hidden="true" />
               <div>
                 <p>Quality score</p>
-                <strong>{draft.quality_score === null ? 'Не проверено' : `${draft.quality_score} / 100`}</strong>
+                <strong>
+                  {draft.quality_score === null
+                    ? "Не проверено"
+                    : `${draft.quality_score} / 100`}
+                </strong>
               </div>
             </div>
             <div className="progress-track small">
-              <div className="progress-fill" style={{ width: `${score || 6}%` }} />
+              <div
+                className="progress-fill"
+                style={{ width: `${score || 6}%` }}
+              />
             </div>
             <div className="check-list">
               {checklist.map((item) => (
-                <span key={item.label} className={item.ready ? 'check-item ready' : 'check-item'}>
-                  {item.ready ? <Check size={13} strokeWidth={3} aria-hidden="true" /> : <X size={13} strokeWidth={3} aria-hidden="true" />}
+                <span
+                  key={item.label}
+                  className={item.ready ? "check-item ready" : "check-item"}
+                >
+                  {item.ready ? (
+                    <Check size={13} strokeWidth={3} aria-hidden="true" />
+                  ) : (
+                    <X size={13} strokeWidth={3} aria-hidden="true" />
+                  )}
                   {item.label}
                 </span>
               ))}
@@ -1258,33 +1658,63 @@ function DraftCard({
         <div className="draft-actions-bottom">
           <button
             type="button"
-            onClick={() => onAction(draft.id, 'publish_safe_click')}
-            disabled={isWorking || draft.status !== 'ready'}
+            onClick={() => onAction(draft.id, "publish_safe_click")}
+            disabled={isWorking || draft.status !== "ready"}
             title="Публикует черновик вручную: статус станет published, публичная страница и sitemap обновятся"
             className="primary-button"
           >
             <ShieldCheck size={17} strokeWidth={2.4} aria-hidden="true" />
             Опубликовать
           </button>
-          <button type="button" onClick={() => onAction(draft.id, 'mark_ready')} disabled={isWorking} className="secondary-button good-action">
+          <button
+            type="button"
+            onClick={() => onAction(draft.id, "mark_ready")}
+            disabled={isWorking}
+            className="secondary-button good-action"
+          >
             <CheckCircle2 size={17} strokeWidth={2.4} aria-hidden="true" />
             Готово
           </button>
-          <button type="button" onClick={() => onAction(draft.id, 'wrong_trailer')} disabled={isWorking} className="secondary-button">
+          <button
+            type="button"
+            onClick={() => onAction(draft.id, "wrong_trailer")}
+            disabled={isWorking}
+            className="secondary-button"
+          >
             Неверный трейлер
           </button>
-          <button type="button" onClick={() => onAction(draft.id, 'bad_description')} disabled={isWorking} className="secondary-button">
+          <button
+            type="button"
+            onClick={() => onAction(draft.id, "bad_description")}
+            disabled={isWorking}
+            className="secondary-button"
+          >
             Плохое описание
           </button>
-          <button type="button" onClick={() => onAction(draft.id, 'duplicate')} disabled={isWorking} className="secondary-button">
+          <button
+            type="button"
+            onClick={() => onAction(draft.id, "duplicate")}
+            disabled={isWorking}
+            className="secondary-button"
+          >
             <CopyCheck size={17} strokeWidth={2.4} aria-hidden="true" />
             Дубль
           </button>
-          <button type="button" onClick={() => onAction(draft.id, 'reject')} disabled={isWorking} className="secondary-button danger-action">
+          <button
+            type="button"
+            onClick={() => onAction(draft.id, "reject")}
+            disabled={isWorking}
+            className="secondary-button danger-action"
+          >
             <Trash2 size={17} strokeWidth={2.4} aria-hidden="true" />
             Отклонить
           </button>
-          <button type="button" onClick={() => onManualEdit(draft)} disabled={isWorking} className="secondary-button">
+          <button
+            type="button"
+            onClick={() => onManualEdit(draft)}
+            disabled={isWorking}
+            className="secondary-button"
+          >
             <Edit3 size={17} strokeWidth={2.4} aria-hidden="true" />
             Исправить вручную
           </button>
@@ -1294,21 +1724,40 @@ function DraftCard({
   );
 }
 
-
-function TrailerModal({ draft, onClose }: { draft: Draft; onClose: () => void }) {
+function TrailerModal({
+  draft,
+  onClose,
+}: {
+  draft: Draft;
+  onClose: () => void;
+}) {
   const embedUrl = getTrailerEmbedUrl(draft);
   const externalUrl = getTrailerExternalUrl(draft);
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <section className="modal-panel trailer-modal" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true">
+      <section
+        className="modal-panel trailer-modal"
+        onClick={(event) => event.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+      >
         <div className="modal-head">
           <div>
             <p className="eyebrow">Трейлер</p>
-            <h3>{draft.title || 'Без названия'}</h3>
-            <span>{draft.trailer_provider || 'video'} · {statusLabel(draft.trailer_status)} · confidence {draft.trailer_confidence ?? 0}</span>
+            <h3>{draft.title || "Без названия"}</h3>
+            <span>
+              {draft.trailer_provider || "video"} ·{" "}
+              {statusLabel(draft.trailer_status)} · confidence{" "}
+              {draft.trailer_confidence ?? 0}
+            </span>
           </div>
-          <button type="button" onClick={onClose} className="icon-close" aria-label="Закрыть">
+          <button
+            type="button"
+            onClick={onClose}
+            className="icon-close"
+            aria-label="Закрыть"
+          >
             <X size={20} strokeWidth={2.8} aria-hidden="true" />
           </button>
         </div>
@@ -1317,14 +1766,16 @@ function TrailerModal({ draft, onClose }: { draft: Draft; onClose: () => void })
           <div className="trailer-frame-wrap">
             <iframe
               src={embedUrl}
-              title={`Трейлер: ${draft.title || 'KinoLuma'}`}
+              title={`Трейлер: ${draft.title || "KinoLuma"}`}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowFullScreen
             />
           </div>
         ) : (
           <div className="empty-state compact-empty">
-            <div className="empty-icon"><PlayCircle size={24} strokeWidth={2.4} aria-hidden="true" /></div>
+            <div className="empty-icon">
+              <PlayCircle size={24} strokeWidth={2.4} aria-hidden="true" />
+            </div>
             <h3>Встраивание недоступно</h3>
             <p>Можно открыть трейлер во внешней вкладке.</p>
           </div>
@@ -1332,12 +1783,19 @@ function TrailerModal({ draft, onClose }: { draft: Draft; onClose: () => void })
 
         <div className="modal-actions">
           {externalUrl ? (
-            <a href={externalUrl} target="_blank" rel="noreferrer" className="primary-button">
+            <a
+              href={externalUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="primary-button"
+            >
               <ExternalLink size={17} strokeWidth={2.4} aria-hidden="true" />
               Открыть на YouTube
             </a>
           ) : null}
-          <button type="button" onClick={onClose} className="secondary-button">Закрыть</button>
+          <button type="button" onClick={onClose} className="secondary-button">
+            Закрыть
+          </button>
         </div>
       </section>
     </div>
@@ -1363,59 +1821,207 @@ function ManualEditModal({
 }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <form className="modal-panel edit-modal" onClick={(event) => event.stopPropagation()} onSubmit={onSave} role="dialog" aria-modal="true">
+      <form
+        className="modal-panel edit-modal"
+        onClick={(event) => event.stopPropagation()}
+        onSubmit={onSave}
+        role="dialog"
+        aria-modal="true"
+      >
         <div className="modal-head">
           <div>
             <p className="eyebrow">Ручная правка</p>
-            <h3>{draft.title || 'Черновик'}</h3>
-            <span>Изменения сохранятся в Supabase и попадут в agent_feedback.</span>
+            <h3>{draft.title || "Черновик"}</h3>
+            <span>
+              Изменения сохранятся в Supabase и попадут в agent_feedback.
+            </span>
           </div>
-          <button type="button" onClick={onClose} className="icon-close" aria-label="Закрыть">
+          <button
+            type="button"
+            onClick={onClose}
+            className="icon-close"
+            aria-label="Закрыть"
+          >
             <X size={20} strokeWidth={2.8} aria-hidden="true" />
           </button>
         </div>
 
         <div className="edit-grid">
-          <EditField label="Название" value={form.title} onChange={(value) => onChange('title', value)} />
-          <EditField label="Оригинальное название" value={form.original_title} onChange={(value) => onChange('original_title', value)} />
-          <EditField label="Slug" value={form.slug} onChange={(value) => onChange('slug', value)} />
-          <EditField label="Год" value={form.year} onChange={(value) => onChange('year', value)} />
-          <EditField label="Кинопоиск ID" value={form.kinopoisk_id} onChange={(value) => onChange('kinopoisk_id', value)} placeholder="например 535341" />
-          <EditField label="Рейтинг фильма" value={form.rating} onChange={(value) => onChange('rating', value)} placeholder="например 7.4" />
-          <EditField label="Тип" value={form.type} onChange={(value) => onChange('type', value)} placeholder="film / series / anime / cartoon / documentary" />
-          <EditField label="Статус" value={form.status} onChange={(value) => onChange('status', value)} />
-          <EditField label="Жанры через запятую" value={form.genres} onChange={(value) => onChange('genres', value)} className="wide" />
-          <EditField label="SEO title" value={form.seo_title} onChange={(value) => onChange('seo_title', value)} className="wide" />
-          <EditField label="SEO description" value={form.seo_description} onChange={(value) => onChange('seo_description', value)} className="wide" />
-          <EditField label="Trailer URL" value={form.trailer_url} onChange={(value) => onChange('trailer_url', value)} />
-          <EditField label="Trailer embed URL" value={form.trailer_embed_url} onChange={(value) => onChange('trailer_embed_url', value)} />
-          <EditField label="Trailer provider" value={form.trailer_provider} onChange={(value) => onChange('trailer_provider', value)} />
-          <EditField label="Trailer key" value={form.trailer_key} onChange={(value) => onChange('trailer_key', value)} />
-          <EditField label="Trailer status" value={form.trailer_status} onChange={(value) => onChange('trailer_status', value)} />
-          <EditField label="Trailer confidence" value={form.trailer_confidence} onChange={(value) => onChange('trailer_confidence', value)} />
+          <EditField
+            label="Название"
+            value={form.title}
+            onChange={(value) => onChange("title", value)}
+          />
+          <EditField
+            label="Оригинальное название"
+            value={form.original_title}
+            onChange={(value) => onChange("original_title", value)}
+          />
+          <EditField
+            label="Slug"
+            value={form.slug}
+            onChange={(value) => onChange("slug", value)}
+          />
+          <EditField
+            label="Год"
+            value={form.year}
+            onChange={(value) => onChange("year", value)}
+          />
+          <EditField
+            label="Кинопоиск ID"
+            value={form.kinopoisk_id}
+            onChange={(value) => onChange("kinopoisk_id", value)}
+            placeholder="например 535341"
+          />
+          <EditField
+            label="Рейтинг фильма"
+            value={form.rating}
+            onChange={(value) => onChange("rating", value)}
+            placeholder="например 7.4"
+          />
+          <EditField
+            label="Тип"
+            value={form.type}
+            onChange={(value) => onChange("type", value)}
+            placeholder="film / series / anime / cartoon / documentary"
+          />
+          <EditField
+            label="Статус"
+            value={form.status}
+            onChange={(value) => onChange("status", value)}
+          />
+          <EditField
+            label="Жанры через запятую"
+            value={form.genres}
+            onChange={(value) => onChange("genres", value)}
+            className="wide"
+          />
+          <EditField
+            label="SEO title"
+            value={form.seo_title}
+            onChange={(value) => onChange("seo_title", value)}
+            className="wide"
+          />
+          <EditField
+            label="SEO description"
+            value={form.seo_description}
+            onChange={(value) => onChange("seo_description", value)}
+            className="wide"
+          />
+          <EditField
+            label="Trailer URL"
+            value={form.trailer_url}
+            onChange={(value) => onChange("trailer_url", value)}
+          />
+          <EditField
+            label="Trailer embed URL"
+            value={form.trailer_embed_url}
+            onChange={(value) => onChange("trailer_embed_url", value)}
+          />
+          <EditField
+            label="Trailer provider"
+            value={form.trailer_provider}
+            onChange={(value) => onChange("trailer_provider", value)}
+          />
+          <EditField
+            label="Trailer key"
+            value={form.trailer_key}
+            onChange={(value) => onChange("trailer_key", value)}
+          />
+          <EditField
+            label="Trailer status"
+            value={form.trailer_status}
+            onChange={(value) => onChange("trailer_status", value)}
+          />
+          <EditField
+            label="Trailer confidence"
+            value={form.trailer_confidence}
+            onChange={(value) => onChange("trailer_confidence", value)}
+          />
+          <EditField
+            label="Rendex ID или <ins>"
+            value={form.rendex_video_id}
+            onChange={(value) => onChange("rendex_video_id", value)}
+            placeholder={
+              '150669 или <ins data-publisher-id="678053396" data-type="movie" data-id="150669"></ins>'
+            }
+            className="wide"
+          />
+          <div className="player-generator-row wide">
+            <button
+              type="button"
+              onClick={() => {
+                const generated = buildAutoPlayerLinksForDraft(form);
+                if (generated) onChange("player_links", generated);
+              }}
+              className="secondary-button compact-action"
+            >
+              <Sparkles size={16} strokeWidth={2.4} aria-hidden="true" />
+              Сгенерировать плееры
+            </button>
+            <span>
+              Основной — Collapse, запасной 1 — Rendex, запасной 2 — Factorios
+              по Kinopoisk ID.
+            </span>
+          </div>
           <EditTextarea
             label="Плееры фильма"
             value={form.player_links}
-            onChange={(value) => onChange('player_links', value)}
-            placeholder={'Основной | rendex | 150669\nЗапасной | iframe | https://tarantino.factorios.live/show/kinopoisk/1219177'}
+            onChange={(value) => onChange("player_links", value)}
+            placeholder={
+              "Основной | collapse | kp | 1219177\nЗапасной 1 | rendex | movie | 150669\nЗапасной 2 | iframe | https://tarantino.factorios.live/show/kinopoisk/1219177"
+            }
           />
-          <EditTextarea label="Описание" value={form.description} onChange={(value) => onChange('description', value)} />
-          <EditTextarea label="Long description" value={form.long_description} onChange={(value) => onChange('long_description', value)} />
-          <EditTextarea label="FAQ JSON" value={form.faq_json} onChange={(value) => onChange('faq_json', value)} placeholder='[{"question":"...","answer":"..."}]' />
-          <EditTextarea label="Заметки модерации" value={form.moderation_notes} onChange={(value) => onChange('moderation_notes', value)} />
+          <EditTextarea
+            label="Описание"
+            value={form.description}
+            onChange={(value) => onChange("description", value)}
+          />
+          <EditTextarea
+            label="Long description"
+            value={form.long_description}
+            onChange={(value) => onChange("long_description", value)}
+          />
+          <EditTextarea
+            label="FAQ JSON"
+            value={form.faq_json}
+            onChange={(value) => onChange("faq_json", value)}
+            placeholder='[{"question":"...","answer":"..."}]'
+          />
+          <EditTextarea
+            label="Заметки модерации"
+            value={form.moderation_notes}
+            onChange={(value) => onChange("moderation_notes", value)}
+          />
         </div>
 
         <div className="modal-actions sticky-actions">
-          <button type="button" onClick={onDelete} disabled={isWorking} className="secondary-button danger-action delete-draft-button">
+          <button
+            type="button"
+            onClick={onDelete}
+            disabled={isWorking}
+            className="secondary-button danger-action delete-draft-button"
+          >
             <Trash2 size={17} strokeWidth={2.4} aria-hidden="true" />
             Удалить фильм
           </button>
           <div className="modal-save-actions">
-            <button type="submit" disabled={isWorking} className="primary-button">
+            <button
+              type="submit"
+              disabled={isWorking}
+              className="primary-button"
+            >
               <Save size={17} strokeWidth={2.4} aria-hidden="true" />
-              {isWorking ? 'Сохраняю...' : 'Сохранить изменения'}
+              {isWorking ? "Сохраняю..." : "Сохранить изменения"}
             </button>
-            <button type="button" onClick={onClose} disabled={isWorking} className="secondary-button">Отмена</button>
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isWorking}
+              className="secondary-button"
+            >
+              Отмена
+            </button>
           </div>
         </div>
       </form>
@@ -1428,7 +2034,7 @@ function EditField({
   value,
   onChange,
   placeholder,
-  className = '',
+  className = "",
 }: {
   label: string;
   value: string;
@@ -1439,7 +2045,11 @@ function EditField({
   return (
     <label className={`edit-field ${className}`}>
       <span>{label}</span>
-      <input value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} />
+      <input
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+      />
     </label>
   );
 }
@@ -1458,14 +2068,25 @@ function EditTextarea({
   return (
     <label className="edit-field wide">
       <span>{label}</span>
-      <textarea value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} rows={5} />
+      <textarea
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        rows={5}
+      />
     </label>
   );
 }
 
 function RunList({ runs }: { runs: ImportRun[] }) {
   if (!runs.length) {
-    return <EmptyState icon={<Activity size={24} strokeWidth={2.4} aria-hidden="true" />} title="Запусков пока нет" text="После cron discover-movies здесь появится история запусков." />;
+    return (
+      <EmptyState
+        icon={<Activity size={24} strokeWidth={2.4} aria-hidden="true" />}
+        title="Запусков пока нет"
+        text="После cron discover-movies здесь появится история запусков."
+      />
+    );
   }
 
   return (
@@ -1481,12 +2102,17 @@ function RunList({ runs }: { runs: ImportRun[] }) {
             <StatusPill status={run.status} />
           </div>
           <div className="info-grid run-info">
-            <Info label="Найдено" value={run.found_count?.toString() ?? '0'} />
-            <Info label="Создано drafts" value={run.created_drafts_count?.toString() ?? '0'} />
-            <Info label="Ошибок" value={run.failed_count?.toString() ?? '0'} />
+            <Info label="Найдено" value={run.found_count?.toString() ?? "0"} />
+            <Info
+              label="Создано drafts"
+              value={run.created_drafts_count?.toString() ?? "0"}
+            />
+            <Info label="Ошибок" value={run.failed_count?.toString() ?? "0"} />
             <Info label="Завершён" value={formatDate(run.finished_at)} />
           </div>
-          {run.log ? <pre className="log-card">{formatLog(run.log)}</pre> : null}
+          {run.log ? (
+            <pre className="log-card">{formatLog(run.log)}</pre>
+          ) : null}
         </article>
       ))}
     </div>
@@ -1502,7 +2128,15 @@ function Info({ label, value }: { label: string; value: string }) {
   );
 }
 
-function EmptyState({ icon, title, text }: { icon: ReactNode; title: string; text: string }) {
+function EmptyState({
+  icon,
+  title,
+  text,
+}: {
+  icon: ReactNode;
+  title: string;
+  text: string;
+}) {
   return (
     <div className="empty-state">
       <div className="empty-icon">{icon}</div>
@@ -2928,6 +3562,21 @@ const adminImportStyles = `
       opacity: 1;
       transform: translateY(0);
     }
+  }
+
+
+  .player-generator-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 12px 0 4px;
+  }
+
+  .player-generator-row span {
+    color: rgba(255,255,255,0.62);
+    font-size: 13px;
+    font-weight: 800;
   }
 
   @media (max-width: 1100px) {
