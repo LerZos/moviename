@@ -58,7 +58,7 @@ function extractRendexVideoId(value: string) {
   return digits || '';
 }
 
-function parsePlayers(value: FormDataEntryValue | null) {
+function parsePlayers(value: FormDataEntryValue | null): Record<string, unknown>[] {
   if (typeof value !== 'string') {
     return [];
   }
@@ -112,7 +112,7 @@ function parsePlayers(value: FormDataEntryValue | null) {
         embedUrl,
       };
     })
-    .filter((player): player is Record<string, unknown> => Boolean(player));
+    .filter(Boolean) as Record<string, unknown>[];
 }
 
 function playersToText(players: unknown) {

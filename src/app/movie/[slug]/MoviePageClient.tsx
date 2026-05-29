@@ -17,6 +17,7 @@ import {
   loadMovieActions,
   syncMovieAction,
 } from "../../lib/kinolumaSupabase";
+import { buildAutoPlayers, isAnimeAutoPlayerInput } from "../../lib/players";
 
 type MoviePageClientProps = {
   movie: Movie;
@@ -209,9 +210,39 @@ function getGeneratedPosterFallback(title: string) {
 }
 
 export default function MoviePageClient({ movie, allMovies = staticAllMovies }: MoviePageClientProps) {
-  const players = useMemo(
-    () => (movie.players && movie.players.length > 0 ? movie.players : DEFAULT_PLAYERS),
-    [movie.players],
+  const generatedPlayers = useMemo(
+    () =>
+      buildAutoPlayers({
+        slug: movie.slug,
+        kinopoiskId: movie.kinopoiskId,
+        movieType: movie.type,
+        genres: movie.genres,
+      }),
+    [movie.genres, movie.kinopoiskId, movie.slug, movie.type],
+  );
+
+  const players = useMemo(() => {
+    const realPlayers = (movie.players || []).filter((player) => {
+      if (isRendexPlayer(player)) {
+        return Boolean(getRendexContentId(player));
+      }
+
+      return Boolean(player.embedUrl?.trim());
+    });
+
+    if (realPlayers.length > 0) return realPlayers;
+    if (generatedPlayers.length > 0) return generatedPlayers;
+
+    return DEFAULT_PLAYERS;
+  }, [generatedPlayers, movie.players]);
+
+  const isAnimePlayerUnavailable = useMemo(
+    () =>
+      isAnimeAutoPlayerInput({
+        movieType: movie.type,
+        genres: movie.genres,
+      }),
+    [movie.genres, movie.type],
   );
 
   const facts = useMemo(
@@ -796,7 +827,7 @@ export default function MoviePageClient({ movie, allMovies = staticAllMovies }: 
                 allowFullScreen
                 referrerPolicy="strict-origin-when-cross-origin"
               />
-            ) : movie.type === "Аниме" ? (
+            ) : isAnimePlayerUnavailable ? (
               <div className="player-placeholder">
                 <div className="play-icon">
                   <svg viewBox="0 0 24 24" aria-hidden="true">

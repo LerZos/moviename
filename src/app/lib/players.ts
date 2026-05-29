@@ -295,7 +295,7 @@ export function getKinopoiskIdFromRawJson(rawJson: unknown) {
 function normalizeRendexContentType(input?: string | null) {
   const value = cleanString(input).toLowerCase();
 
-  if (value === 'series' || value === 'serial' || value === 'tv') return 'serial';
+  if (value === 'series' || value === 'serial' || value === 'tv') return 'series';
 
   return 'movie';
 }

@@ -96,8 +96,8 @@ function parsePlayerLinks(value: unknown) {
       .map((player, index) => {
         const item = asRecord(player);
         const name = cleanText(item.name) || `Плеер ${index + 1}`;
-        const type = cleanText(item.type).toLowerCase();
-        const contentId = cleanText(item.contentId) || cleanText(item.rendexVideoId);
+        const type = (cleanText(item.type) || '').toLowerCase();
+        const contentId = cleanText(item.contentId) || cleanText(item.rendexVideoId) || '';
         const embedUrl = cleanText(item.embedUrl);
 
         if (type === 'rendex') return buildRendexPlayer(name, contentId, index);

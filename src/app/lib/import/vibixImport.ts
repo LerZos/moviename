@@ -112,7 +112,19 @@ function buildVibixPlayers(video: VibixVideo) {
   return players;
 }
 
+
+function hasAnimeMarker(video: VibixVideo) {
+  const genreText = Array.isArray(video.genre) ? video.genre.join(' ') : cleanText(video.genre);
+  const tagsText = Array.isArray(video.tags)
+    ? video.tags.map((tag) => `${cleanText(tag.name)} ${cleanText(tag.code)}`).join(' ')
+    : '';
+  const text = `${genreText} ${tagsText} ${cleanText(video.name)} ${cleanText(video.name_rus)} ${cleanText(video.name_eng)}`.toLowerCase();
+
+  return text.includes('аниме') || text.includes('anime');
+}
+
 function normalizeCandidate(video: VibixVideo) {
+  if (hasAnimeMarker(video)) return null;
   const videoId = cleanInt(video.id);
   const title = normalizeTitle(video);
   const originalTitle = normalizeOriginalTitle(video);
@@ -184,7 +196,10 @@ export async function importVibixCandidates(options: ImportVibixCandidatesOption
   try {
     const response = await fetchVibixLinks({ type, page, limit });
     const videos = Array.isArray(response.data) ? response.data : [];
-    const normalized = videos.map(normalizeCandidate).filter(Boolean) as Array<ReturnType<typeof normalizeCandidate> & Record<string, unknown>>;
+    type NormalizedVibixCandidate = NonNullable<ReturnType<typeof normalizeCandidate>>;
+    const normalized = videos
+      .map(normalizeCandidate)
+      .filter((candidate): candidate is NormalizedVibixCandidate => Boolean(candidate));
 
     const freshCandidates: typeof normalized = [];
     const duplicates: unknown[] = [];
