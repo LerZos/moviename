@@ -1,5 +1,4 @@
 import { movies, type CastMember, type ContentType, type Movie, type MovieFact, type PlayerProvider } from '../../data/movies';
-import { mergeAutoPlayersIntoRawJson, parsePlayerArray } from '../players';
 import { supabaseAdmin } from '../supabase/admin';
 
 export type MovieOverrideData = Partial<Movie> & Record<string, unknown>;
@@ -116,8 +115,46 @@ function createDraftPoster(title: string, originalTitle: string) {
 function getManualPlayers(rawJson: unknown): PlayerProvider[] {
   const raw = asRecord(rawJson);
   const kinoluma = asRecord(raw.kinoluma);
+  const players = Array.isArray(kinoluma.players) ? kinoluma.players : [];
 
-  return parsePlayerArray(kinoluma.players);
+  return players
+    .map((player, index) => {
+      const item = asRecord(player);
+      const type = cleanString(item.type).toLowerCase();
+      const embedUrl = cleanString(item.embedUrl);
+      const contentId = cleanString(item.contentId) || cleanString(item.rendexVideoId);
+      const name = cleanString(item.name) || `Плеер ${index + 1}`;
+
+      if (type === 'rendex' && contentId) {
+        return {
+          id: cleanString(item.id) || `rendex-${contentId}`,
+          name,
+          embedUrl: '',
+          type: 'rendex',
+          provider: 'rendex',
+          publisherId: cleanString(item.publisherId) || process.env.RENDEX_PUBLISHER_ID || process.env.VIBIX_PUBLISHER_ID || '678053396',
+          contentType: cleanString(item.contentType) || 'movie',
+          contentId,
+          rendexVideoId: contentId,
+          design: cleanString(item.design) || '1',
+          color1: cleanString(item.color1) || '#56CEAA',
+          color2: cleanString(item.color2) || '#FFFFFF',
+          color3: cleanString(item.color3) || '#AEC7BC',
+          color4: cleanString(item.color4) || '#42BD88',
+          color5: cleanString(item.color5) || '#000000',
+        } as PlayerProvider & Record<string, unknown>;
+      }
+
+      if (!embedUrl) return null;
+
+      return {
+        id: cleanString(item.id) || `player-${index + 1}`,
+        name,
+        embedUrl,
+        type: type || 'iframe',
+      } as PlayerProvider & Record<string, unknown>;
+    })
+    .filter((player): player is PlayerProvider => Boolean(player));
 }
 
 function getNumber(value: unknown) {
@@ -260,11 +297,7 @@ function draftToMovie(draft: MovieDraftRow): Movie | null {
   const originalTitle = cleanString(draft.original_title) || title;
   const genres = cleanStringArray(draft.genres, 12);
   const poster = cleanString(draft.poster_url) || cleanString(draft.backdrop_url) || createDraftPoster(title, originalTitle);
-  const rawJsonWithPlayers = mergeAutoPlayersIntoRawJson(draft.raw_json, {
-    kinopoiskId: draft.kinopoisk_id,
-    movieType: mapDraftType(draft.type),
-  });
-  const players = getManualPlayers(rawJsonWithPlayers);
+  const players = getManualPlayers(draft.raw_json);
 
   return {
     id: getStableMovieId(slug),
@@ -277,14 +310,14 @@ function draftToMovie(draft: MovieDraftRow): Movie | null {
     searchTitles: [title, originalTitle, slug].filter((value, index, array) => value && array.indexOf(value) === index),
     type: mapDraftType(draft.type),
     year: draft.year ? String(draft.year) : '',
-    rating: getRatingFromRawJson(rawJsonWithPlayers),
+    rating: getRatingFromRawJson(draft.raw_json),
     genres,
     poster,
     backdrop: cleanString(draft.backdrop_url) || undefined,
     description: cleanString(draft.description) || `${title} — материал KinoLuma, опубликованный из импортного черновика после проверки.`,
     trailerUrl: cleanString(draft.trailer_embed_url) || cleanString(draft.trailer_url),
     longDescription: cleanString(draft.long_description) || undefined,
-    facts: getDraftFacts({ ...draft, raw_json: rawJsonWithPlayers }),
+    facts: getDraftFacts(draft),
     cast: getDraftCast(draft),
     players: players.length ? players : DEFAULT_PLAYERS,
   } as Movie & Record<string, unknown>;

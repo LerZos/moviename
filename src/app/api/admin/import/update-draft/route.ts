@@ -1,6 +1,5 @@
 import { supabaseAdmin } from '../../../../lib/supabase/admin';
 import { assertAdminSecret } from '../../../../lib/import/adminAuth';
-import { buildAutoPlayers, extractRendexVideoId, parsePlayerText } from '../../../../lib/players';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -38,11 +37,6 @@ function cleanNumber(value: unknown) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function cleanRendexVideoId(value: unknown) {
-  const id = extractRendexVideoId(value);
-  return id ? Number(id) : null;
-}
-
 function cleanGenres(value: unknown) {
   if (Array.isArray(value)) {
     return value
@@ -64,29 +58,97 @@ function asRecord(value: unknown): Record<string, unknown> {
   return value as Record<string, unknown>;
 }
 
-function parsePlayerLinks(value: unknown) {
-  return parsePlayerText(value);
+function extractRendexVideoId(value: string) {
+  const trimmed = value.trim();
+  const fromDataId = trimmed.match(/data-id=["']?([^"'\s>]+)/i)?.[1];
+  if (fromDataId) return fromDataId.trim();
+
+  const digits = trimmed.match(/\d+/)?.[0];
+  return digits || '';
 }
 
-function mergePlayerLinksIntoRawJson(rawJson: unknown, playerLinks: unknown, values: ManualDraftValues = {}) {
+function buildRendexPlayer(name: string, rawId: string, index: number) {
+  const contentId = extractRendexVideoId(rawId);
+  if (!contentId) return null;
+
+  return {
+    id: `rendex-${contentId}`,
+    name: name || `Плеер ${index + 1}`,
+    type: 'rendex',
+    provider: 'rendex',
+    publisherId: process.env.RENDEX_PUBLISHER_ID || process.env.VIBIX_PUBLISHER_ID || '678053396',
+    contentType: 'movie',
+    contentId,
+    rendexVideoId: contentId,
+    design: '1',
+    color1: '#56CEAA',
+    color2: '#FFFFFF',
+    color3: '#AEC7BC',
+    color4: '#42BD88',
+    color5: '#000000',
+    embedUrl: '',
+  };
+}
+
+function parsePlayerLinks(value: unknown) {
+  if (Array.isArray(value)) {
+    return value
+      .map((player, index) => {
+        const item = asRecord(player);
+        const name = cleanText(item.name) || `Плеер ${index + 1}`;
+        const type = cleanText(item.type).toLowerCase();
+        const contentId = cleanText(item.contentId) || cleanText(item.rendexVideoId);
+        const embedUrl = cleanText(item.embedUrl);
+
+        if (type === 'rendex') return buildRendexPlayer(name, contentId, index);
+        if (!embedUrl) return null;
+
+        return {
+          id: cleanText(item.id) || `player-${index + 1}`,
+          name,
+          type: type || 'iframe',
+          embedUrl,
+        };
+      })
+      .filter(Boolean);
+  }
+
+  if (typeof value !== 'string') return [];
+
+  return value
+    .split('\n')
+    .map((line, index) => {
+      const trimmed = line.trim();
+      if (!trimmed) return null;
+
+      const parts = trimmed.split('|').map((part) => part.trim()).filter(Boolean);
+      const name = parts[0] || `Плеер ${index + 1}`;
+      const type = (parts[1] || '').toLowerCase();
+
+      if (type === 'rendex') return buildRendexPlayer(name, parts.slice(2).join('|'), index);
+
+      const embedUrl = type === 'iframe' ? parts.slice(2).join('|').trim() : parts.slice(1).join('|').trim() || trimmed;
+      if (!embedUrl) return null;
+
+      return {
+        id: `player-${index + 1}`,
+        name,
+        type: 'iframe',
+        embedUrl,
+      };
+    })
+    .filter(Boolean);
+}
+
+function mergePlayerLinksIntoRawJson(rawJson: unknown, playerLinks: unknown) {
   const base = asRecord(rawJson);
   const kinoluma = asRecord(base.kinoluma);
-  const rendexVideoId = cleanRendexVideoId(values.rendex_video_id);
-  const kinopoiskId = cleanNumber(values.kinopoisk_id);
-  const manualPlayers = parsePlayerLinks(playerLinks);
-  const generatedPlayers = buildAutoPlayers({
-    rendexVideoId,
-    kinopoiskId,
-    contentType: cleanText(values.type) === 'series' ? 'serial' : 'movie',
-  });
 
   return {
     ...base,
     kinoluma: {
       ...kinoluma,
-      ...(rendexVideoId !== null ? { rendex_video_id: String(rendexVideoId) } : {}),
-      ...(kinopoiskId !== null ? { kinopoisk_id: String(kinopoiskId) } : {}),
-      players: manualPlayers.length ? manualPlayers : generatedPlayers,
+      players: parsePlayerLinks(playerLinks),
       players_updated_at: new Date().toISOString(),
     },
   };
@@ -181,8 +243,8 @@ function buildUpdate(values: ManualDraftValues, beforeDraft: Record<string, unkn
     update.faq = parseFaq(values.faq);
   }
 
-  if ('player_links' in values || 'rendex_video_id' in values) {
-    update.raw_json = mergePlayerLinksIntoRawJson(beforeDraft.raw_json, values.player_links, values);
+  if ('player_links' in values) {
+    update.raw_json = mergePlayerLinksIntoRawJson(beforeDraft.raw_json, values.player_links);
   }
 
   return update;

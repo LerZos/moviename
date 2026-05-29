@@ -1,7 +1,7 @@
 import { supabaseAdmin } from '../../../../lib/supabase/admin';
 import { assertAdminSecret } from '../../../../lib/import/adminAuth';
 import { tmdbFetch } from '../../../../lib/import/tmdb';
-import { buildAutoPlayersFromRawJson, getRendexVideoIdFromRawJson, playersToText } from '../../../../lib/players';
+import { getVibixConfig } from '../../../../lib/import/vibixApi';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -56,12 +56,22 @@ function asObject(value: unknown): Record<string, unknown> {
 function getDraftPlayerLinks(rawJson: unknown) {
   const raw = asObject(rawJson);
   const kinoluma = asObject(raw.kinoluma);
+  const players = Array.isArray(kinoluma.players) ? kinoluma.players : [];
 
-  return playersToText(kinoluma.players) || playersToText(buildAutoPlayersFromRawJson(raw));
-}
+  return players
+    .map((player) => {
+      const item = asObject(player);
+      const name = typeof item.name === 'string' && item.name.trim() ? item.name.trim() : 'Плеер';
+      const type = typeof item.type === 'string' ? item.type.trim().toLowerCase() : '';
+      const contentId = typeof item.contentId === 'string' ? item.contentId.trim() : typeof item.rendexVideoId === 'string' ? item.rendexVideoId.trim() : '';
+      const embedUrl = typeof item.embedUrl === 'string' ? item.embedUrl.trim() : '';
 
-function getDraftRendexVideoId(rawJson: unknown) {
-  return getRendexVideoIdFromRawJson(rawJson) || null;
+      if (type === 'rendex' && contentId) return `${name} | rendex | ${contentId}`;
+      if (type === 'iframe' && embedUrl) return `${name} | iframe | ${embedUrl}`;
+      return embedUrl ? `${name} | ${embedUrl}` : '';
+    })
+    .filter(Boolean)
+    .join('\n');
 }
 
 function getNumber(value: unknown) {
@@ -306,7 +316,6 @@ export async function GET(request: Request) {
         return {
           ...publicDraft,
           player_links: getDraftPlayerLinks(rawJson),
-          rendex_video_id: getDraftRendexVideoId(rawJson),
           movie_rating: getDraftMovieRating(rawJson),
         };
       }),
@@ -320,6 +329,7 @@ export async function GET(request: Request) {
         hasTemplateSeo: true,
         hasKinopoisk: Boolean(process.env.KINOPOISK_DEV_TOKEN),
         hasTMDB: Boolean(process.env.TMDB_ACCESS_TOKEN),
+        hasVibix: getVibixConfig().isConfigured,
       },
     });
   } catch (error) {

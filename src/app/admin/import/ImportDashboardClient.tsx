@@ -26,7 +26,6 @@ import {
   Wand2,
   X,
 } from 'lucide-react';
-import { buildPlayerTextFromIds } from '../../lib/players';
 
 type Candidate = {
   id: string;
@@ -70,7 +69,6 @@ type Draft = {
   trailer_embed_url: string | null;
   trailer_source: string | null;
   player_links: string | null;
-  rendex_video_id: string | null;
   trailer_confidence: number | null;
   trailer_status: string | null;
   similar_movie_ids: unknown[] | null;
@@ -105,7 +103,6 @@ type ManualDraftForm = {
   trailer_status: string;
   trailer_confidence: string;
   player_links: string;
-  rendex_video_id: string;
   moderation_notes: string;
 };
 
@@ -134,6 +131,7 @@ type ImportListResponse = {
     hasTemplateSeo: boolean;
     hasKinopoisk: boolean;
     hasTMDB: boolean;
+    hasVibix: boolean;
   };
   error?: string;
 };
@@ -357,7 +355,6 @@ function draftToManualForm(draft: Draft): ManualDraftForm {
     trailer_status: draft.trailer_status ?? '',
     trailer_confidence: draft.trailer_confidence?.toString() ?? '',
     player_links: draft.player_links ?? '',
-    rendex_video_id: draft.rendex_video_id ?? '',
     moderation_notes: draft.moderation_notes ?? '',
   };
 }
@@ -508,6 +505,14 @@ export default function ImportDashboardClient() {
     );
   }
 
+  function importVibix(type: 'movie' | 'serial') {
+    return runPost(
+      '/api/admin/import/vibix',
+      { type, page: 1, limit: 30 },
+      type === 'movie' ? 'Vibix: фильмы добавлены в кандидаты' : 'Vibix: сериалы добавлены в кандидаты',
+    );
+  }
+
 
   function moderateDraft(draftId: string) {
     return runPost('/api/admin/import/moderate', { draftId }, 'Проверка выполнена');
@@ -541,26 +546,6 @@ export default function ImportDashboardClient() {
 
   function updateEditField(field: keyof ManualDraftForm, value: string) {
     setEditForm((current) => (current ? { ...current, [field]: value } : current));
-  }
-
-  function generatePlayersForEditForm() {
-    setEditForm((current) => {
-      if (!current) return current;
-
-      const generated = buildPlayerTextFromIds({
-        kinopoiskId: current.kinopoisk_id,
-        rendexVideoId: current.rendex_video_id,
-        contentType: current.type === 'series' ? 'serial' : 'movie',
-      });
-
-      if (!generated) {
-        setError('Для автогенерации нужен Rendex video ID и/или Кинопоиск ID.');
-        return current;
-      }
-
-      setError(null);
-      return { ...current, player_links: generated };
-    });
   }
 
   async function saveManualEdit(event: FormEvent<HTMLFormElement>) {
@@ -694,6 +679,14 @@ export default function ImportDashboardClient() {
                   <Sparkles size={18} strokeWidth={2.4} aria-hidden="true" />
                   Создать следующий черновик
                 </button>
+                <button type="button" onClick={() => void importVibix('movie')} disabled={isLoading || isWorking} className="secondary-button">
+                  <Database size={18} strokeWidth={2.4} aria-hidden="true" />
+                  Vibix: фильмы
+                </button>
+                <button type="button" onClick={() => void importVibix('serial')} disabled={isLoading || isWorking} className="secondary-button">
+                  <Layers3 size={18} strokeWidth={2.4} aria-hidden="true" />
+                  Vibix: сериалы
+                </button>
                 <button type="button" onClick={() => void loadData()} disabled={isLoading || isWorking} className="secondary-button">
                   <RefreshCcw size={18} strokeWidth={2.4} aria-hidden="true" />
                   Обновить данные
@@ -761,6 +754,7 @@ export default function ImportDashboardClient() {
             <ConfigBadge icon={<Layers3 size={18} strokeWidth={2.4} aria-hidden="true" />} label="Kinopoisk.dev" active={data.config.hasKinopoisk} />
             <ConfigBadge icon={<Sparkles size={18} strokeWidth={2.4} aria-hidden="true" />} label="Template SEO" active={data.config.hasTemplateSeo} />
             <ConfigBadge icon={<Bot size={18} strokeWidth={2.4} aria-hidden="true" />} label="OpenAI SEO" active={data.config.hasOpenAI} />
+            <ConfigBadge icon={<PlayCircle size={18} strokeWidth={2.4} aria-hidden="true" />} label="Vibix API" active={data.config.hasVibix} />
           </section>
         ) : null}
 
@@ -857,7 +851,6 @@ export default function ImportDashboardClient() {
           form={editForm}
           isWorking={isWorking}
           onChange={updateEditField}
-          onGeneratePlayers={generatePlayersForEditForm}
           onClose={() => {
             setEditingDraft(null);
             setEditForm(null);
@@ -1356,7 +1349,6 @@ function ManualEditModal({
   form,
   isWorking,
   onChange,
-  onGeneratePlayers,
   onClose,
   onSave,
   onDelete,
@@ -1365,7 +1357,6 @@ function ManualEditModal({
   form: ManualDraftForm;
   isWorking: boolean;
   onChange: (field: keyof ManualDraftForm, value: string) => void;
-  onGeneratePlayers: () => void;
   onClose: () => void;
   onSave: (event: FormEvent<HTMLFormElement>) => void;
   onDelete: () => void;
@@ -1390,7 +1381,6 @@ function ManualEditModal({
           <EditField label="Slug" value={form.slug} onChange={(value) => onChange('slug', value)} />
           <EditField label="Год" value={form.year} onChange={(value) => onChange('year', value)} />
           <EditField label="Кинопоиск ID" value={form.kinopoisk_id} onChange={(value) => onChange('kinopoisk_id', value)} placeholder="например 535341" />
-          <EditField label="Rendex video ID / &lt;ins&gt; код" value={form.rendex_video_id} onChange={(value) => onChange('rendex_video_id', value)} placeholder={'150669 или <ins data-publisher-id="678053396" data-type="movie" data-id="150669"></ins>'} />
           <EditField label="Рейтинг фильма" value={form.rating} onChange={(value) => onChange('rating', value)} placeholder="например 7.4" />
           <EditField label="Тип" value={form.type} onChange={(value) => onChange('type', value)} placeholder="film / series / anime / cartoon / documentary" />
           <EditField label="Статус" value={form.status} onChange={(value) => onChange('status', value)} />
@@ -1403,16 +1393,6 @@ function ManualEditModal({
           <EditField label="Trailer key" value={form.trailer_key} onChange={(value) => onChange('trailer_key', value)} />
           <EditField label="Trailer status" value={form.trailer_status} onChange={(value) => onChange('trailer_status', value)} />
           <EditField label="Trailer confidence" value={form.trailer_confidence} onChange={(value) => onChange('trailer_confidence', value)} />
-          <div className="player-generator-box">
-            <div>
-              <strong>Автогенерация плееров</strong>
-              <span>Основной — Rendex по video ID, запасной — Factorios по Кинопоиск ID.</span>
-            </div>
-            <button type="button" onClick={onGeneratePlayers} disabled={isWorking} className="secondary-button compact-button">
-              <Wand2 size={16} strokeWidth={2.5} aria-hidden="true" />
-              Сгенерировать
-            </button>
-          </div>
           <EditTextarea
             label="Плееры фильма"
             value={form.player_links}
@@ -2839,40 +2819,6 @@ const adminImportStyles = `
     height: 100%;
     border: 0;
     display: block;
-  }
-
-  .player-generator-box {
-    grid-column: 1 / -1;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 14px;
-    padding: 14px;
-    border: 1px solid rgba(255,255,255,0.10);
-    border-radius: 20px;
-    background: rgba(255,255,255,0.045);
-  }
-
-  .player-generator-box strong {
-    display: block;
-    color: #ffffff;
-    font-size: 13px;
-    font-weight: 1000;
-  }
-
-  .player-generator-box span {
-    display: block;
-    margin-top: 5px;
-    color: rgba(255,255,255,0.52);
-    font-size: 12px;
-    line-height: 1.45;
-    font-weight: 650;
-  }
-
-  .compact-button {
-    min-height: 40px;
-    padding: 0 14px;
-    white-space: nowrap;
   }
 
   .modal-actions {

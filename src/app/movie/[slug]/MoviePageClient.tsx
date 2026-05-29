@@ -10,8 +10,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { movies as staticAllMovies, type Movie, type MovieFact } from "../../data/movies";
-import { buildAutoPlayers, RENDEX_SCRIPT_SRC, type KinoLumaPlayer } from "../../lib/players";
+import { movies as staticAllMovies, type Movie, type MovieFact, type PlayerProvider } from "../../data/movies";
 import { supabase } from "../../lib/supabase";
 import {
   getCurrentSupabaseUser,
@@ -29,55 +28,45 @@ const LIKED_ITEMS_KEY = "kinoluma-liked-items";
 const DISLIKED_ITEMS_KEY = "kinoluma-disliked-items";
 const WATCHING_ITEMS_KEY = "kinoluma-watching-items";
 
-const DEFAULT_PLAYERS: KinoLumaPlayer[] = [
-  { id: "player-unavailable", name: "Плеер", embedUrl: "" },
+const DEFAULT_PLAYERS: PlayerProvider[] = [
+  { id: "player-1", name: "Плеер 1", embedUrl: "" },
+  { id: "player-2", name: "Плеер 2", embedUrl: "" },
+  { id: "player-3", name: "Плеер 3", embedUrl: "" },
 ];
 
-const ANIME_UNAVAILABLE_MESSAGE = "Просмотр аниме сейчас временно недоступен из-за недостатка плеера.";
-const ANIME_UNAVAILABLE_PLAYERS: KinoLumaPlayer[] = [
-  { id: "anime-unavailable", name: "Аниме", embedUrl: "" },
-];
 
-function isAnimeContent(movie: Movie) {
-  const type = movie.type.toLowerCase();
-  const genres = (movie.genres || []).map((genre) => genre.toLowerCase()).join(" ");
+const RENDEX_SCRIPT_SRC = "https://graphicslab.io/sdk/v2/rendex-sdk.min.js";
 
-  return type === "аниме" || genres.includes("аниме") || type === "anime" || genres.includes("anime");
+function getPlayerRecord(player: PlayerProvider): PlayerProvider & Record<string, unknown> {
+  return player as PlayerProvider & Record<string, unknown>;
 }
 
-function isPlayablePlayer(player: KinoLumaPlayer | undefined) {
-  if (!player) return false;
-
-  if (player.type === "rendex") {
-    return Boolean(player.contentId);
-  }
-
-  return Boolean(player.embedUrl);
+function isRendexPlayer(player: PlayerProvider) {
+  const record = getPlayerRecord(player);
+  return String(record.type || record.provider || '').toLowerCase() === 'rendex';
 }
 
-function getMoviePlayers(movie: Movie) {
-  if (isAnimeContent(movie)) {
-    return ANIME_UNAVAILABLE_PLAYERS;
-  }
+function getRendexContentId(player: PlayerProvider) {
+  const record = getPlayerRecord(player);
+  return String(record.contentId || record.rendexVideoId || '').trim();
+}
 
-  const manualPlayers = ((movie.players || []) as KinoLumaPlayer[]).filter(isPlayablePlayer);
+function getRendexPublisherId(player: PlayerProvider) {
+  const record = getPlayerRecord(player);
+  return String(record.publisherId || '678053396').trim();
+}
 
-  if (manualPlayers.length > 0) {
-    return manualPlayers;
-  }
+function getRendexContentType(player: PlayerProvider, movie: Movie) {
+  const record = getPlayerRecord(player);
+  const explicitType = String(record.contentType || '').trim();
+  if (explicitType) return explicitType;
+  return movie.type === 'Сериал' ? 'series' : 'movie';
+}
 
-  const autoPlayers = buildAutoPlayers({
-    slug: movie.slug,
-    kinopoiskId: movie.kinopoiskId,
-    movieType: movie.type,
-    genres: movie.genres,
-  });
-
-  if (autoPlayers.length > 0) {
-    return autoPlayers;
-  }
-
-  return DEFAULT_PLAYERS;
+function getRendexColor(player: PlayerProvider, key: string, fallback: string) {
+  const record = getPlayerRecord(player);
+  const value = record[key];
+  return typeof value === 'string' && value.trim() ? value.trim() : fallback;
 }
 
 function getInitials(name: string) {
@@ -134,10 +123,6 @@ function getDefaultFacts(movie: Movie): MovieFact[] {
 
 function getFactValue(facts: MovieFact[], label: string, fallback: string) {
   return facts.find((fact) => fact.label === label)?.value || fallback;
-}
-
-function isRendexPlayer(player: KinoLumaPlayer | undefined) {
-  return player?.type === "rendex" && Boolean(player.contentId);
 }
 
 
@@ -224,8 +209,10 @@ function getGeneratedPosterFallback(title: string) {
 }
 
 export default function MoviePageClient({ movie, allMovies = staticAllMovies }: MoviePageClientProps) {
-  const isAnimeUnavailable = useMemo(() => isAnimeContent(movie), [movie]);
-  const players = useMemo(() => getMoviePlayers(movie), [movie]);
+  const players = useMemo(
+    () => (movie.players && movie.players.length > 0 ? movie.players : DEFAULT_PLAYERS),
+    [movie.players],
+  );
 
   const facts = useMemo(
     () => (movie.facts && movie.facts.length > 0 ? movie.facts : getDefaultFacts(movie)),
@@ -761,59 +748,43 @@ export default function MoviePageClient({ movie, allMovies = staticAllMovies }: 
               <h2>Смотреть {movie.type.toLowerCase()}</h2>
             </div>
 
-            {!isAnimeUnavailable && (
-              <div className="player-tabs" aria-label="Выбор плеера">
-                {players.map((player) => (
-                  <button
-                    key={player.id}
-                    type="button"
-                    onClick={() => setActivePlayerId(player.id)}
-                    className={
-                      activePlayer.id === player.id
-                        ? "player-tab player-tab-active"
-                        : "player-tab"
-                    }
-                  >
-                    {player.name}
-                  </button>
-                ))}
-              </div>
-            )}
+            <div className="player-tabs" aria-label="Выбор плеера">
+              {players.map((player) => (
+                <button
+                  key={player.id}
+                  type="button"
+                  onClick={() => setActivePlayerId(player.id)}
+                  className={
+                    activePlayer.id === player.id
+                      ? "player-tab player-tab-active"
+                      : "player-tab"
+                  }
+                >
+                  {player.name}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="player-box">
-            {isAnimeUnavailable ? (
-              <div className="player-placeholder player-placeholder-unavailable">
-                <div className="play-icon">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M12 2.25A9.75 9.75 0 1 0 12 21.75A9.75 9.75 0 0 0 12 2.25ZM12.75 7.5V12.5H11.25V7.5H12.75ZM12 16.75A1 1 0 1 1 12 14.75A1 1 0 0 1 12 16.75Z" />
-                  </svg>
-                </div>
-
-                <h3>Просмотр временно недоступен</h3>
-
-                <p>{ANIME_UNAVAILABLE_MESSAGE}</p>
-              </div>
-            ) : isRendexPlayer(activePlayer) ? (
+            {isRendexPlayer(activePlayer) && getRendexContentId(activePlayer) ? (
               <>
-                <div className="player-rendex" key={activePlayer.id}>
+                <Script id="rendex-sdk" src={RENDEX_SCRIPT_SRC} strategy="afterInteractive" />
+                <div key={`${activePlayer.id}-${getRendexContentId(activePlayer)}`} className="rendex-player-frame">
                   <ins
-                    data-publisher-id={activePlayer.publisherId || "678053396"}
-                    data-type={activePlayer.contentType || "movie"}
-                    data-id={activePlayer.contentId}
-                    data-design={activePlayer.design || "1"}
-                    data-color1={activePlayer.color1 || "#56CEAA"}
-                    data-color2={activePlayer.color2 || "#FFFFFF"}
-                    data-color3={activePlayer.color3 || "#AEC7BC"}
-                    data-color4={activePlayer.color4 || "#42BD88"}
-                    data-color5={activePlayer.color5 || "#000000"}
+                    data-publisher-id={getRendexPublisherId(activePlayer)}
+                    data-type={getRendexContentType(activePlayer, movie)}
+                    data-id={getRendexContentId(activePlayer)}
+                    data-design="1"
+                    data-color1={getRendexColor(activePlayer, 'color1', '#56CEAA')}
+                    data-color2={getRendexColor(activePlayer, 'color2', '#FFFFFF')}
+                    data-color3={getRendexColor(activePlayer, 'color3', '#AEC7BC')}
+                    data-color4={getRendexColor(activePlayer, 'color4', '#42BD88')}
+                    data-color5={getRendexColor(activePlayer, 'color5', '#000000')}
+                    data-width="100%"
+                    data-height="100%"
                   />
                 </div>
-                <Script
-                  id="rendex-sdk"
-                  src={activePlayer.scriptSrc || RENDEX_SCRIPT_SRC}
-                  strategy="afterInteractive"
-                />
               </>
             ) : activePlayer.embedUrl ? (
               <iframe
@@ -825,6 +796,18 @@ export default function MoviePageClient({ movie, allMovies = staticAllMovies }: 
                 allowFullScreen
                 referrerPolicy="strict-origin-when-cross-origin"
               />
+            ) : movie.type === "Аниме" ? (
+              <div className="player-placeholder">
+                <div className="play-icon">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M9 7.5V16.5L16.2 12L9 7.5Z" />
+                  </svg>
+                </div>
+
+                <h3>Аниме временно недоступно</h3>
+
+                <p>Просмотр аниме сейчас временно недоступен из-за недостатка плеера.</p>
+              </div>
             ) : (
               <div className="player-placeholder">
                 <div className="play-icon">
@@ -835,7 +818,7 @@ export default function MoviePageClient({ movie, allMovies = staticAllMovies }: 
 
                 <h3>{activePlayer.name}</h3>
 
-                <p>Плеер пока не добавлен для этого фильма или сериала. Проверь Kinopoisk ID или добавь плеер в админке.</p>
+                <p>Технические работы с плеерами, возвращайтесь позже.</p>
               </div>
             )}
           </div>
@@ -1639,26 +1622,15 @@ const moviePageStyles = `
   .player-box::before {
     content: "";
     display: block;
-    padding-top: 60.6557377%;
+    padding-top: 46%;
   }
 
-  .player-iframe,
-  .player-rendex {
+  .player-iframe {
     position: absolute;
     inset: 0;
     display: block;
     width: 100%;
     height: 100%;
-    border: 0;
-    background: #000000;
-  }
-
-  .player-rendex ins,
-  .player-rendex iframe {
-    display: block;
-    width: 100% !important;
-    height: 100% !important;
-    min-height: 100%;
     border: 0;
     background: #000000;
   }

@@ -114,7 +114,90 @@ async function fetchKinopoiskByTitle(
   return firstMatch ?? null;
 }
 
+
+function asRecord(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  return value as Record<string, unknown>;
+}
+
+function cleanString(value: unknown) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function cleanNumber(value: unknown) {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value !== 'string') return null;
+
+  const parsed = Number(value.replace(',', '.').trim());
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function cleanInt(value: unknown) {
+  const numberValue = cleanNumber(value);
+  return numberValue === null ? null : Math.trunc(numberValue);
+}
+
+function cleanStringArray(value: unknown) {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => cleanString(typeof item === 'object' && item !== null ? (item as Record<string, unknown>).name : item))
+      .filter(Boolean);
+  }
+
+  if (typeof value === 'string') {
+    return value
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+}
+
+function detectVibixType(value: unknown): MovieType {
+  const type = cleanString(value).toLowerCase();
+  if (type === 'serial' || type === 'series' || type === 'tv') return 'series';
+  return 'film';
+}
+
+function getVibixMovieFacts(candidate: ImportCandidate): MovieFacts {
+  const raw = asRecord(candidate.raw_json);
+  const vibix = asRecord(raw.vibix || raw);
+  const kinoluma = asRecord(raw.kinoluma);
+  const title = cleanString(vibix.name_rus) || cleanString(vibix.name) || cleanString(candidate.title) || `Vibix ${cleanString(vibix.id)}`;
+  const originalTitle = cleanString(vibix.name_original) || cleanString(vibix.name_eng) || candidate.original_title || null;
+  const year = cleanInt(vibix.year) ?? candidate.year ?? null;
+  const kinopoiskId = cleanInt(vibix.kp_id) ?? cleanInt(vibix.kinopoisk_id) ?? cleanInt(raw.kp_id) ?? cleanInt(raw.kinopoisk_id);
+  const imdbId = cleanString(vibix.imdb_id) || cleanString(raw.imdb_id) || null;
+
+  return {
+    title,
+    originalTitle,
+    year,
+    type: detectVibixType(vibix.type || candidate.type),
+    genres: cleanStringArray(vibix.genre),
+    posterUrl: cleanString(vibix.poster_url) || null,
+    backdropUrl: cleanString(vibix.backdrop_url) || null,
+    tmdbId: null,
+    kinopoiskId,
+    imdbId,
+    actors: [],
+    directors: [],
+    description: cleanString(vibix.description) || cleanString(vibix.description_short) || null,
+    source: 'vibix',
+    rawJson: {
+      candidate,
+      vibix,
+      kinoluma,
+    },
+  };
+}
+
 export async function fetchMovieFacts(candidate: ImportCandidate): Promise<MovieFacts> {
+  if (candidate.source === 'vibix' || candidate.source_id.startsWith('vibix:')) {
+    return getVibixMovieFacts(candidate);
+  }
+
   const [mediaTypeFromSource, idFromSource] = candidate.source_id.split(':') as ['movie' | 'tv', string];
   const mediaType = mediaTypeFromSource === 'tv' ? 'tv' : 'movie';
   const tmdbId = Number(idFromSource);

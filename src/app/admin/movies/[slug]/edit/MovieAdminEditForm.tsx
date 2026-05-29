@@ -5,7 +5,6 @@ import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
 
 import { supabase } from '../../../../lib/supabase';
 import type { Movie } from '../../../../data/movies';
-import { buildPlayerTextFromIds, extractRendexVideoId, parsePlayerText, playersToText } from '../../../../lib/players';
 
 type MovieAdminEditFormProps = {
   slug: string;
@@ -50,13 +49,95 @@ function parseNumber(value: FormDataEntryValue | null) {
   return Number.isFinite(numberValue) ? numberValue : undefined;
 }
 
-function parseRendexVideoId(value: FormDataEntryValue | null) {
-  const id = extractRendexVideoId(value);
-  return id ? Number(id) : undefined;
+function extractRendexVideoId(value: string) {
+  const trimmed = value.trim();
+  const fromDataId = trimmed.match(/data-id=["']?([^"'\s>]+)/i)?.[1];
+  if (fromDataId) return fromDataId.trim();
+
+  const digits = trimmed.match(/\d+/)?.[0];
+  return digits || '';
 }
 
 function parsePlayers(value: FormDataEntryValue | null) {
-  return parsePlayerText(typeof value === 'string' ? value : '');
+  if (typeof value !== 'string') {
+    return [];
+  }
+
+  return value
+    .split('\n')
+    .map((line, index) => {
+      const trimmed = line.trim();
+
+      if (!trimmed) {
+        return null;
+      }
+
+      const parts = trimmed.split('|').map((part) => part.trim()).filter(Boolean);
+      const name = parts[0] || `Плеер ${index + 1}`;
+      const type = (parts[1] || '').toLowerCase();
+
+      if (type === 'rendex') {
+        const contentId = extractRendexVideoId(parts.slice(2).join('|'));
+        if (!contentId) return null;
+
+        return {
+          id: `rendex-${contentId}`,
+          name,
+          type: 'rendex',
+          provider: 'rendex',
+          publisherId: '678053396',
+          contentType: 'movie',
+          contentId,
+          rendexVideoId: contentId,
+          design: '1',
+          color1: '#56CEAA',
+          color2: '#FFFFFF',
+          color3: '#AEC7BC',
+          color4: '#42BD88',
+          color5: '#000000',
+          embedUrl: '',
+        };
+      }
+
+      const embedUrl = type === 'iframe' ? parts.slice(2).join('|').trim() : parts.slice(1).join('|').trim();
+
+      if (!embedUrl) {
+        return null;
+      }
+
+      return {
+        id: `player-${index + 1}`,
+        name,
+        type: 'iframe',
+        embedUrl,
+      };
+    })
+    .filter((player): player is Record<string, unknown> => Boolean(player));
+}
+
+function playersToText(players: unknown) {
+  if (!Array.isArray(players)) {
+    return '';
+  }
+
+  return players
+    .map((player) => {
+      if (!player || typeof player !== 'object') {
+        return '';
+      }
+
+      const item = player as Record<string, unknown>;
+      const name = typeof item.name === 'string' && item.name.trim() ? item.name.trim() : 'Плеер';
+      const type = typeof item.type === 'string' ? item.type.trim().toLowerCase() : '';
+      const contentId = typeof item.contentId === 'string' ? item.contentId.trim() : typeof item.rendexVideoId === 'string' ? item.rendexVideoId.trim() : '';
+      const embedUrl = typeof item.embedUrl === 'string' ? item.embedUrl.trim() : '';
+
+      if (type === 'rendex' && contentId) return `${name} | rendex | ${contentId}`;
+      if (type === 'iframe' && embedUrl) return `${name} | iframe | ${embedUrl}`;
+      return embedUrl ? `${name} | ${embedUrl}` : '';
+    })
+    .filter(Boolean)
+    .join('\n');
 }
 
 function safeJson(value: unknown) {
@@ -109,30 +190,9 @@ export default function MovieAdminEditForm({ slug, movie }: MovieAdminEditFormPr
   const [yearPreview, setYearPreview] = useState(valueToString(movie.year));
   const [ratingPreview, setRatingPreview] = useState(valueToString(movie.rating));
   const [typePreview, setTypePreview] = useState(valueToString(movie.type));
-  const [kinopoiskIdPreview, setKinopoiskIdPreview] = useState(valueToString(movie.kinopoiskId));
-  const [rendexVideoIdPreview, setRendexVideoIdPreview] = useState(valueToString(movie.rendexVideoId || movie.rendex_video_id || movie.iframeVideoId || movie.iframe_video_id));
-  const [playersText, setPlayersText] = useState(playersToText(movie.players));
 
   const factsJson = useMemo(() => safeJson(movie.facts), [movie.facts]);
   const castJson = useMemo(() => safeJson(movie.cast), [movie.cast]);
-
-  function generatePlayerLinks() {
-    const generated = buildPlayerTextFromIds({
-      kinopoiskId: kinopoiskIdPreview,
-      rendexVideoId: rendexVideoIdPreview,
-      movieType: typePreview,
-    });
-
-    if (!generated) {
-      setSaveState('error');
-      setMessage('Для автогенерации нужен Rendex video ID и/или Кинопоиск ID.');
-      return;
-    }
-
-    setPlayersText(generated);
-    setSaveState('idle');
-    setMessage('Плееры сгенерированы. Основной — Rendex, запасной — Factorios. Не забудь сохранить правки.');
-  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -167,7 +227,6 @@ export default function MovieAdminEditForm({ slug, movie }: MovieAdminEditFormPr
         backdrop: valueToString(formData.get('backdrop')).trim(),
         trailerUrl: valueToString(formData.get('trailerUrl')).trim(),
         kinopoiskId: parseNumber(formData.get('kinopoiskId')),
-        rendexVideoId: parseRendexVideoId(formData.get('rendexVideoId')),
         tmdbId: parseNumber(formData.get('tmdbId')),
         imdbId: valueToString(formData.get('imdbId')).trim(),
         genres: parseCsv(formData.get('genres')),
@@ -310,12 +369,7 @@ export default function MovieAdminEditForm({ slug, movie }: MovieAdminEditFormPr
 
             <label className="field">
               <span>Kinopoisk ID</span>
-              <input
-                name="kinopoiskId"
-                value={kinopoiskIdPreview}
-                onChange={(event) => setKinopoiskIdPreview(event.target.value)}
-                className="edit-input"
-              />
+              <input name="kinopoiskId" defaultValue={valueToString(movie.kinopoiskId)} className="edit-input" />
             </label>
 
             <label className="field">
@@ -385,7 +439,7 @@ export default function MovieAdminEditForm({ slug, movie }: MovieAdminEditFormPr
             <div>
               <span className="section-index">03</span>
               <h2>Видео</h2>
-              <p>Трейлер и плееры. Основной плеер можно собрать по Rendex video ID, запасной — по Кинопоиск ID.</p>
+              <p>Трейлер и плееры. Формат плеера: название, вертикальная черта и embed-ссылка.</p>
             </div>
           </div>
 
@@ -396,38 +450,15 @@ export default function MovieAdminEditForm({ slug, movie }: MovieAdminEditFormPr
             </label>
 
             <label className="field full">
-              <span>Rendex video ID</span>
-              <input
-                name="rendexVideoId"
-                value={rendexVideoIdPreview}
-                onChange={(event) => setRendexVideoIdPreview(event.target.value)}
-                className="edit-input"
-                placeholder={'150669 или <ins data-publisher-id="678053396" data-type="movie" data-id="150669"></ins>'}
-              />
-              <FieldHint>Можно вставить только ID или весь код &lt;ins&gt; — KinoLuma сам возьмёт data-id.</FieldHint>
-            </label>
-
-            <div className="field full player-generator-panel">
-              <div>
-                <span>Автогенерация</span>
-                <p>Собирает основной Rendex-плеер и запасной Factorios-плеер.</p>
-              </div>
-              <button type="button" onClick={generatePlayerLinks} className="mini-action-button">
-                Сгенерировать плееры
-              </button>
-            </div>
-
-            <label className="field full">
               <span>Плееры</span>
               <textarea
                 name="players"
-                value={playersText}
-                onChange={(event) => setPlayersText(event.target.value)}
+                defaultValue={playersToText(movie.players)}
                 rows={5}
                 className="edit-input edit-textarea"
-                placeholder={'Основной | rendex | 150669\nОсновной | rendex | <ins data-publisher-id="678053396" data-type="movie" data-id="150669"></ins>\nЗапасной | iframe | https://tarantino.factorios.live/show/kinopoisk/1219177'}
+                placeholder={'Основной | rendex | 150669\nЗапасной | iframe | https://tarantino.factorios.live/show/kinopoisk/1219177'}
               />
-              <FieldHint>Одна строка — один плеер. Для Rendex можно указать videoId или вставить весь &lt;ins&gt;-код: data-id будет извлечён автоматически.</FieldHint>
+              <FieldHint>Одна строка — один плеер. Если поле пустое, текущие плееры не будут добавлены в override.</FieldHint>
             </label>
           </div>
         </div>
@@ -653,40 +684,6 @@ export default function MovieAdminEditForm({ slug, movie }: MovieAdminEditFormPr
           font-size: 12px;
           line-height: 1.5;
           font-weight: 650;
-        }
-
-        .player-generator-panel {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 14px;
-          padding: 16px;
-          border: 1px solid rgba(255,255,255,0.10);
-          border-radius: 22px;
-          background: rgba(255,255,255,0.045);
-        }
-
-        .player-generator-panel p {
-          margin: 6px 0 0;
-          color: rgba(255,255,255,0.52);
-          font-size: 12px;
-          line-height: 1.5;
-          font-weight: 650;
-        }
-
-        .mini-action-button {
-          border: 0;
-          min-height: 42px;
-          padding: 0 16px;
-          border-radius: 999px;
-          background: #ffffff;
-          color: #000000;
-          font: inherit;
-          font-size: 12px;
-          font-weight: 1000;
-          cursor: pointer;
-          white-space: nowrap;
-          box-shadow: 0 18px 34px rgba(255,255,255,0.10);
         }
 
         .edit-input {
