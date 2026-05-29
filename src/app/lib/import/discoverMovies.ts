@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '../supabase/admin';
+import { buildCandidateDuplicateInput, findDuplicateMovie, serializeDuplicateMatch } from './duplicateGuard';
 import { tmdbFetch } from './tmdb';
 import type { MovieType } from './types';
 
@@ -21,41 +22,17 @@ type TmdbListItem = {
 };
 
 type TmdbListResponse = {
+  page?: number;
+  total_pages?: number;
+  total_results?: number;
   results: TmdbListItem[];
 };
 
-const MIN_DISCOVERY_VOTE_COUNT = 50;
+type NormalizedCandidate = ReturnType<typeof normalizeCandidate>;
+
 const MIN_DISCOVERY_RATING = 5;
-
-function todayDate() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function getReleaseDate(item: TmdbListItem) {
-  return item.release_date ?? item.first_air_date ?? '';
-}
-
-function isReleased(item: TmdbListItem) {
-  const releaseDate = getReleaseDate(item);
-
-  if (!releaseDate) return false;
-
-  return releaseDate <= todayDate();
-}
-
-function hasEnoughRatingData(item: TmdbListItem) {
-  const voteAverage = typeof item.vote_average === 'number' ? item.vote_average : 0;
-  const voteCount = typeof item.vote_count === 'number' ? item.vote_count : 0;
-
-  return voteAverage >= MIN_DISCOVERY_RATING && voteCount >= MIN_DISCOVERY_VOTE_COUNT;
-}
-
-function isGoodImportCandidate(item: TmdbListItem) {
-  const hasTitle = Boolean(item.title ?? item.name ?? item.original_title ?? item.original_name);
-  const hasPoster = Boolean(item.poster_path || item.backdrop_path);
-
-  return hasTitle && hasPoster && isReleased(item) && hasEnoughRatingData(item);
-}
+const MIN_DISCOVERY_VOTE_COUNT = 50;
+const DEFAULT_DISCOVERY_MAX_PAGE = 20;
 
 function getYear(value?: string): number | null {
   if (!value) return null;
@@ -66,6 +43,32 @@ function getYear(value?: string): number | null {
 function detectBasicType(item: TmdbListItem): MovieType {
   const mediaType = item.media_type ?? (item.title ? 'movie' : 'tv');
   return mediaType === 'tv' ? 'series' : 'film';
+}
+
+function todayIsoDate() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function getNumber(value: unknown) {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value !== 'string') return null;
+
+  const parsed = Number(value.replace(',', '.').trim());
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function getDiscoveryMaxPage() {
+  const rawValue = Number(process.env.KINOLUMA_DISCOVERY_MAX_PAGE);
+  const value = Number.isFinite(rawValue) && rawValue > 0 ? rawValue : DEFAULT_DISCOVERY_MAX_PAGE;
+
+  return Math.max(2, Math.min(Math.trunc(value), 100));
+}
+
+function getRotatingPage(offset: number) {
+  const maxPage = getDiscoveryMaxPage();
+  const dayNumber = Math.floor(Date.now() / 86_400_000);
+
+  return ((dayNumber + offset) % maxPage) + 1;
 }
 
 function normalizeCandidate(item: TmdbListItem, fallbackMediaType: 'movie' | 'tv') {
@@ -86,7 +89,48 @@ function normalizeCandidate(item: TmdbListItem, fallbackMediaType: 'movie' | 'tv
   };
 }
 
-async function refreshNewCandidateRawJson(candidate: ReturnType<typeof normalizeCandidate>) {
+function getCandidateSkipReason(candidate: NormalizedCandidate) {
+  const raw = candidate.raw_json;
+  const releaseDate = String(raw.release_date ?? raw.first_air_date ?? '').trim();
+  const rating = getNumber(raw.vote_average) ?? 0;
+  const voteCount = getNumber(raw.vote_count) ?? 0;
+  const hasImage = Boolean(raw.poster_path || raw.backdrop_path);
+
+  if (!candidate.title) return 'Нет названия';
+  if (!releaseDate) return 'Нет даты выхода в TMDB';
+  if (releaseDate > todayIsoDate()) return 'Фильм ещё не вышел';
+  if (!hasImage) return 'Нет постера или backdrop';
+  if (rating < MIN_DISCOVERY_RATING || voteCount < MIN_DISCOVERY_VOTE_COUNT) {
+    return 'Слишком слабый или пустой рейтинг TMDB';
+  }
+
+  return null;
+}
+
+function buildEndpoints() {
+  const today = todayIsoDate();
+  const moviePage = getRotatingPage(0);
+  const moviePage2 = getRotatingPage(5);
+  const tvPage = getRotatingPage(9);
+  const tvPage2 = getRotatingPage(14);
+
+  return [
+    { path: `/trending/movie/day?language=ru-RU&page=${moviePage}`, mediaType: 'movie' as const },
+    { path: `/trending/tv/day?language=ru-RU&page=${tvPage}`, mediaType: 'tv' as const },
+    { path: `/movie/popular?language=ru-RU&page=${moviePage2}`, mediaType: 'movie' as const },
+    { path: `/tv/popular?language=ru-RU&page=${tvPage2}`, mediaType: 'tv' as const },
+    {
+      path: `/discover/movie?language=ru-RU&sort_by=popularity.desc&include_adult=false&include_video=false&vote_count.gte=${MIN_DISCOVERY_VOTE_COUNT}&vote_average.gte=${MIN_DISCOVERY_RATING}&primary_release_date.lte=${today}&page=${getRotatingPage(19)}`,
+      mediaType: 'movie' as const,
+    },
+    {
+      path: `/discover/tv?language=ru-RU&sort_by=popularity.desc&include_adult=false&vote_count.gte=${MIN_DISCOVERY_VOTE_COUNT}&vote_average.gte=${MIN_DISCOVERY_RATING}&first_air_date.lte=${today}&page=${getRotatingPage(24)}`,
+      mediaType: 'tv' as const,
+    },
+  ];
+}
+
+async function refreshNewCandidateRawJson(candidate: NormalizedCandidate) {
   const { error } = await supabaseAdmin
     .from('import_candidates')
     .update({
@@ -95,6 +139,28 @@ async function refreshNewCandidateRawJson(candidate: ReturnType<typeof normalize
       year: candidate.year,
       type: candidate.type,
       raw_json: candidate.raw_json,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('source', candidate.source)
+    .eq('source_id', candidate.source_id)
+    .eq('status', 'new');
+
+  if (error) throw error;
+}
+
+async function markExistingCandidateAsDuplicate(candidate: NormalizedCandidate, reason: unknown) {
+  const rawJson = candidate.raw_json && typeof candidate.raw_json === 'object'
+    ? candidate.raw_json
+    : {};
+
+  const { error } = await supabaseAdmin
+    .from('import_candidates')
+    .update({
+      status: 'duplicate',
+      raw_json: {
+        ...rawJson,
+        kinoluma_duplicate: reason,
+      },
       updated_at: new Date().toISOString(),
     })
     .eq('source', candidate.source)
@@ -116,16 +182,7 @@ export async function discoverMovies() {
   const runId = runInsert.data.id as string;
 
   try {
-    const today = todayDate();
-    const endpoints: Array<{ path: string; mediaType: 'movie' | 'tv' }> = [
-      { path: `/trending/movie/day?language=ru-RU&page=1`, mediaType: 'movie' },
-      { path: `/trending/tv/day?language=ru-RU&page=1`, mediaType: 'tv' },
-      { path: `/discover/movie?language=ru-RU&page=1&include_adult=false&include_video=false&sort_by=popularity.desc&primary_release_date.lte=${today}&vote_count.gte=${MIN_DISCOVERY_VOTE_COUNT}&vote_average.gte=${MIN_DISCOVERY_RATING}`, mediaType: 'movie' },
-      { path: `/discover/tv?language=ru-RU&page=1&include_adult=false&sort_by=popularity.desc&first_air_date.lte=${today}&vote_count.gte=${MIN_DISCOVERY_VOTE_COUNT}&vote_average.gte=${MIN_DISCOVERY_RATING}`, mediaType: 'tv' },
-      { path: '/movie/popular?language=ru-RU&page=1', mediaType: 'movie' },
-      { path: '/tv/popular?language=ru-RU&page=1', mediaType: 'tv' },
-    ];
-
+    const endpoints = buildEndpoints();
     const responses = await Promise.all(
       endpoints.map(async (endpoint) => ({
         ...endpoint,
@@ -133,31 +190,50 @@ export async function discoverMovies() {
       })),
     );
 
-    const candidatesByKey = new Map<string, ReturnType<typeof normalizeCandidate>>();
+    const candidatesByKey = new Map<string, NormalizedCandidate>();
+    let skippedUnsafeCount = 0;
 
     for (const response of responses) {
       for (const item of response.data.results ?? []) {
-        if (!isGoodImportCandidate(item)) continue;
-
         const candidate = normalizeCandidate(item, response.mediaType);
-        if (!candidate.title) continue;
+        const skipReason = getCandidateSkipReason(candidate);
+
+        if (skipReason) {
+          skippedUnsafeCount += 1;
+          continue;
+        }
+
         candidatesByKey.set(`${candidate.source}:${candidate.source_id}`, candidate);
       }
     }
 
     const candidates = Array.from(candidatesByKey.values());
+    const freshCandidates: NormalizedCandidate[] = [];
+    let skippedDuplicateCount = 0;
 
-    if (candidates.length > 0) {
+    for (const candidate of candidates) {
+      const duplicate = await findDuplicateMovie(buildCandidateDuplicateInput(candidate));
+
+      if (duplicate.isDuplicate) {
+        skippedDuplicateCount += 1;
+        await markExistingCandidateAsDuplicate(candidate, serializeDuplicateMatch(duplicate));
+        continue;
+      }
+
+      freshCandidates.push(candidate);
+    }
+
+    if (freshCandidates.length > 0) {
       const { error } = await supabaseAdmin
         .from('import_candidates')
-        .upsert(candidates, {
+        .upsert(freshCandidates, {
           onConflict: 'source,source_id',
           ignoreDuplicates: true,
         });
 
       if (error) throw error;
 
-      await Promise.all(candidates.map((candidate) => refreshNewCandidateRawJson(candidate)));
+      await Promise.all(freshCandidates.map((candidate) => refreshNewCandidateRawJson(candidate)));
     }
 
     await supabaseAdmin
@@ -165,14 +241,28 @@ export async function discoverMovies() {
       .update({
         status: 'finished',
         finished_at: new Date().toISOString(),
-        found_count: candidates.length,
+        found_count: freshCandidates.length,
         log: [
-          { message: 'TMDB discovery finished', at: new Date().toISOString(), foundCount: candidates.length },
+          {
+            message: 'TMDB discovery finished',
+            at: new Date().toISOString(),
+            foundCount: freshCandidates.length,
+            scannedCount: candidates.length,
+            skippedDuplicateCount,
+            skippedUnsafeCount,
+            endpoints: endpoints.map((endpoint) => endpoint.path),
+          },
         ],
       })
       .eq('id', runId);
 
-    return { runId, foundCount: candidates.length };
+    return {
+      runId,
+      foundCount: freshCandidates.length,
+      scannedCount: candidates.length,
+      skippedDuplicateCount,
+      skippedUnsafeCount,
+    };
   } catch (error) {
     await supabaseAdmin
       .from('movie_import_runs')

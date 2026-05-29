@@ -3,7 +3,13 @@ import { checkDuplicates } from './checkDuplicates';
 import { fetchMovieFacts } from './fetchMovieFacts';
 import { findTrailer } from './findTrailer';
 import { generateSlug } from './generateSlug';
+import { mergeAutoPlayersIntoRawJson } from '../players';
 import type { ImportCandidate } from './types';
+
+function asRecord(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  return value as Record<string, unknown>;
+}
 
 export async function createMovieDraft(candidate: ImportCandidate) {
   await supabaseAdmin
@@ -18,18 +24,35 @@ export async function createMovieDraft(candidate: ImportCandidate) {
     kinopoiskId: facts.kinopoiskId,
     imdbId: facts.imdbId,
     slug,
+    title: facts.title,
+    originalTitle: facts.originalTitle,
+    year: facts.year,
   });
 
   if (duplicate.isDuplicate) {
     await supabaseAdmin
       .from('import_candidates')
-      .update({ status: 'duplicate' })
+      .update({
+        status: 'duplicate',
+        raw_json: {
+          ...asRecord(candidate.raw_json),
+          kinoluma_duplicate: {
+            ...duplicate,
+            checkedAt: new Date().toISOString(),
+          },
+        },
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', candidate.id);
 
     return { created: false, duplicate };
   }
 
   const trailer = findTrailer(facts);
+  const rawJsonWithPlayers = mergeAutoPlayersIntoRawJson(facts.rawJson, {
+    kinopoiskId: facts.kinopoiskId,
+    movieType: facts.type,
+  });
 
   const { data, error } = await supabaseAdmin
     .from('movie_drafts')
@@ -61,15 +84,7 @@ export async function createMovieDraft(candidate: ImportCandidate) {
       trailer_status: trailer.status,
       similar_movie_ids: [],
       source: facts.source,
-      raw_json: {
-        ...facts.rawJson,
-        kinoluma: {
-          ...(facts.rawJson.kinoluma && typeof facts.rawJson.kinoluma === 'object' && !Array.isArray(facts.rawJson.kinoluma)
-            ? facts.rawJson.kinoluma
-            : {}),
-          players: [],
-        },
-      },
+      raw_json: rawJsonWithPlayers,
       status: 'needs_ai_seo',
       quality_score: null,
       moderation_notes: null,
@@ -80,7 +95,7 @@ export async function createMovieDraft(candidate: ImportCandidate) {
   if (error) {
     await supabaseAdmin
       .from('import_candidates')
-      .update({ status: 'failed' })
+      .update({ status: 'failed', updated_at: new Date().toISOString() })
       .eq('id', candidate.id);
 
     throw error;
@@ -88,7 +103,7 @@ export async function createMovieDraft(candidate: ImportCandidate) {
 
   await supabaseAdmin
     .from('import_candidates')
-    .update({ status: 'drafted' })
+    .update({ status: 'drafted', updated_at: new Date().toISOString() })
     .eq('id', candidate.id);
 
   return { created: true, draft: data };

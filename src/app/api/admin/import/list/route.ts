@@ -1,6 +1,7 @@
 import { supabaseAdmin } from '../../../../lib/supabase/admin';
 import { assertAdminSecret } from '../../../../lib/import/adminAuth';
 import { tmdbFetch } from '../../../../lib/import/tmdb';
+import { buildAutoPlayersFromRawJson, getRendexVideoIdFromRawJson, playersToText } from '../../../../lib/players';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -55,18 +56,46 @@ function asObject(value: unknown): Record<string, unknown> {
 function getDraftPlayerLinks(rawJson: unknown) {
   const raw = asObject(rawJson);
   const kinoluma = asObject(raw.kinoluma);
-  const players = Array.isArray(kinoluma.players) ? kinoluma.players : [];
 
-  return players
-    .map((player) => {
-      const item = asObject(player);
-      const name = typeof item.name === 'string' && item.name.trim() ? item.name.trim() : 'Плеер';
-      const embedUrl = typeof item.embedUrl === 'string' ? item.embedUrl.trim() : '';
+  return playersToText(kinoluma.players) || playersToText(buildAutoPlayersFromRawJson(raw));
+}
 
-      return embedUrl ? `${name} | ${embedUrl}` : '';
-    })
-    .filter(Boolean)
-    .join('\n');
+function getDraftRendexVideoId(rawJson: unknown) {
+  return getRendexVideoIdFromRawJson(rawJson) || null;
+}
+
+function getNumber(value: unknown) {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value !== 'string') return null;
+
+  const parsed = Number(value.replace(',', '.').trim());
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function roundRating(value: number) {
+  return Math.max(0, Math.min(10, Math.round(value * 10) / 10));
+}
+
+function getDraftMovieRating(rawJson: unknown) {
+  const raw = asObject(rawJson);
+  const kinoluma = asObject(raw.kinoluma);
+  const tmdb = asObject(raw.tmdb);
+  const kinopoisk = asObject(raw.kinopoisk);
+  const candidate = asObject(raw.candidate);
+  const kinopoiskRating = asObject(kinopoisk.rating);
+
+  const manualRating = getNumber(kinoluma.manual_rating);
+  const kpRating = getNumber(kinopoiskRating.kp);
+  const imdbRating = getNumber(kinopoiskRating.imdb);
+  const tmdbRating = getNumber(tmdb.vote_average) ?? getNumber(candidate.vote_average);
+  const tmdbVoteCount = getNumber(tmdb.vote_count) ?? getNumber(candidate.vote_count) ?? 0;
+
+  if (manualRating && manualRating > 0) return roundRating(manualRating);
+  if (kpRating && kpRating > 0) return roundRating(kpRating);
+  if (imdbRating && imdbRating > 0) return roundRating(imdbRating);
+  if (tmdbRating && tmdbRating > 0 && tmdbVoteCount > 0) return roundRating(tmdbRating);
+
+  return null;
 }
 
 function getCandidatePosterUrl(raw: unknown) {
@@ -236,6 +265,7 @@ export async function GET(request: Request) {
       .select(
         'id, title, original_title, slug, year, type, genres, poster_url, backdrop_url, tmdb_id, kinopoisk_id, imdb_id, actors, directors, description, long_description, seo_title, seo_description, faq, trailer_provider, trailer_key, trailer_url, trailer_embed_url, trailer_source, trailer_confidence, trailer_status, similar_movie_ids, source, status, quality_score, moderation_notes, raw_json, created_at, updated_at',
       )
+      .neq('status', 'deleted')
       .order('created_at', { ascending: false })
       .limit(120);
 
@@ -276,6 +306,8 @@ export async function GET(request: Request) {
         return {
           ...publicDraft,
           player_links: getDraftPlayerLinks(rawJson),
+          rendex_video_id: getDraftRendexVideoId(rawJson),
+          movie_rating: getDraftMovieRating(rawJson),
         };
       }),
       runs: runs ?? [],

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Script from "next/script";
 import MobileBottomNav from "../../components/MobileBottomNav";
 import {
   type MouseEvent,
@@ -9,7 +10,8 @@ import {
   useRef,
   useState,
 } from "react";
-import { movies as staticAllMovies, type Movie, type MovieFact, type PlayerProvider } from "../../data/movies";
+import { movies as staticAllMovies, type Movie, type MovieFact } from "../../data/movies";
+import { buildAutoPlayers, RENDEX_SCRIPT_SRC, type KinoLumaPlayer } from "../../lib/players";
 import { supabase } from "../../lib/supabase";
 import {
   getCurrentSupabaseUser,
@@ -27,11 +29,56 @@ const LIKED_ITEMS_KEY = "kinoluma-liked-items";
 const DISLIKED_ITEMS_KEY = "kinoluma-disliked-items";
 const WATCHING_ITEMS_KEY = "kinoluma-watching-items";
 
-const DEFAULT_PLAYERS: PlayerProvider[] = [
-  { id: "player-1", name: "Плеер 1", embedUrl: "" },
-  { id: "player-2", name: "Плеер 2", embedUrl: "" },
-  { id: "player-3", name: "Плеер 3", embedUrl: "" },
+const DEFAULT_PLAYERS: KinoLumaPlayer[] = [
+  { id: "player-unavailable", name: "Плеер", embedUrl: "" },
 ];
+
+const ANIME_UNAVAILABLE_MESSAGE = "Просмотр аниме сейчас временно недоступен из-за недостатка плеера.";
+const ANIME_UNAVAILABLE_PLAYERS: KinoLumaPlayer[] = [
+  { id: "anime-unavailable", name: "Аниме", embedUrl: "" },
+];
+
+function isAnimeContent(movie: Movie) {
+  const type = movie.type.toLowerCase();
+  const genres = (movie.genres || []).map((genre) => genre.toLowerCase()).join(" ");
+
+  return type === "аниме" || genres.includes("аниме") || type === "anime" || genres.includes("anime");
+}
+
+function isPlayablePlayer(player: KinoLumaPlayer | undefined) {
+  if (!player) return false;
+
+  if (player.type === "rendex") {
+    return Boolean(player.contentId);
+  }
+
+  return Boolean(player.embedUrl);
+}
+
+function getMoviePlayers(movie: Movie) {
+  if (isAnimeContent(movie)) {
+    return ANIME_UNAVAILABLE_PLAYERS;
+  }
+
+  const manualPlayers = ((movie.players || []) as KinoLumaPlayer[]).filter(isPlayablePlayer);
+
+  if (manualPlayers.length > 0) {
+    return manualPlayers;
+  }
+
+  const autoPlayers = buildAutoPlayers({
+    slug: movie.slug,
+    kinopoiskId: movie.kinopoiskId,
+    movieType: movie.type,
+    genres: movie.genres,
+  });
+
+  if (autoPlayers.length > 0) {
+    return autoPlayers;
+  }
+
+  return DEFAULT_PLAYERS;
+}
 
 function getInitials(name: string) {
   return (
@@ -87,6 +134,10 @@ function getDefaultFacts(movie: Movie): MovieFact[] {
 
 function getFactValue(facts: MovieFact[], label: string, fallback: string) {
   return facts.find((fact) => fact.label === label)?.value || fallback;
+}
+
+function isRendexPlayer(player: KinoLumaPlayer | undefined) {
+  return player?.type === "rendex" && Boolean(player.contentId);
 }
 
 
@@ -173,10 +224,8 @@ function getGeneratedPosterFallback(title: string) {
 }
 
 export default function MoviePageClient({ movie, allMovies = staticAllMovies }: MoviePageClientProps) {
-  const players = useMemo(
-    () => (movie.players && movie.players.length > 0 ? movie.players : DEFAULT_PLAYERS),
-    [movie.players],
-  );
+  const isAnimeUnavailable = useMemo(() => isAnimeContent(movie), [movie]);
+  const players = useMemo(() => getMoviePlayers(movie), [movie]);
 
   const facts = useMemo(
     () => (movie.facts && movie.facts.length > 0 ? movie.facts : getDefaultFacts(movie)),
@@ -603,7 +652,7 @@ export default function MoviePageClient({ movie, allMovies = staticAllMovies }: 
                 onClick={(event) => handleSectionLink(event, "player")}
                 className="primary-button"
               >
-                Смотреть
+                Смотреть онлайн
               </a>
 
               <a
@@ -712,26 +761,61 @@ export default function MoviePageClient({ movie, allMovies = staticAllMovies }: 
               <h2>Смотреть {movie.type.toLowerCase()}</h2>
             </div>
 
-            <div className="player-tabs" aria-label="Выбор плеера">
-              {players.map((player) => (
-                <button
-                  key={player.id}
-                  type="button"
-                  onClick={() => setActivePlayerId(player.id)}
-                  className={
-                    activePlayer.id === player.id
-                      ? "player-tab player-tab-active"
-                      : "player-tab"
-                  }
-                >
-                  {player.name}
-                </button>
-              ))}
-            </div>
+            {!isAnimeUnavailable && (
+              <div className="player-tabs" aria-label="Выбор плеера">
+                {players.map((player) => (
+                  <button
+                    key={player.id}
+                    type="button"
+                    onClick={() => setActivePlayerId(player.id)}
+                    className={
+                      activePlayer.id === player.id
+                        ? "player-tab player-tab-active"
+                        : "player-tab"
+                    }
+                  >
+                    {player.name}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="player-box">
-            {activePlayer.embedUrl ? (
+            {isAnimeUnavailable ? (
+              <div className="player-placeholder player-placeholder-unavailable">
+                <div className="play-icon">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 2.25A9.75 9.75 0 1 0 12 21.75A9.75 9.75 0 0 0 12 2.25ZM12.75 7.5V12.5H11.25V7.5H12.75ZM12 16.75A1 1 0 1 1 12 14.75A1 1 0 0 1 12 16.75Z" />
+                  </svg>
+                </div>
+
+                <h3>Просмотр временно недоступен</h3>
+
+                <p>{ANIME_UNAVAILABLE_MESSAGE}</p>
+              </div>
+            ) : isRendexPlayer(activePlayer) ? (
+              <>
+                <div className="player-rendex" key={activePlayer.id}>
+                  <ins
+                    data-publisher-id={activePlayer.publisherId || "678053396"}
+                    data-type={activePlayer.contentType || "movie"}
+                    data-id={activePlayer.contentId}
+                    data-design={activePlayer.design || "1"}
+                    data-color1={activePlayer.color1 || "#56CEAA"}
+                    data-color2={activePlayer.color2 || "#FFFFFF"}
+                    data-color3={activePlayer.color3 || "#AEC7BC"}
+                    data-color4={activePlayer.color4 || "#42BD88"}
+                    data-color5={activePlayer.color5 || "#000000"}
+                  />
+                </div>
+                <Script
+                  id="rendex-sdk"
+                  src={activePlayer.scriptSrc || RENDEX_SCRIPT_SRC}
+                  strategy="afterInteractive"
+                />
+              </>
+            ) : activePlayer.embedUrl ? (
               <iframe
                 key={activePlayer.id}
                 src={activePlayer.embedUrl}
@@ -751,7 +835,7 @@ export default function MoviePageClient({ movie, allMovies = staticAllMovies }: 
 
                 <h3>{activePlayer.name}</h3>
 
-                <p>Технические работы с плеерами, возвращайтесь позже.</p>
+                <p>Плеер пока не добавлен для этого фильма или сериала. Проверь Kinopoisk ID или добавь плеер в админке.</p>
               </div>
             )}
           </div>
@@ -1555,15 +1639,26 @@ const moviePageStyles = `
   .player-box::before {
     content: "";
     display: block;
-    padding-top: 46%;
+    padding-top: 60.6557377%;
   }
 
-  .player-iframe {
+  .player-iframe,
+  .player-rendex {
     position: absolute;
     inset: 0;
     display: block;
     width: 100%;
     height: 100%;
+    border: 0;
+    background: #000000;
+  }
+
+  .player-rendex ins,
+  .player-rendex iframe {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 100%;
     border: 0;
     background: #000000;
   }

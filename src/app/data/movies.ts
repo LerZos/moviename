@@ -223,9 +223,11 @@ export const movies: Movie[] = [
         { name: "Dave Bautista", role: "Глоссу Раббан" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-4540126",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/4540126",
+        },
       ],
     },
   {
@@ -262,9 +264,11 @@ export const movies: Movie[] = [
         { name: "Florence Pugh", role: "Джин Тэтлок" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-4664634",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/4664634",
+        },
       ],
     },
   {
@@ -301,9 +305,11 @@ export const movies: Movie[] = [
         { name: "Michael Caine", role: "Профессор Бранд" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-258687",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/258687",
+        },
       ],
     },
   {
@@ -340,9 +346,11 @@ export const movies: Movie[] = [
         { name: "Colin Farrell", role: "Пингвин" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-590286",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/590286",
+        },
       ],
     },
   {
@@ -387,9 +395,11 @@ export const movies: Movie[] = [
         { name: "Пятно", role: "Злодей, который становится опаснее, чем кажется" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-1219177",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/1219177",
+        },
       ],
     },
   {
@@ -426,9 +436,11 @@ export const movies: Movie[] = [
         { name: "Kate Winslet", role: "Ронал" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-505898",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/505898",
+        },
       ],
     },
   {
@@ -465,9 +477,11 @@ export const movies: Movie[] = [
         { name: "Дэвид Харбор", role: "Джим Хоппер" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-915196",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/915196",
+        },
       ],
     },
   {
@@ -504,9 +518,11 @@ export const movies: Movie[] = [
         { name: "Merle Dandridge", role: "Марлин" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-839458",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/839458",
+        },
       ],
     },
   {
@@ -543,9 +559,11 @@ export const movies: Movie[] = [
         { name: "Gwendoline Christie", role: "Лариса Уимс" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-4365427",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/4365427",
+        },
       ],
     },
   {
@@ -582,9 +600,11 @@ export const movies: Movie[] = [
         { name: "Ewan Mitchell", role: "Эймонд Таргариен" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-1316601",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/1316601",
+        },
       ],
     },
   {
@@ -621,9 +641,11 @@ export const movies: Movie[] = [
         { name: "Bob Odenkirk", role: "Сол Гудман" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-404900",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/404900",
+        },
       ],
     },
   {
@@ -660,9 +682,11 @@ export const movies: Movie[] = [
         { name: "Lena Headey", role: "Серсея Ланнистер" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-464963",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/464963",
+        },
       ],
     },
   {
@@ -860,9 +884,11 @@ export const movies: Movie[] = [
         { name: "Планета Земля", role: "Общий фокус истории" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-1007472",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/1007472",
+        },
       ],
     },
   {
@@ -899,9 +925,11 @@ export const movies: Movie[] = [
         { name: "Земля", role: "Главная тема сериала" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-1235081",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/1235081",
+        },
       ],
     },
   {
@@ -943,9 +971,11 @@ export const movies: Movie[] = [
         { name: "Эксперты индустрии", role: "Участники интервью" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-1337788",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/1337788",
+        },
       ],
     },
   {
@@ -983,9 +1013,11 @@ export const movies: Movie[] = [
         { name: "Marion Cotillard", role: "Мол" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-447301",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/447301",
+        },
       ],
     },
   {
@@ -1023,9 +1055,11 @@ export const movies: Movie[] = [
         { name: "Gloria Foster", role: "Пифия" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-301",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/301",
+        },
       ],
     },
   {
@@ -1062,9 +1096,11 @@ export const movies: Movie[] = [
         { name: "Zoë Kravitz", role: "Тост" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-453406",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/453406",
+        },
       ],
     },
   {
@@ -1102,9 +1138,11 @@ export const movies: Movie[] = [
         { name: "Michael Caine", role: "Альфред" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-111543",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/111543",
+        },
       ],
     },
   {
@@ -1142,9 +1180,11 @@ export const movies: Movie[] = [
         { name: "Jared Leto", role: "Ниандер Уоллес" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-589290",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/589290",
+        },
       ],
     },
   {
@@ -1181,9 +1221,11 @@ export const movies: Movie[] = [
         { name: "Val Kilmer", role: "Том «Айсмен» Казански" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-572032",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/572032",
+        },
       ],
     },
   {
@@ -1221,9 +1263,11 @@ export const movies: Movie[] = [
         { name: "Эбботт и Костелло", role: "Пришельцы-гептаподы" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-718811",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/718811",
+        },
       ],
     },
   {
@@ -1261,9 +1305,11 @@ export const movies: Movie[] = [
         { name: "Dimple Kapadia", role: "Прия" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-1236063",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/1236063",
+        },
       ],
     },
   {
@@ -1306,9 +1352,11 @@ export const movies: Movie[] = [
         { name: "Noah Taylor", role: "Доктор Картер" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-505851",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/505851",
+        },
       ],
     },
   {
@@ -1346,9 +1394,11 @@ export const movies: Movie[] = [
         { name: "Ian McShane", role: "Уинстон" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-1267348",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/1267348",
+        },
       ],
     },
   {
@@ -1385,9 +1435,11 @@ export const movies: Movie[] = [
         { name: "David Bowie", role: "Никола Тесла" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-195334",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/195334",
+        },
       ],
     },
   {
@@ -1424,9 +1476,11 @@ export const movies: Movie[] = [
         { name: "Космический мусор", role: "Катализатор катастрофы" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-468466",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/468466",
+        },
       ],
     },
   {
@@ -1474,9 +1528,11 @@ export const movies: Movie[] = [
         { name: "Розалина", role: "Космическая фигура мира Mario" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-5934685",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/5934685",
+        },
       ],
     },
   {
@@ -1525,9 +1581,11 @@ export const movies: Movie[] = [
         { name: "Земля", role: "Ставка всей истории" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-1382256",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/1382256",
+        },
       ],
     },
   {
@@ -1576,9 +1634,11 @@ export const movies: Movie[] = [
         { name: "Музыкальная сцена", role: "Главное пространство истории" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-5437614",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/5437614",
+        },
       ],
     },
   {
@@ -1625,9 +1685,11 @@ export const movies: Movie[] = [
         { name: "Runway", role: "Модный журнал и поле битвы дедлайнов" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-6373982",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/6373982",
+        },
       ],
     },
   {
@@ -1670,9 +1732,11 @@ export const movies: Movie[] = [
         { name: "Вудсборо", role: "Место, где спокойствие обычно недолгое" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-5364826",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/5364826",
+        },
       ],
     },
   {
@@ -1714,9 +1778,11 @@ export const movies: Movie[] = [
         { name: "Город будущего", role: "Локация технологичного триллера" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-5453060",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/5453060",
+        },
       ],
     },
   {
@@ -1758,9 +1824,11 @@ export const movies: Movie[] = [
         { name: "Супергеройская роль", role: "Главный поворот сюжета" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-5003039",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/5003039",
+        },
       ],
     },
   {
@@ -1809,9 +1877,11 @@ export const movies: Movie[] = [
         { name: "Звёздный флот", role: "Главная система и мечта героев" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-1186149",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/1186149",
+        },
       ],
     },
   {
@@ -1848,9 +1918,11 @@ export const movies: Movie[] = [
         { name: "Тимон и Пумба", role: "Комедийный дуэт и команда поддержки" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-2360",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/2360",
+        },
       ],
     },
   {
@@ -1887,8 +1959,11 @@ export const movies: Movie[] = [
         { name: "Мистер Картофельная Голова", role: "Сарказм на ножках" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
+        {
+          id: "factorios-482",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/482",
+        },
       ],
     },
   {
@@ -1925,8 +2000,11 @@ export const movies: Movie[] = [
         { name: "Капитан", role: "Человек, который заново учится выбирать" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
+        {
+          id: "factorios-279102",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/279102",
+        },
       ],
     },
   {
@@ -1963,8 +2041,11 @@ export const movies: Movie[] = [
         { name: "Лорд Фаркуад", role: "Злодей с большим самомнением" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
+        {
+          id: "factorios-430",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/430",
+        },
       ],
     },
   {
@@ -2001,8 +2082,11 @@ export const movies: Movie[] = [
         { name: "Антон Эго", role: "Критик, чей взгляд решает многое" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
+        {
+          id: "factorios-89514",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/89514",
+        },
       ],
     },
   {
@@ -2039,8 +2123,11 @@ export const movies: Movie[] = [
         { name: "Брезгливость", role: "Внутренний фильтр стиля и подозрительной брокколи" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
+        {
+          id: "factorios-645118",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/645118",
+        },
       ],
     },
   {
@@ -2077,8 +2164,11 @@ export const movies: Movie[] = [
         { name: "Эрнесто де ла Крус", role: "Кумир, за блеском которого скрыто не всё" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
+        {
+          id: "factorios-679486",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/679486",
+        },
       ],
     },
   {
@@ -2115,8 +2205,11 @@ export const movies: Movie[] = [
         { name: "Стоик", role: "Отец Иккинга и вождь деревни" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
+        {
+          id: "factorios-280172",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/280172",
+        },
       ],
     },
   {
@@ -2153,9 +2246,11 @@ export const movies: Movie[] = [
         { name: "Clancy Brown", role: "Капитан Хэдли" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-326",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/326",
+        },
       ],
     },
   {
@@ -2192,9 +2287,11 @@ export const movies: Movie[] = [
         { name: "Sally Field", role: "Миссис Гамп" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-448",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/448",
+        },
       ],
     },
   {
@@ -2231,9 +2328,11 @@ export const movies: Movie[] = [
         { name: "Orlando Bloom", role: "Леголас" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-328",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/328",
+        },
       ],
     },
   {
@@ -2270,8 +2369,11 @@ export const movies: Movie[] = [
         { name: "Жители острова", role: "Дикая, шумная и честная школа жизни" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
+        {
+          id: "factorios-5457899",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/5457899",
+        },
       ],
     },
   {
@@ -2308,8 +2410,11 @@ export const movies: Movie[] = [
         { name: "Зависть", role: "Новая участница внутренней команды" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
+        {
+          id: "factorios-5102255",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/5102255",
+        },
       ],
     },
   {
@@ -2346,9 +2451,11 @@ export const movies: Movie[] = [
         { name: "Lachy Hulme", role: "Несмертный Джо" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-1388409",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/1388409",
+        },
       ],
     },
   {
@@ -2385,9 +2492,11 @@ export const movies: Movie[] = [
         { name: "Ксеноморф", role: "Причина не заходить в странные коридоры" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-4887347",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/4887347",
+        },
       ],
     },
   {
@@ -2500,8 +2609,11 @@ export const movies: Movie[] = [
         { name: "Другой мир", role: "Место, где уют быстро становится ловушкой" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
+        {
+          id: "factorios-49166",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/49166",
+        },
       ],
     },
   {
@@ -2541,13 +2653,16 @@ export const movies: Movie[] = [
         { name: "Планета Земля", role: "Главная тема проекта" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-279548",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/279548",
+        },
       ],
     },
   {
     "slug": "gladiator",
+    kinopoiskId: 474,
     "title": "Гладиатор",
     "originalTitle": "Gladiator",
     "searchTitles": [
@@ -2628,27 +2743,18 @@ export const movies: Movie[] = [
         "role": "Марк Аврелий"
       }
     ],
-    "players": [
+    players: [
       {
-        "id": "player-1",
-        "name": "Плеер 1",
-        "embedUrl": ""
+        id: "factorios-474",
+        name: "Основной",
+        embedUrl: "https://tarantino.factorios.live/show/kinopoisk/474",
       },
-      {
-        "id": "player-2",
-        "name": "Плеер 2",
-        "embedUrl": ""
-      },
-      {
-        "id": "player-3",
-        "name": "Плеер 3",
-        "embedUrl": ""
-      }
     ],
     "id": 59
   },
   {
     "slug": "pulp-fiction",
+    kinopoiskId: 342,
     "title": "Криминальное чтиво",
     "originalTitle": "Pulp Fiction",
     "searchTitles": [
@@ -2728,27 +2834,18 @@ export const movies: Movie[] = [
         "role": "Марселлас Уоллес"
       }
     ],
-    "players": [
+    players: [
       {
-        "id": "player-1",
-        "name": "Плеер 1",
-        "embedUrl": ""
+        id: "factorios-342",
+        name: "Основной",
+        embedUrl: "https://tarantino.factorios.live/show/kinopoisk/342",
       },
-      {
-        "id": "player-2",
-        "name": "Плеер 2",
-        "embedUrl": ""
-      },
-      {
-        "id": "player-3",
-        "name": "Плеер 3",
-        "embedUrl": ""
-      }
     ],
     "id": 60
   },
   {
     "slug": "fight-club",
+    kinopoiskId: 361,
     "title": "Бойцовский клуб",
     "originalTitle": "Fight Club",
     "searchTitles": [
@@ -2826,27 +2923,18 @@ export const movies: Movie[] = [
         "role": "Ангельское лицо"
       }
     ],
-    "players": [
+    players: [
       {
-        "id": "player-1",
-        "name": "Плеер 1",
-        "embedUrl": ""
+        id: "factorios-361",
+        name: "Основной",
+        embedUrl: "https://tarantino.factorios.live/show/kinopoisk/361",
       },
-      {
-        "id": "player-2",
-        "name": "Плеер 2",
-        "embedUrl": ""
-      },
-      {
-        "id": "player-3",
-        "name": "Плеер 3",
-        "embedUrl": ""
-      }
     ],
     "id": 61
   },
   {
     "slug": "se7en",
+    kinopoiskId: 377,
     "title": "Семь",
     "originalTitle": "Se7en",
     "searchTitles": [
@@ -2927,27 +3015,18 @@ export const movies: Movie[] = [
         "role": "Капитан полиции"
       }
     ],
-    "players": [
+    players: [
       {
-        "id": "player-1",
-        "name": "Плеер 1",
-        "embedUrl": ""
+        id: "factorios-377",
+        name: "Основной",
+        embedUrl: "https://tarantino.factorios.live/show/kinopoisk/377",
       },
-      {
-        "id": "player-2",
-        "name": "Плеер 2",
-        "embedUrl": ""
-      },
-      {
-        "id": "player-3",
-        "name": "Плеер 3",
-        "embedUrl": ""
-      }
     ],
     "id": 62
   },
   {
     "slug": "the-godfather",
+    kinopoiskId: 325,
     "title": "Крёстный отец",
     "originalTitle": "The Godfather",
     "searchTitles": [
@@ -3026,27 +3105,18 @@ export const movies: Movie[] = [
         "role": "Том Хейген"
       }
     ],
-    "players": [
+    players: [
       {
-        "id": "player-1",
-        "name": "Плеер 1",
-        "embedUrl": ""
+        id: "factorios-325",
+        name: "Основной",
+        embedUrl: "https://tarantino.factorios.live/show/kinopoisk/325",
       },
-      {
-        "id": "player-2",
-        "name": "Плеер 2",
-        "embedUrl": ""
-      },
-      {
-        "id": "player-3",
-        "name": "Плеер 3",
-        "embedUrl": ""
-      }
     ],
     "id": 63
   },
   {
     "slug": "the-green-mile",
+    kinopoiskId: 435,
     "title": "Зелёная миля",
     "originalTitle": "The Green Mile",
     "searchTitles": [
@@ -3126,27 +3196,18 @@ export const movies: Movie[] = [
         "role": "Джан Эджкомб"
       }
     ],
-    "players": [
+    players: [
       {
-        "id": "player-1",
-        "name": "Плеер 1",
-        "embedUrl": ""
+        id: "factorios-435",
+        name: "Основной",
+        embedUrl: "https://tarantino.factorios.live/show/kinopoisk/435",
       },
-      {
-        "id": "player-2",
-        "name": "Плеер 2",
-        "embedUrl": ""
-      },
-      {
-        "id": "player-3",
-        "name": "Плеер 3",
-        "embedUrl": ""
-      }
     ],
     "id": 64
   },
   {
     "slug": "whiplash",
+    kinopoiskId: 725190,
     "title": "Одержимость",
     "originalTitle": "Whiplash",
     "searchTitles": [
@@ -3225,27 +3286,18 @@ export const movies: Movie[] = [
         "role": "Райан"
       }
     ],
-    "players": [
+    players: [
       {
-        "id": "player-1",
-        "name": "Плеер 1",
-        "embedUrl": ""
+        id: "factorios-725190",
+        name: "Основной",
+        embedUrl: "https://tarantino.factorios.live/show/kinopoisk/725190",
       },
-      {
-        "id": "player-2",
-        "name": "Плеер 2",
-        "embedUrl": ""
-      },
-      {
-        "id": "player-3",
-        "name": "Плеер 3",
-        "embedUrl": ""
-      }
     ],
     "id": 65
   },
   {
     "slug": "parasite",
+    kinopoiskId: 1043758,
     "title": "Паразиты",
     "originalTitle": "Parasite",
     "searchTitles": [
@@ -3325,27 +3377,18 @@ export const movies: Movie[] = [
         "role": "Пак Дон-ик"
       }
     ],
-    "players": [
+    players: [
       {
-        "id": "player-1",
-        "name": "Плеер 1",
-        "embedUrl": ""
+        id: "factorios-1043758",
+        name: "Основной",
+        embedUrl: "https://tarantino.factorios.live/show/kinopoisk/1043758",
       },
-      {
-        "id": "player-2",
-        "name": "Плеер 2",
-        "embedUrl": ""
-      },
-      {
-        "id": "player-3",
-        "name": "Плеер 3",
-        "embedUrl": ""
-      }
     ],
     "id": 66
   },
   {
     "slug": "joker-2019",
+    kinopoiskId: 1048334,
     "title": "Джокер",
     "originalTitle": "Joker",
     "searchTitles": [
@@ -3425,27 +3468,18 @@ export const movies: Movie[] = [
         "role": "Томас Уэйн"
       }
     ],
-    "players": [
+    players: [
       {
-        "id": "player-1",
-        "name": "Плеер 1",
-        "embedUrl": ""
+        id: "factorios-1048334",
+        name: "Основной",
+        embedUrl: "https://tarantino.factorios.live/show/kinopoisk/1048334",
       },
-      {
-        "id": "player-2",
-        "name": "Плеер 2",
-        "embedUrl": ""
-      },
-      {
-        "id": "player-3",
-        "name": "Плеер 3",
-        "embedUrl": ""
-      }
     ],
     "id": 67
   },
   {
     "slug": "chernobyl",
+    kinopoiskId: 1227803,
     "title": "Чернобыль",
     "originalTitle": "Chernobyl",
     "searchTitles": [
@@ -3522,27 +3556,18 @@ export const movies: Movie[] = [
         "role": "Людмила Игнатенко"
       }
     ],
-    "players": [
+    players: [
       {
-        "id": "player-1",
-        "name": "Плеер 1",
-        "embedUrl": ""
+        id: "factorios-1227803",
+        name: "Основной",
+        embedUrl: "https://tarantino.factorios.live/show/kinopoisk/1227803",
       },
-      {
-        "id": "player-2",
-        "name": "Плеер 2",
-        "embedUrl": ""
-      },
-      {
-        "id": "player-3",
-        "name": "Плеер 3",
-        "embedUrl": ""
-      }
     ],
     "id": 68
   },
   {
     "slug": "sherlock",
+    kinopoiskId: 502838,
     "title": "Шерлок",
     "originalTitle": "Sherlock",
     "searchTitles": [
@@ -3619,27 +3644,18 @@ export const movies: Movie[] = [
         "role": "Миссис Хадсон"
       }
     ],
-    "players": [
+    players: [
       {
-        "id": "player-1",
-        "name": "Плеер 1",
-        "embedUrl": ""
+        id: "factorios-502838",
+        name: "Основной",
+        embedUrl: "https://tarantino.factorios.live/show/kinopoisk/502838",
       },
-      {
-        "id": "player-2",
-        "name": "Плеер 2",
-        "embedUrl": ""
-      },
-      {
-        "id": "player-3",
-        "name": "Плеер 3",
-        "embedUrl": ""
-      }
     ],
     "id": 69
   },
   {
     "slug": "better-call-saul",
+    kinopoiskId: 796660,
     "title": "Лучше звоните Солу",
     "originalTitle": "Better Call Saul",
     "searchTitles": [
@@ -3715,27 +3731,18 @@ export const movies: Movie[] = [
         "role": "Густаво Фринг"
       }
     ],
-    "players": [
+    players: [
       {
-        "id": "player-1",
-        "name": "Плеер 1",
-        "embedUrl": ""
+        id: "factorios-796660",
+        name: "Основной",
+        embedUrl: "https://tarantino.factorios.live/show/kinopoisk/796660",
       },
-      {
-        "id": "player-2",
-        "name": "Плеер 2",
-        "embedUrl": ""
-      },
-      {
-        "id": "player-3",
-        "name": "Плеер 3",
-        "embedUrl": ""
-      }
     ],
     "id": 70
   },
   {
     "slug": "the-boys",
+    kinopoiskId: 460586,
     "title": "Пацаны",
     "originalTitle": "The Boys",
     "searchTitles": [
@@ -3814,27 +3821,18 @@ export const movies: Movie[] = [
         "role": "Молоко матери"
       }
     ],
-    "players": [
+    players: [
       {
-        "id": "player-1",
-        "name": "Плеер 1",
-        "embedUrl": ""
+        id: "factorios-460586",
+        name: "Основной",
+        embedUrl: "https://tarantino.factorios.live/show/kinopoisk/460586",
       },
-      {
-        "id": "player-2",
-        "name": "Плеер 2",
-        "embedUrl": ""
-      },
-      {
-        "id": "player-3",
-        "name": "Плеер 3",
-        "embedUrl": ""
-      }
     ],
     "id": 71
   },
   {
     "slug": "peaky-blinders",
+    kinopoiskId: 716587,
     "title": "Острые козырьки",
     "originalTitle": "Peaky Blinders",
     "searchTitles": [
@@ -3911,27 +3909,18 @@ export const movies: Movie[] = [
         "role": "Альфи Соломонс"
       }
     ],
-    "players": [
+    players: [
       {
-        "id": "player-1",
-        "name": "Плеер 1",
-        "embedUrl": ""
+        id: "factorios-716587",
+        name: "Основной",
+        embedUrl: "https://tarantino.factorios.live/show/kinopoisk/716587",
       },
-      {
-        "id": "player-2",
-        "name": "Плеер 2",
-        "embedUrl": ""
-      },
-      {
-        "id": "player-3",
-        "name": "Плеер 3",
-        "embedUrl": ""
-      }
     ],
     "id": 72
   },
   {
     "slug": "dark",
+    kinopoiskId: 1032606,
     "title": "Тьма",
     "originalTitle": "Dark",
     "searchTitles": [
@@ -4008,27 +3997,18 @@ export const movies: Movie[] = [
         "role": "Незнакомец"
       }
     ],
-    "players": [
+    players: [
       {
-        "id": "player-1",
-        "name": "Плеер 1",
-        "embedUrl": ""
+        id: "factorios-1032606",
+        name: "Основной",
+        embedUrl: "https://tarantino.factorios.live/show/kinopoisk/1032606",
       },
-      {
-        "id": "player-2",
-        "name": "Плеер 2",
-        "embedUrl": ""
-      },
-      {
-        "id": "player-3",
-        "name": "Плеер 3",
-        "embedUrl": ""
-      }
     ],
     "id": 73
   },
   {
     "slug": "the-mandalorian",
+    kinopoiskId: 1118138,
     "title": "Мандалорец",
     "originalTitle": "The Mandalorian",
     "searchTitles": [
@@ -4107,27 +4087,18 @@ export const movies: Movie[] = [
         "role": "Мофф Гидеон"
       }
     ],
-    "players": [
+    players: [
       {
-        "id": "player-1",
-        "name": "Плеер 1",
-        "embedUrl": ""
+        id: "factorios-1118138",
+        name: "Основной",
+        embedUrl: "https://tarantino.factorios.live/show/kinopoisk/1118138",
       },
-      {
-        "id": "player-2",
-        "name": "Плеер 2",
-        "embedUrl": ""
-      },
-      {
-        "id": "player-3",
-        "name": "Плеер 3",
-        "embedUrl": ""
-      }
     ],
     "id": 74
   },
   {
     "slug": "arcane",
+    kinopoiskId: 4445150,
     "title": "Аркейн",
     "originalTitle": "Arcane",
     "searchTitles": [
@@ -4206,22 +4177,12 @@ export const movies: Movie[] = [
         "role": "Следовательница из Пилтовера"
       }
     ],
-    "players": [
+    players: [
       {
-        "id": "player-1",
-        "name": "Плеер 1",
-        "embedUrl": ""
+        id: "factorios-4445150",
+        name: "Основной",
+        embedUrl: "https://tarantino.factorios.live/show/kinopoisk/4445150",
       },
-      {
-        "id": "player-2",
-        "name": "Плеер 2",
-        "embedUrl": ""
-      },
-      {
-        "id": "player-3",
-        "name": "Плеер 3",
-        "embedUrl": ""
-      }
     ],
     "id": 75
   },
@@ -5016,6 +4977,7 @@ export const movies: Movie[] = [
   },
   {
     "slug": "kung-fu-panda",
+    kinopoiskId: 103734,
     "title": "Кунг-фу Панда",
     "originalTitle": "Kung Fu Panda",
     "searchTitles": [
@@ -5093,22 +5055,18 @@ export const movies: Movie[] = [
         "role": "Мудрый учитель"
       }
     ],
-    "players": [
+    players: [
       {
-        "id": "player-1",
-        "name": "Плеер 1",
-        "embedUrl": ""
+        id: "factorios-103734",
+        name: "Основной",
+        embedUrl: "https://tarantino.factorios.live/show/kinopoisk/103734",
       },
-      {
-        "id": "player-2",
-        "name": "Плеер 2",
-        "embedUrl": ""
-      }
     ],
     "id": 84
   },
   {
     "slug": "zootopia",
+    kinopoiskId: 775276,
     "title": "Зверополис",
     "originalTitle": "Zootopia",
     "searchTitles": [
@@ -5187,22 +5145,18 @@ export const movies: Movie[] = [
         "role": "Мэр Зверополиса"
       }
     ],
-    "players": [
+    players: [
       {
-        "id": "player-1",
-        "name": "Плеер 1",
-        "embedUrl": ""
+        id: "factorios-775276",
+        name: "Основной",
+        embedUrl: "https://tarantino.factorios.live/show/kinopoisk/775276",
       },
-      {
-        "id": "player-2",
-        "name": "Плеер 2",
-        "embedUrl": ""
-      }
     ],
     "id": 85
   },
   {
     "slug": "moana",
+    kinopoiskId: 837530,
     "title": "Моана",
     "originalTitle": "Moana",
     "searchTitles": [
@@ -5280,22 +5234,18 @@ export const movies: Movie[] = [
         "role": "Самый водный помощник"
       }
     ],
-    "players": [
+    players: [
       {
-        "id": "player-1",
-        "name": "Плеер 1",
-        "embedUrl": ""
+        id: "factorios-837530",
+        name: "Основной",
+        embedUrl: "https://tarantino.factorios.live/show/kinopoisk/837530",
       },
-      {
-        "id": "player-2",
-        "name": "Плеер 2",
-        "embedUrl": ""
-      }
     ],
     "id": 86
   },
   {
     "slug": "the-incredibles",
+    kinopoiskId: 38903,
     "title": "Суперсемейка",
     "originalTitle": "The Incredibles",
     "searchTitles": [
@@ -5373,22 +5323,18 @@ export const movies: Movie[] = [
         "role": "Злодей с обидой и гаджетами"
       }
     ],
-    "players": [
+    players: [
       {
-        "id": "player-1",
-        "name": "Плеер 1",
-        "embedUrl": ""
+        id: "factorios-38903",
+        name: "Основной",
+        embedUrl: "https://tarantino.factorios.live/show/kinopoisk/38903",
       },
-      {
-        "id": "player-2",
-        "name": "Плеер 2",
-        "embedUrl": ""
-      }
     ],
     "id": 87
   },
   {
     "slug": "cosmos-a-spacetime-odyssey",
+    kinopoiskId: 762381,
     "title": "Космос: Пространство и время",
     "originalTitle": "Cosmos: A Spacetime Odyssey",
     "searchTitles": [
@@ -5465,27 +5411,18 @@ export const movies: Movie[] = [
         "role": "Главная тема"
       }
     ],
-    "players": [
+    players: [
       {
-        "id": "player-1",
-        "name": "Плеер 1",
-        "embedUrl": ""
+        id: "factorios-762381",
+        name: "Основной",
+        embedUrl: "https://tarantino.factorios.live/show/kinopoisk/762381",
       },
-      {
-        "id": "player-2",
-        "name": "Плеер 2",
-        "embedUrl": ""
-      },
-      {
-        "id": "player-3",
-        "name": "Плеер 3",
-        "embedUrl": ""
-      }
     ],
     "id": 88
   },
   {
     "slug": "free-solo",
+    kinopoiskId: 1182400,
     "title": "Фри-соло",
     "originalTitle": "Free Solo",
     "searchTitles": [
@@ -5562,27 +5499,18 @@ export const movies: Movie[] = [
         "role": "Главная стена фильма"
       }
     ],
-    "players": [
+    players: [
       {
-        "id": "player-1",
-        "name": "Плеер 1",
-        "embedUrl": ""
+        id: "factorios-1182400",
+        name: "Основной",
+        embedUrl: "https://tarantino.factorios.live/show/kinopoisk/1182400",
       },
-      {
-        "id": "player-2",
-        "name": "Плеер 2",
-        "embedUrl": ""
-      },
-      {
-        "id": "player-3",
-        "name": "Плеер 3",
-        "embedUrl": ""
-      }
     ],
     "id": 89
   },
   {
     "slug": "the-last-dance",
+    kinopoiskId: 1162628,
     "title": "Последний танец",
     "originalTitle": "The Last Dance",
     "searchTitles": [
@@ -5659,27 +5587,18 @@ export const movies: Movie[] = [
         "role": "Команда эпохи"
       }
     ],
-    "players": [
+    players: [
       {
-        "id": "player-1",
-        "name": "Плеер 1",
-        "embedUrl": ""
+        id: "factorios-1162628",
+        name: "Основной",
+        embedUrl: "https://tarantino.factorios.live/show/kinopoisk/1162628",
       },
-      {
-        "id": "player-2",
-        "name": "Плеер 2",
-        "embedUrl": ""
-      },
-      {
-        "id": "player-3",
-        "name": "Плеер 3",
-        "embedUrl": ""
-      }
     ],
     "id": 90
   },
   {
     "slug": "my-octopus-teacher",
+    kinopoiskId: 1405676,
     "title": "Мой учитель — осьминог",
     "originalTitle": "My Octopus Teacher",
     "searchTitles": [
@@ -5755,22 +5674,12 @@ export const movies: Movie[] = [
         "role": "Режиссёр"
       }
     ],
-    "players": [
+    players: [
       {
-        "id": "player-1",
-        "name": "Плеер 1",
-        "embedUrl": ""
+        id: "factorios-1405676",
+        name: "Основной",
+        embedUrl: "https://tarantino.factorios.live/show/kinopoisk/1405676",
       },
-      {
-        "id": "player-2",
-        "name": "Плеер 2",
-        "embedUrl": ""
-      },
-      {
-        "id": "player-3",
-        "name": "Плеер 3",
-        "embedUrl": ""
-      }
     ],
     "id": 91
   },
@@ -5813,9 +5722,11 @@ export const movies: Movie[] = [
         { name: "Riley B. Smith", role: "Ральф Динин" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-826050",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/826050",
+        },
       ],
     },
   {
@@ -5853,9 +5764,11 @@ export const movies: Movie[] = [
         { name: "Rob Delaney", role: "Питер" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-1008444",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/1008444",
+        },
       ],
     },
   {
@@ -5892,9 +5805,11 @@ export const movies: Movie[] = [
         { name: "William H. Macy", role: "Треватан" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-1338024",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/1338024",
+        },
       ],
     },
   {
@@ -5932,9 +5847,11 @@ export const movies: Movie[] = [
         { name: "Eric Dane", role: "Макграт" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-927494",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/927494",
+        },
       ],
     },
   {
@@ -5972,9 +5889,11 @@ export const movies: Movie[] = [
         { name: "Stephanie Hsu", role: "Альма Милан" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-535243",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/535243",
+        },
       ],
     },
   {
@@ -6012,9 +5931,11 @@ export const movies: Movie[] = [
         { name: "Fala Chen", role: "Иви" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-4902648",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/4902648",
+        },
       ],
     },
   {
@@ -6052,9 +5973,11 @@ export const movies: Movie[] = [
         { name: "Peggy Lu", role: "Миссис Чен" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-4766559",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/4766559",
+        },
       ],
     },
   {
@@ -6091,9 +6014,11 @@ export const movies: Movie[] = [
         { name: "Eliane Umuhire", role: "Зена" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-1451347",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/1451347",
+        },
       ],
     },
   {
@@ -6130,9 +6055,11 @@ export const movies: Movie[] = [
         { name: "Maura Tierney", role: "Кэти" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-5388362",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/5388362",
+        },
       ],
     },
   {
@@ -6170,9 +6097,11 @@ export const movies: Movie[] = [
         { name: "Connie Nielsen", role: "Луцилла" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-1207839",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/1207839",
+        },
       ],
     },
   {
@@ -6210,9 +6139,11 @@ export const movies: Movie[] = [
         { name: "Isabela Merced", role: "Хоукгёрл" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-997647",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/997647",
+        },
       ],
     },
   {
@@ -6250,9 +6181,11 @@ export const movies: Movie[] = [
         { name: "Julia Louis-Dreyfus", role: "Валентина Аллегра де Фонтейн" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-5001443",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/5001443",
+        },
       ],
     },
   {
@@ -6290,9 +6223,11 @@ export const movies: Movie[] = [
         { name: "Ralph Ineson", role: "Галактус" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-1287545",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/1287545",
+        },
       ],
     },
 
@@ -6301,6 +6236,7 @@ export const movies: Movie[] = [
       tmdbId: 64688,
       imdbId: "tt1232829",
       slug: "21-jump-street",
+      kinopoiskId: 413080,
       title: "Мачо и ботан",
       originalTitle: "21 Jump Street",
       searchTitles: ["мачо и ботан", "21 jump street", "джамп стрит", "мачо и ботан 1"],
@@ -6329,9 +6265,11 @@ export const movies: Movie[] = [
         { name: "Ice Cube", role: "Капитан Диксон" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-413080",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/413080",
+        },
       ],
     },
   {
@@ -6339,6 +6277,7 @@ export const movies: Movie[] = [
       tmdbId: 187017,
       imdbId: "tt2294449",
       slug: "22-jump-street",
+      kinopoiskId: 672899,
       title: "Мачо и ботан 2",
       originalTitle: "22 Jump Street",
       searchTitles: ["мачо и ботан 2", "22 jump street", "джамп стрит 2"],
@@ -6367,9 +6306,11 @@ export const movies: Movie[] = [
         { name: "Jillian Bell", role: "Мерседес" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-672899",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/672899",
+        },
       ],
     },
   {
@@ -6377,6 +6318,7 @@ export const movies: Movie[] = [
       tmdbId: 18785,
       imdbId: "tt1119646",
       slug: "the-hangover",
+      kinopoiskId: 426004,
       title: "Мальчишник в Вегасе",
       originalTitle: "The Hangover",
       searchTitles: ["мальчишник в вегасе", "the hangover", "похмелье"],
@@ -6405,9 +6347,11 @@ export const movies: Movie[] = [
         { name: "Heather Graham", role: "Джейд" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-426004",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/426004",
+        },
       ],
     },
   {
@@ -6415,6 +6359,7 @@ export const movies: Movie[] = [
       tmdbId: 193893,
       imdbId: "tt1924435",
       slug: "lets-be-cops",
+      kinopoiskId: 760469,
       title: "Типа копы",
       originalTitle: "Let's Be Cops",
       searchTitles: ["типа копы", "let's be cops", "lets be cops"],
@@ -6443,9 +6388,11 @@ export const movies: Movie[] = [
         { name: "Keegan-Michael Key", role: "Пупа" },
       ],
       players: [
-        { id: "player-1", name: "Плеер 1", embedUrl: "" },
-        { id: "player-2", name: "Плеер 2", embedUrl: "" },
-        { id: "player-3", name: "Плеер 3", embedUrl: "" },
+        {
+          id: "factorios-760469",
+          name: "Основной",
+          embedUrl: "https://tarantino.factorios.live/show/kinopoisk/760469",
+        },
       ],
     },
 

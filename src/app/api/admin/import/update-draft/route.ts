@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '../../../../lib/supabase/admin';
 import { assertAdminSecret } from '../../../../lib/import/adminAuth';
+import { buildAutoPlayers, extractRendexVideoId, parsePlayerText } from '../../../../lib/players';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -37,6 +38,11 @@ function cleanNumber(value: unknown) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function cleanRendexVideoId(value: unknown) {
+  const id = extractRendexVideoId(value);
+  return id ? Number(id) : null;
+}
+
 function cleanGenres(value: unknown) {
   if (Array.isArray(value)) {
     return value
@@ -59,54 +65,28 @@ function asRecord(value: unknown): Record<string, unknown> {
 }
 
 function parsePlayerLinks(value: unknown) {
-  if (Array.isArray(value)) {
-    return value
-      .map((player, index) => {
-        const item = asRecord(player);
-        const embedUrl = cleanText(item.embedUrl);
-        if (!embedUrl) return null;
-
-        return {
-          id: cleanText(item.id) || `player-${index + 1}`,
-          name: cleanText(item.name) || `Плеер ${index + 1}`,
-          embedUrl,
-        };
-      })
-      .filter(Boolean);
-  }
-
-  if (typeof value !== 'string') return [];
-
-  return value
-    .split('\n')
-    .map((line, index) => {
-      const trimmed = line.trim();
-      if (!trimmed) return null;
-
-      const [namePart, ...urlParts] = trimmed.split('|');
-      const name = namePart?.trim() || `Плеер ${index + 1}`;
-      const embedUrl = urlParts.join('|').trim() || trimmed;
-
-      if (!embedUrl) return null;
-
-      return {
-        id: `player-${index + 1}`,
-        name,
-        embedUrl,
-      };
-    })
-    .filter(Boolean);
+  return parsePlayerText(value);
 }
 
-function mergePlayerLinksIntoRawJson(rawJson: unknown, playerLinks: unknown) {
+function mergePlayerLinksIntoRawJson(rawJson: unknown, playerLinks: unknown, values: ManualDraftValues = {}) {
   const base = asRecord(rawJson);
   const kinoluma = asRecord(base.kinoluma);
+  const rendexVideoId = cleanRendexVideoId(values.rendex_video_id);
+  const kinopoiskId = cleanNumber(values.kinopoisk_id);
+  const manualPlayers = parsePlayerLinks(playerLinks);
+  const generatedPlayers = buildAutoPlayers({
+    rendexVideoId,
+    kinopoiskId,
+    contentType: cleanText(values.type) === 'series' ? 'serial' : 'movie',
+  });
 
   return {
     ...base,
     kinoluma: {
       ...kinoluma,
-      players: parsePlayerLinks(playerLinks),
+      ...(rendexVideoId !== null ? { rendex_video_id: String(rendexVideoId) } : {}),
+      ...(kinopoiskId !== null ? { kinopoisk_id: String(kinopoiskId) } : {}),
+      players: manualPlayers.length ? manualPlayers : generatedPlayers,
       players_updated_at: new Date().toISOString(),
     },
   };
@@ -172,6 +152,10 @@ function buildUpdate(values: ManualDraftValues, beforeDraft: Record<string, unkn
     update.year = cleanNumber(values.year);
   }
 
+  if ('kinopoisk_id' in values) {
+    update.kinopoisk_id = cleanNumber(values.kinopoisk_id);
+  }
+
   if ('trailer_confidence' in values) {
     const value = cleanNumber(values.trailer_confidence);
     update.trailer_confidence = value === null ? null : Math.max(0, Math.min(100, value));
@@ -197,8 +181,8 @@ function buildUpdate(values: ManualDraftValues, beforeDraft: Record<string, unkn
     update.faq = parseFaq(values.faq);
   }
 
-  if ('player_links' in values) {
-    update.raw_json = mergePlayerLinksIntoRawJson(beforeDraft.raw_json, values.player_links);
+  if ('player_links' in values || 'rendex_video_id' in values) {
+    update.raw_json = mergePlayerLinksIntoRawJson(beforeDraft.raw_json, values.player_links, values);
   }
 
   return update;

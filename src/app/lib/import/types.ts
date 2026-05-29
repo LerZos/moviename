@@ -15,7 +15,8 @@ export type MovieDraftStatus =
   | 'needs_review'
   | 'ready'
   | 'published'
-  | 'rejected';
+  | 'rejected'
+  | 'deleted';
 
 export type ImportCandidate = {
   id: string;

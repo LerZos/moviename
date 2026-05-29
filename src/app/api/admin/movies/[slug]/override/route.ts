@@ -1,7 +1,8 @@
 import { revalidatePath } from 'next/cache';
 
 import { assertAdminAccess, getAdminUserFromRequest } from '../../../../../lib/import/adminAuth';
-import { getPublicBaseMovieBySlug, saveMovieOverride, type MovieOverrideData } from '../../../../../lib/movies/movieOverrides';
+import { getMovieOverrideData, getPublicBaseMovieBySlug, saveMovieOverride, type MovieOverrideData } from '../../../../../lib/movies/movieOverrides';
+import { extractRendexVideoId } from '../../../../../lib/players';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -26,6 +27,11 @@ function cleanNumber(value: unknown) {
 
   const numberValue = Number(value);
   return Number.isFinite(numberValue) ? numberValue : undefined;
+}
+
+function cleanRendexVideoId(value: unknown) {
+  const id = extractRendexVideoId(value);
+  return id ? Number(id) : undefined;
 }
 
 function cleanStringArray(value: unknown) {
@@ -84,6 +90,9 @@ function buildOverridePayload(body: Record<string, unknown>): MovieOverrideData 
   const tmdbId = cleanNumber(body.tmdbId);
   if (tmdbId !== undefined) payload.tmdbId = tmdbId;
 
+  const rendexVideoId = cleanRendexVideoId(body.rendexVideoId);
+  if (rendexVideoId !== undefined) payload.rendexVideoId = rendexVideoId;
+
   const genres = cleanStringArray(body.genres);
   if (genres) payload.genres = genres;
 
@@ -103,6 +112,17 @@ function buildOverridePayload(body: Record<string, unknown>): MovieOverrideData 
   if (posterFallbacks) payload.posterFallbacks = posterFallbacks;
 
   return payload as MovieOverrideData;
+}
+
+
+function revalidateMovieSurfaces(slug: string) {
+  revalidatePath('/');
+  revalidatePath(`/movie/${slug}`);
+  revalidatePath('/sitemap.xml');
+
+  ['films', 'series', 'anime', 'cartoons', 'documentaries'].forEach((catalogSlug) => {
+    revalidatePath(`/catalog/${catalogSlug}`);
+  });
 }
 
 export async function PUT(request: Request, context: RouteContext) {
@@ -136,8 +156,7 @@ export async function PUT(request: Request, context: RouteContext) {
 
     await saveMovieOverride(slug, overridePayload, adminUser?.email || 'admin');
 
-    revalidatePath(`/movie/${slug}`);
-    revalidatePath('/sitemap.xml');
+    revalidateMovieSurfaces(slug);
 
     return Response.json({
       ok: true,
@@ -149,6 +168,51 @@ export async function PUT(request: Request, context: RouteContext) {
       {
         ok: false,
         error: error instanceof Error ? error.message : 'Unknown movie override error',
+      },
+      { status: 500 },
+    );
+  }
+}
+
+export async function DELETE(request: Request, context: RouteContext) {
+  const authError = await assertAdminAccess(request);
+  if (authError) return authError;
+
+  const adminUser = await getAdminUserFromRequest(request);
+  const params = await context.params;
+  const slug = params.slug;
+
+  const baseMovie = await getPublicBaseMovieBySlug(slug);
+
+  if (!baseMovie) {
+    return Response.json(
+      { ok: false, error: 'Movie not found' },
+      { status: 404 },
+    );
+  }
+
+  try {
+    const currentOverride = await getMovieOverrideData(slug);
+    const hiddenPayload: MovieOverrideData = {
+      ...(currentOverride ?? {}),
+      hidden: true,
+      deletedAt: new Date().toISOString(),
+      deletedBy: adminUser?.email || 'admin',
+    };
+
+    await saveMovieOverride(slug, hiddenPayload, adminUser?.email || 'admin');
+    revalidateMovieSurfaces(slug);
+
+    return Response.json({
+      ok: true,
+      slug,
+      message: 'Фильм скрыт с публичного сайта через movie_overrides.',
+    });
+  } catch (error) {
+    return Response.json(
+      {
+        ok: false,
+        error: error instanceof Error ? error.message : 'Unknown movie delete override error',
       },
       { status: 500 },
     );

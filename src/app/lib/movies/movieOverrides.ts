@@ -1,4 +1,5 @@
 import { movies, type CastMember, type ContentType, type Movie, type MovieFact, type PlayerProvider } from '../../data/movies';
+import { mergeAutoPlayersIntoRawJson, parsePlayerArray } from '../players';
 import { supabaseAdmin } from '../supabase/admin';
 
 export type MovieOverrideData = Partial<Movie> & Record<string, unknown>;
@@ -115,21 +116,8 @@ function createDraftPoster(title: string, originalTitle: string) {
 function getManualPlayers(rawJson: unknown): PlayerProvider[] {
   const raw = asRecord(rawJson);
   const kinoluma = asRecord(raw.kinoluma);
-  const players = Array.isArray(kinoluma.players) ? kinoluma.players : [];
 
-  return players
-    .map((player, index) => {
-      const item = asRecord(player);
-      const embedUrl = cleanString(item.embedUrl);
-      if (!embedUrl) return null;
-
-      return {
-        id: cleanString(item.id) || `player-${index + 1}`,
-        name: cleanString(item.name) || `Плеер ${index + 1}`,
-        embedUrl,
-      };
-    })
-    .filter((player): player is PlayerProvider => Boolean(player));
+  return parsePlayerArray(kinoluma.players);
 }
 
 function getNumber(value: unknown) {
@@ -158,13 +146,16 @@ function getRawSourceRecords(rawJson: unknown) {
 }
 
 function getRatingFromRawJson(rawJson: unknown) {
-  const { tmdb, kinopoisk, candidate } = getRawSourceRecords(rawJson);
+  const { raw, tmdb, kinopoisk, candidate } = getRawSourceRecords(rawJson);
+  const kinoluma = getNestedRecord(raw, 'kinoluma');
   const kinopoiskRating = asRecord(kinopoisk.rating);
+  const manualRating = getNumber(kinoluma.manual_rating);
   const kpRating = getNumber(kinopoiskRating.kp);
   const imdbRating = getNumber(kinopoiskRating.imdb);
   const tmdbRating = getNumber(tmdb.vote_average) ?? getNumber(candidate.vote_average);
   const tmdbVoteCount = getNumber(tmdb.vote_count) ?? getNumber(candidate.vote_count) ?? 0;
 
+  if (manualRating && manualRating > 0) return roundRating(manualRating);
   if (kpRating && kpRating > 0) return roundRating(kpRating);
   if (imdbRating && imdbRating > 0) return roundRating(imdbRating);
   if (tmdbRating && tmdbRating > 0 && tmdbVoteCount > 0) return roundRating(tmdbRating);
@@ -269,7 +260,11 @@ function draftToMovie(draft: MovieDraftRow): Movie | null {
   const originalTitle = cleanString(draft.original_title) || title;
   const genres = cleanStringArray(draft.genres, 12);
   const poster = cleanString(draft.poster_url) || cleanString(draft.backdrop_url) || createDraftPoster(title, originalTitle);
-  const players = getManualPlayers(draft.raw_json);
+  const rawJsonWithPlayers = mergeAutoPlayersIntoRawJson(draft.raw_json, {
+    kinopoiskId: draft.kinopoisk_id,
+    movieType: mapDraftType(draft.type),
+  });
+  const players = getManualPlayers(rawJsonWithPlayers);
 
   return {
     id: getStableMovieId(slug),
@@ -282,14 +277,14 @@ function draftToMovie(draft: MovieDraftRow): Movie | null {
     searchTitles: [title, originalTitle, slug].filter((value, index, array) => value && array.indexOf(value) === index),
     type: mapDraftType(draft.type),
     year: draft.year ? String(draft.year) : '',
-    rating: getRatingFromRawJson(draft.raw_json),
+    rating: getRatingFromRawJson(rawJsonWithPlayers),
     genres,
     poster,
     backdrop: cleanString(draft.backdrop_url) || undefined,
     description: cleanString(draft.description) || `${title} — материал KinoLuma, опубликованный из импортного черновика после проверки.`,
     trailerUrl: cleanString(draft.trailer_embed_url) || cleanString(draft.trailer_url),
     longDescription: cleanString(draft.long_description) || undefined,
-    facts: getDraftFacts(draft),
+    facts: getDraftFacts({ ...draft, raw_json: rawJsonWithPlayers }),
     cast: getDraftCast(draft),
     players: players.length ? players : DEFAULT_PLAYERS,
   } as Movie & Record<string, unknown>;
@@ -339,6 +334,10 @@ async function getMovieOverridesBySlugs(slugs: string[]) {
   return result;
 }
 
+function isHiddenOverride(override: MovieOverrideData | null | undefined) {
+  return Boolean(override && override.hidden === true);
+}
+
 function applyOverride(movie: Movie, override: MovieOverrideData | null | undefined): Movie {
   if (!override) return movie;
 
@@ -367,7 +366,9 @@ export async function getPublicMovies(): Promise<Movie[]> {
   const slugs = Array.from(bySlug.keys());
   const overrides = await getMovieOverridesBySlugs(slugs);
 
-  return Array.from(bySlug.values()).map((movie) => applyOverride(movie, overrides.get(movie.slug)));
+  return Array.from(bySlug.values())
+    .map((movie) => applyOverride(movie, overrides.get(movie.slug)))
+    .filter((movie) => !(movie as Movie & { hidden?: boolean }).hidden);
 }
 
 export async function getPublicBaseMovieBySlug(slug: string): Promise<Movie | null> {
@@ -419,6 +420,10 @@ export async function getMovieWithOverrides(slug: string): Promise<Movie | null>
   }
 
   const override = await getMovieOverrideData(slug);
+
+  if (isHiddenOverride(override)) {
+    return null;
+  }
 
   return applyOverride(baseMovie, override);
 }

@@ -26,6 +26,7 @@ import {
   Wand2,
   X,
 } from 'lucide-react';
+import { buildPlayerTextFromIds } from '../../lib/players';
 
 type Candidate = {
   id: string;
@@ -55,6 +56,7 @@ type Draft = {
   tmdb_id: number | null;
   kinopoisk_id: number | null;
   imdb_id: string | null;
+  movie_rating: number | null;
   actors: string[] | null;
   directors: string[] | null;
   description: string | null;
@@ -68,6 +70,7 @@ type Draft = {
   trailer_embed_url: string | null;
   trailer_source: string | null;
   player_links: string | null;
+  rendex_video_id: string | null;
   trailer_confidence: number | null;
   trailer_status: string | null;
   similar_movie_ids: unknown[] | null;
@@ -85,6 +88,8 @@ type ManualDraftForm = {
   original_title: string;
   slug: string;
   year: string;
+  kinopoisk_id: string;
+  rating: string;
   type: string;
   status: string;
   genres: string;
@@ -100,6 +105,7 @@ type ManualDraftForm = {
   trailer_status: string;
   trailer_confidence: string;
   player_links: string;
+  rendex_video_id: string;
   moderation_notes: string;
 };
 
@@ -334,6 +340,8 @@ function draftToManualForm(draft: Draft): ManualDraftForm {
     original_title: draft.original_title ?? '',
     slug: draft.slug ?? '',
     year: draft.year?.toString() ?? '',
+    kinopoisk_id: draft.kinopoisk_id?.toString() ?? '',
+    rating: draft.movie_rating?.toString() ?? '',
     type: draft.type ?? '',
     status: draft.status ?? '',
     genres: (draft.genres ?? []).join(', '),
@@ -349,6 +357,7 @@ function draftToManualForm(draft: Draft): ManualDraftForm {
     trailer_status: draft.trailer_status ?? '',
     trailer_confidence: draft.trailer_confidence?.toString() ?? '',
     player_links: draft.player_links ?? '',
+    rendex_video_id: draft.rendex_video_id ?? '',
     moderation_notes: draft.moderation_notes ?? '',
   };
 }
@@ -534,6 +543,26 @@ export default function ImportDashboardClient() {
     setEditForm((current) => (current ? { ...current, [field]: value } : current));
   }
 
+  function generatePlayersForEditForm() {
+    setEditForm((current) => {
+      if (!current) return current;
+
+      const generated = buildPlayerTextFromIds({
+        kinopoiskId: current.kinopoisk_id,
+        rendexVideoId: current.rendex_video_id,
+        contentType: current.type === 'series' ? 'serial' : 'movie',
+      });
+
+      if (!generated) {
+        setError('Для автогенерации нужен Rendex video ID и/или Кинопоиск ID.');
+        return current;
+      }
+
+      setError(null);
+      return { ...current, player_links: generated };
+    });
+  }
+
   async function saveManualEdit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -543,6 +572,28 @@ export default function ImportDashboardClient() {
       '/api/admin/import/update-draft',
       { draftId: editingDraft.id, values: editForm },
       'Черновик обновлён вручную',
+    );
+
+    if (ok) {
+      setEditingDraft(null);
+      setEditForm(null);
+    }
+  }
+
+  async function deleteEditingDraft() {
+    if (!editingDraft) return;
+
+    const title = editingDraft.title || editingDraft.slug || 'этот фильм';
+    const confirmed = window.confirm(
+      `Удалить «${title}» из импортированных фильмов?\n\nФильм пропадёт с сайта и из вкладок импорта. Запись останется в Supabase со статусом deleted, чтобы можно было восстановить её вручную.`,
+    );
+
+    if (!confirmed) return;
+
+    const ok = await runPost(
+      '/api/admin/import/delete-draft',
+      { draftId: editingDraft.id },
+      'Фильм удалён из импорта',
     );
 
     if (ok) {
@@ -806,11 +857,13 @@ export default function ImportDashboardClient() {
           form={editForm}
           isWorking={isWorking}
           onChange={updateEditField}
+          onGeneratePlayers={generatePlayersForEditForm}
           onClose={() => {
             setEditingDraft(null);
             setEditForm(null);
           }}
           onSave={saveManualEdit}
+          onDelete={() => void deleteEditingDraft()}
         />
       ) : null}
     </main>
@@ -1173,6 +1226,7 @@ function DraftCard({
             <Info label="TMDB" value={draft.tmdb_id?.toString() ?? '—'} />
             <Info label="IMDb" value={draft.imdb_id ?? '—'} />
             <Info label="Кинопоиск" value={draft.kinopoisk_id?.toString() ?? '—'} />
+            <Info label="Рейтинг" value={draft.movie_rating ? draft.movie_rating.toString() : '—'} />
             <Info label="Slug" value={draft.slug ?? '—'} />
             <Info label="Trailer" value={`${statusLabel(draft.trailer_status)} · ${draft.trailer_confidence ?? 0}`} />
             <Info label="FAQ" value={Array.isArray(draft.faq) && draft.faq.length ? `${draft.faq.length}` : 'Нет'} />
@@ -1302,15 +1356,19 @@ function ManualEditModal({
   form,
   isWorking,
   onChange,
+  onGeneratePlayers,
   onClose,
   onSave,
+  onDelete,
 }: {
   draft: Draft;
   form: ManualDraftForm;
   isWorking: boolean;
   onChange: (field: keyof ManualDraftForm, value: string) => void;
+  onGeneratePlayers: () => void;
   onClose: () => void;
   onSave: (event: FormEvent<HTMLFormElement>) => void;
+  onDelete: () => void;
 }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -1331,6 +1389,9 @@ function ManualEditModal({
           <EditField label="Оригинальное название" value={form.original_title} onChange={(value) => onChange('original_title', value)} />
           <EditField label="Slug" value={form.slug} onChange={(value) => onChange('slug', value)} />
           <EditField label="Год" value={form.year} onChange={(value) => onChange('year', value)} />
+          <EditField label="Кинопоиск ID" value={form.kinopoisk_id} onChange={(value) => onChange('kinopoisk_id', value)} placeholder="например 535341" />
+          <EditField label="Rendex video ID / &lt;ins&gt; код" value={form.rendex_video_id} onChange={(value) => onChange('rendex_video_id', value)} placeholder={'150669 или <ins data-publisher-id="678053396" data-type="movie" data-id="150669"></ins>'} />
+          <EditField label="Рейтинг фильма" value={form.rating} onChange={(value) => onChange('rating', value)} placeholder="например 7.4" />
           <EditField label="Тип" value={form.type} onChange={(value) => onChange('type', value)} placeholder="film / series / anime / cartoon / documentary" />
           <EditField label="Статус" value={form.status} onChange={(value) => onChange('status', value)} />
           <EditField label="Жанры через запятую" value={form.genres} onChange={(value) => onChange('genres', value)} className="wide" />
@@ -1342,11 +1403,21 @@ function ManualEditModal({
           <EditField label="Trailer key" value={form.trailer_key} onChange={(value) => onChange('trailer_key', value)} />
           <EditField label="Trailer status" value={form.trailer_status} onChange={(value) => onChange('trailer_status', value)} />
           <EditField label="Trailer confidence" value={form.trailer_confidence} onChange={(value) => onChange('trailer_confidence', value)} />
+          <div className="player-generator-box">
+            <div>
+              <strong>Автогенерация плееров</strong>
+              <span>Основной — Rendex по video ID, запасной — Factorios по Кинопоиск ID.</span>
+            </div>
+            <button type="button" onClick={onGeneratePlayers} disabled={isWorking} className="secondary-button compact-button">
+              <Wand2 size={16} strokeWidth={2.5} aria-hidden="true" />
+              Сгенерировать
+            </button>
+          </div>
           <EditTextarea
             label="Плееры фильма"
             value={form.player_links}
             onChange={(value) => onChange('player_links', value)}
-            placeholder={'Основной | https://...\nЗапасной | https://...'}
+            placeholder={'Основной | rendex | 150669\nЗапасной | iframe | https://tarantino.factorios.live/show/kinopoisk/1219177'}
           />
           <EditTextarea label="Описание" value={form.description} onChange={(value) => onChange('description', value)} />
           <EditTextarea label="Long description" value={form.long_description} onChange={(value) => onChange('long_description', value)} />
@@ -1355,11 +1426,17 @@ function ManualEditModal({
         </div>
 
         <div className="modal-actions sticky-actions">
-          <button type="submit" disabled={isWorking} className="primary-button">
-            <Save size={17} strokeWidth={2.4} aria-hidden="true" />
-            {isWorking ? 'Сохраняю...' : 'Сохранить изменения'}
+          <button type="button" onClick={onDelete} disabled={isWorking} className="secondary-button danger-action delete-draft-button">
+            <Trash2 size={17} strokeWidth={2.4} aria-hidden="true" />
+            Удалить фильм
           </button>
-          <button type="button" onClick={onClose} disabled={isWorking} className="secondary-button">Отмена</button>
+          <div className="modal-save-actions">
+            <button type="submit" disabled={isWorking} className="primary-button">
+              <Save size={17} strokeWidth={2.4} aria-hidden="true" />
+              {isWorking ? 'Сохраняю...' : 'Сохранить изменения'}
+            </button>
+            <button type="button" onClick={onClose} disabled={isWorking} className="secondary-button">Отмена</button>
+          </div>
         </div>
       </form>
     </div>
@@ -2764,12 +2841,57 @@ const adminImportStyles = `
     display: block;
   }
 
+  .player-generator-box {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 14px;
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 20px;
+    background: rgba(255,255,255,0.045);
+  }
+
+  .player-generator-box strong {
+    display: block;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 1000;
+  }
+
+  .player-generator-box span {
+    display: block;
+    margin-top: 5px;
+    color: rgba(255,255,255,0.52);
+    font-size: 12px;
+    line-height: 1.45;
+    font-weight: 650;
+  }
+
+  .compact-button {
+    min-height: 40px;
+    padding: 0 14px;
+    white-space: nowrap;
+  }
+
   .modal-actions {
     margin-top: 18px;
     display: flex;
     flex-wrap: wrap;
     justify-content: flex-end;
     gap: 10px;
+  }
+
+  .modal-save-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
+  .delete-draft-button {
+    margin-right: auto;
   }
 
   .edit-modal {
