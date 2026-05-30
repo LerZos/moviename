@@ -104,7 +104,9 @@ type TmdbImageItem = {
 type TmdbImagesResponse = { backdrops?: TmdbImageItem[] };
 
 function getBackdropPath(item: TmdbDetails | TmdbSearchItem | TmdbImageItem | null | undefined) {
-  const path = item?.backdrop_path || item?.file_path;
+  if (!item) return "";
+
+  const path = "backdrop_path" in item ? item.backdrop_path : item.file_path;
   return path && path.startsWith("/") ? path : "";
 }
 
