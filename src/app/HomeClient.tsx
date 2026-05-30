@@ -17,6 +17,12 @@ import {
 } from "./lib/kinolumaSupabase";
 
 import {
+  DAILY_FEATURED_COUNT,
+  getDailyFeaturedDateKey,
+  getDailyFeaturedItems,
+} from "./lib/home/dailyFeatured";
+
+import {
   type Dispatch,
   type FormEvent,
   type ReactNode,
@@ -32,6 +38,8 @@ type ContentItem = Movie;
 
 type HomeProps = {
   initialContent?: Movie[];
+  initialFeaturedIds?: number[];
+  initialFeaturedDateKey?: string;
 };
 
 type MovieCardProps = {
@@ -63,38 +71,10 @@ type CurrentUser = {
   email: string;
 };
 
-const featuredBackdropImages: Record<number, string> = {
-  1: "https://cs14.pikabu.ru/post_img/big/2024/03/04/5/1709537813111668647.png",
-  2: "https://spzh.eu/img/article/757/46_main.jpg",
-  3: "https://www.screentune.com/wp-content/uploads/2019/01/546680.jpg",
-  5: "https://ic.pics.livejournal.com/glukovarenik/6089907/11999257/11999257_1000.jpg",
-  20: "https://i.amediateka.tech/resize/1200x628/_stor_/cms/content-contentasset/d/2b/8b02c572be116cb73b063dfabeed3d2b-299385-9bf9e2b246164962a036601c9cd0b27f.jpg",
-  21: "https://whatisgood.ru/wp-content/uploads/2022/11/oruzhie-propagandyi-matritsa.jpg",
-  23: "https://news.store.rambler.ru/img/373b6470c4287e1e55b596675b4e96da?img-format=auto&img-1-resize=height:400,fit:max&img-2-filter=sharpen",
-  24: "https://image.tmdb.org/t/p/w780/m7ynwXIvSnhxQPR6pOICrC0L2sO.jpg",
-  29: "https://s0.rbk.ru/v6_top_pics/media/img/4/73/756766311519734.webp",
-  30: "https://avatars.mds.yandex.net/get-vthumb/2712510/a88491ea18b5d9d923baa325a2178b94/800x450",
-  32: "https://img.championat.com/s/732x488/news/big/w/i/multfilm-super-mario-galakticheskoe-kino-sobral-370-mln-luchshij-start-2026-goda_1775402372732866804.jpg",
-  33: "https://images.markus.live/mcswebsites.blob.core.windows.net/1013/Event_9643/landscape_fullhd/PHM_EE_Apollo_EHDh_3840x2160.jpg?width=640&height=360&format=jpg&quality=90",
+const FEATURED_ROTATION_INTERVAL_MS = 15 * 1000;
 
-  93: "https://pluggedin.ru/images/1-bigTopImage_2024_06_24_11_18_09.jpeg",
-  94: "https://img.championat.com/s/732x488/news/big/z/b/sbory-filma-planeta-obezyan-novoe-carstvo-v-mirovom-prokate-prevysili-330-mln_17173434281953548108.jpg",
-  95: "https://img.championat.com/s/732x488/news/big/n/p/film-plohie-parni-do-konca-2024-otzyv_17178361161755895019.jpg",
-  96: "https://kinobugle.ru/wp-content/uploads/2024/05/rajan-goslnig.-emili-blant.-kaskadery_cr.webp",
-  97: "https://s0.rbk.ru/v6_top_pics/media/img/3/88/347138653906883.jpeg",
-  98: "https://i.ytimg.com/vi/6jlyzehOPKI/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLD56-3ugGE6susdFVw1nc_6Nrb2_A",
-  99: "https://itc.ua/wp-content/uploads/2024/06/w1500_52519385.jpg",
-  100: "https://cdn.sortiraparis.com/images/80/66131/1092946-twisters-les-tornades-sont-de-retour-au-cinema-decouvrez-la-bande-annonce.jpg",
-  101: "https://cdn.forbes.ru/forbes-static/new/2024/11/Gladiator-2-673b189977666.jpg",
-  102: "https://ixbt.online/live/images/original/35/79/91/2025/08/25/3404e10115.jpg",
-  103: "https://www.film.ru/sites/default/files/styles/thumb_1024x450/public/filefield_paths/4_55.jpeg",
-  104: "https://www.film.ru/sites/default/files/styles/epsa_1024x450/public/filefield_paths/fantasticfour-firststeps-review-blogroll-1753191165513.jpg",
-};
-
-const FEATURED_ROTATION_INTERVAL_MS = 60 * 60 * 1000;
-
-function getFeaturedBackdropImage(item: ContentItem) {
-  return featuredBackdropImages[item.id] ?? item.poster;
+function getFeaturedPosterImage(item: ContentItem) {
+  return item.poster;
 }
 
 function escapeSvgText(text: string) {
@@ -425,8 +405,14 @@ function readNumberArrayFromStorage(key: string) {
   }
 }
 
-
-const types = ["Все", "Фильм", "Сериал", "Аниме", "Мультфильм", "Документальный"];
+const types = [
+  "Все",
+  "Фильм",
+  "Сериал",
+  "Аниме",
+  "Мультфильм",
+  "Документальный",
+];
 
 const catalogSlugByType: Record<string, string> = {
   Фильм: "films",
@@ -642,7 +628,8 @@ function MovieCard({
     <div
       ref={cardRef}
       style={{
-        transitionDelay: isRowMode || !isVisible ? "0ms" : `${Math.min(index * 35, 210)}ms`,
+        transitionDelay:
+          isRowMode || !isVisible ? "0ms" : `${Math.min(index * 35, 210)}ms`,
       }}
       className={`movie-card group ${
         isRowMode ? "movie-card-row" : "movie-card-grid"
@@ -664,7 +651,8 @@ function MovieCard({
           referrerPolicy="no-referrer"
           className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
           onError={(event) => {
-            const nextFallback = item.posterFallbacks?.[posterFallbackIndexRef.current];
+            const nextFallback =
+              item.posterFallbacks?.[posterFallbackIndexRef.current];
 
             if (nextFallback) {
               posterFallbackIndexRef.current += 1;
@@ -713,13 +701,9 @@ function MovieCard({
           {item.title}
         </button>
 
-        <p className="movie-card-original mh-clamp-1">
-          {item.originalTitle}
-        </p>
+        <p className="movie-card-original mh-clamp-1">{item.originalTitle}</p>
 
-        <p className="movie-card-description mh-clamp-2">
-          {item.description}
-        </p>
+        <p className="movie-card-description mh-clamp-2">{item.description}</p>
 
         <div className="movie-card-tags">
           {item.genres.slice(0, 2).map((genre) => (
@@ -747,7 +731,6 @@ function MovieCard({
       </div>
     </div>
   );
-
 }
 
 type MovieShelfProps = {
@@ -806,9 +789,13 @@ function MovieShelf({
     }
 
     const trackStyles = window.getComputedStyle(track);
-    const gap = Number.parseFloat(trackStyles.columnGap || trackStyles.gap || "0");
+    const gap = Number.parseFloat(
+      trackStyles.columnGap || trackStyles.gap || "0",
+    );
 
-    return firstCard.getBoundingClientRect().width + (Number.isFinite(gap) ? gap : 0);
+    return (
+      firstCard.getBoundingClientRect().width + (Number.isFinite(gap) ? gap : 0)
+    );
   }
 
   function easeOutCubic(progress: number) {
@@ -861,9 +848,15 @@ function MovieShelf({
 
     const maxScroll = Math.max(0, row.scrollWidth - row.clientWidth);
     const cardStep = getScrollStep(row);
-    const cardsPerClick = Math.max(1, Math.floor(row.clientWidth / cardStep) - 1);
+    const cardsPerClick = Math.max(
+      1,
+      Math.floor(row.clientWidth / cardStep) - 1,
+    );
     const distance = cardStep * cardsPerClick;
-    const rawTarget = direction === "right" ? row.scrollLeft + distance : row.scrollLeft - distance;
+    const rawTarget =
+      direction === "right"
+        ? row.scrollLeft + distance
+        : row.scrollLeft - distance;
     const snappedTarget = Math.round(rawTarget / cardStep) * cardStep;
     const target = Math.min(maxScroll, Math.max(0, snappedTarget));
 
@@ -918,7 +911,10 @@ function MovieShelf({
   }
 
   return (
-    <section ref={sectionRef} className="mobile-section px-8 pb-16 scroll-mt-28">
+    <section
+      ref={sectionRef}
+      className="mobile-section px-8 pb-16 scroll-mt-28"
+    >
       <div className="mb-6 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-sm font-bold uppercase tracking-[0.35em] text-neutral-500">
@@ -978,10 +974,17 @@ function MovieShelf({
   );
 }
 
-export default function Home({ initialContent }: HomeProps) {
+export default function Home({
+  initialContent,
+  initialFeaturedIds,
+  initialFeaturedDateKey,
+}: HomeProps) {
   const router = useRouter();
   const content = useMemo(
-    () => (initialContent && initialContent.length > 0 ? initialContent : staticContent),
+    () =>
+      initialContent && initialContent.length > 0
+        ? initialContent
+        : staticContent,
     [initialContent],
   );
   const searchInputRef = useRef<HTMLInputElement | null>(null);
@@ -1005,6 +1008,12 @@ export default function Home({ initialContent }: HomeProps) {
   const [isReactionsLoaded, setIsReactionsLoaded] = useState(false);
   const [popularVisibleRows, setPopularVisibleRows] = useState(4);
   const [popularGridColumns, setPopularGridColumns] = useState(6);
+  const [dailyFeaturedIds, setDailyFeaturedIds] = useState<number[]>(
+    () => initialFeaturedIds ?? [],
+  );
+  const [, setFeaturedDayKey] = useState(
+    () => initialFeaturedDateKey ?? getDailyFeaturedDateKey(),
+  );
 
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -1040,23 +1049,67 @@ export default function Home({ initialContent }: HomeProps) {
   const categoryScrollAnimationFrameRef = useRef<number | null>(null);
   const categoryHighlightTimeoutRef = useRef<number | null>(null);
   const activeMovieRowRef = useRef<HTMLDivElement | null>(null);
+  const featuredRouletteRef = useRef<HTMLDivElement | null>(null);
+  const recentRouletteRef = useRef<HTMLDivElement | null>(null);
 
   const featuredContentPool = useMemo(() => {
-    const priorityIds = [93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104];
-    const priorityItems = priorityIds
+    const featuredFromServer = dailyFeaturedIds
       .map((id) => content.find((item) => item.id === id))
       .filter((item): item is ContentItem => Boolean(item));
 
-    return priorityItems.length > 0 ? priorityItems : content.slice(0, 12);
-  }, [content]);
+    if (
+      featuredFromServer.length >=
+      Math.min(DAILY_FEATURED_COUNT, content.length)
+    ) {
+      return featuredFromServer.slice(0, DAILY_FEATURED_COUNT);
+    }
+
+    return getDailyFeaturedItems(content, new Date(), DAILY_FEATURED_COUNT);
+  }, [content, dailyFeaturedIds]);
+
+  const featuredContentPoolKey = useMemo(
+    () => featuredContentPool.map((item) => item.id).join("-"),
+    [featuredContentPool],
+  );
+
+  const recentlyUpdatedPool = useMemo(() => {
+    const featuredIds = new Set(featuredContentPool.map((item) => item.id));
+
+    return [...content]
+      .filter((item) => !featuredIds.has(item.id))
+      .sort((a, b) => b.id - a.id)
+      .slice(0, 12);
+  }, [content, featuredContentPoolKey]);
 
   const [featuredIndex, setFeaturedIndex] = useState(0);
 
   const featuredContent =
-    featuredContentPool[featuredIndex % Math.max(featuredContentPool.length, 1)] ??
-    content[0];
+    featuredContentPool[
+      featuredIndex % Math.max(featuredContentPool.length, 1)
+    ] ?? content[0];
 
-  const featuredBackdropImage = getFeaturedBackdropImage(featuredContent);
+  const featuredPosterImage = getFeaturedPosterImage(featuredContent);
+
+  const goToFeaturedSlide = (index: number) => {
+    if (featuredContentPool.length <= 0) {
+      return;
+    }
+
+    setFeaturedIndex(
+      ((index % featuredContentPool.length) + featuredContentPool.length) %
+        featuredContentPool.length,
+    );
+  };
+
+  const scrollRoulette = (
+    ref: RefObject<HTMLDivElement>,
+    direction: 1 | -1,
+  ) => {
+    ref.current?.scrollBy({
+      top: direction * 132,
+      behavior: "smooth",
+    });
+  };
 
   const allGenres = useMemo(() => {
     return getGenresForType(selectedType, content);
@@ -1099,21 +1152,15 @@ export default function Home({ initialContent }: HomeProps) {
   }, [content, watchLaterIds]);
 
   const filteredContent = useMemo(() => {
-    const normalizedSearch = normalizeText(search);
-
     return content.filter((item) => {
-      const matchesSearch =
-        normalizedSearch === "" ||
-        getSearchText(item).includes(normalizedSearch);
-
       const matchesType = selectedType === "Все" || item.type === selectedType;
 
       const matchesGenre =
         selectedGenre === "Все" || item.genres.includes(selectedGenre);
 
-      return matchesSearch && matchesType && matchesGenre;
+      return matchesType && matchesGenre;
     });
-  }, [content, search, selectedType, selectedGenre]);
+  }, [content, selectedType, selectedGenre]);
 
   const popularVisibleCount = popularVisibleRows * popularGridColumns;
   const popularContent = filteredContent.slice(0, popularVisibleCount);
@@ -1143,7 +1190,10 @@ export default function Home({ initialContent }: HomeProps) {
       .filter(({ searchText }) => searchText.includes(normalizedSearch))
       .sort((firstItem, secondItem) => {
         if (firstItem.startsWithTitle !== secondItem.startsWithTitle) {
-          return Number(secondItem.startsWithTitle) - Number(firstItem.startsWithTitle);
+          return (
+            Number(secondItem.startsWithTitle) -
+            Number(firstItem.startsWithTitle)
+          );
         }
 
         return secondItem.item.rating - firstItem.item.rating;
@@ -1153,19 +1203,25 @@ export default function Home({ initialContent }: HomeProps) {
   }, [search]);
 
   const shouldShowSearchSuggestions =
-    isSearchFocused && searchSuggestions.length > 0 && normalizeText(search).length > 0;
+    isSearchFocused &&
+    searchSuggestions.length > 0 &&
+    normalizeText(search).length > 0;
 
-  const [displayedSearchSuggestions, setDisplayedSearchSuggestions] =
-    useState<ContentItem[]>([]);
-  const [leavingSearchSuggestionIds, setLeavingSearchSuggestionIds] =
-    useState<number[]>([]);
+  const [displayedSearchSuggestions, setDisplayedSearchSuggestions] = useState<
+    ContentItem[]
+  >([]);
+  const [leavingSearchSuggestionIds, setLeavingSearchSuggestionIds] = useState<
+    number[]
+  >([]);
 
   const shouldRenderSearchSuggestions =
     displayedSearchSuggestions.length > 0 &&
     (shouldShowSearchSuggestions || leavingSearchSuggestionIds.length > 0);
 
   useEffect(() => {
-    const nextSuggestions = shouldShowSearchSuggestions ? searchSuggestions : [];
+    const nextSuggestions = shouldShowSearchSuggestions
+      ? searchSuggestions
+      : [];
     const nextIds = new Set(nextSuggestions.map((item) => item.id));
 
     let removedIds: number[] = [];
@@ -1433,7 +1489,10 @@ export default function Home({ initialContent }: HomeProps) {
     let animationFrameId = 0;
 
     const update = () => {
-      if (row.classList.contains("is-programmatic-scroll") || animationFrameId) {
+      if (
+        row.classList.contains("is-programmatic-scroll") ||
+        animationFrameId
+      ) {
         return;
       }
 
@@ -1475,9 +1534,13 @@ export default function Home({ initialContent }: HomeProps) {
     }
 
     const trackStyles = window.getComputedStyle(track);
-    const gap = Number.parseFloat(trackStyles.columnGap || trackStyles.gap || "0");
+    const gap = Number.parseFloat(
+      trackStyles.columnGap || trackStyles.gap || "0",
+    );
 
-    return firstCard.getBoundingClientRect().width + (Number.isFinite(gap) ? gap : 0);
+    return (
+      firstCard.getBoundingClientRect().width + (Number.isFinite(gap) ? gap : 0)
+    );
   }
 
   function easeOutCubic(progress: number) {
@@ -1505,9 +1568,13 @@ export default function Home({ initialContent }: HomeProps) {
     const start = row.scrollLeft;
     const maxScroll = Math.max(0, row.scrollWidth - row.clientWidth);
     const cardStep = getMovieRowStep(row);
-    const cardsPerClick = Math.max(1, Math.floor(row.clientWidth / cardStep) - 1);
+    const cardsPerClick = Math.max(
+      1,
+      Math.floor(row.clientWidth / cardStep) - 1,
+    );
     const distance = cardStep * cardsPerClick;
-    const rawTarget = direction === "right" ? start + distance : start - distance;
+    const rawTarget =
+      direction === "right" ? start + distance : start - distance;
     const snappedTarget = Math.round(rawTarget / cardStep) * cardStep;
     const target = Math.min(maxScroll, Math.max(0, snappedTarget));
     const scrollDistance = target - start;
@@ -1517,7 +1584,10 @@ export default function Home({ initialContent }: HomeProps) {
       return;
     }
 
-    const duration = Math.min(720, Math.max(420, Math.abs(scrollDistance) * 0.55));
+    const duration = Math.min(
+      720,
+      Math.max(420, Math.abs(scrollDistance) * 0.55),
+    );
     const startedAt = performance.now();
 
     row.classList.add("is-programmatic-scroll");
@@ -1528,7 +1598,8 @@ export default function Home({ initialContent }: HomeProps) {
       row.scrollLeft = start + scrollDistance * easeOutCubic(progress);
 
       if (progress < 1) {
-        rowScrollAnimationFrameRef.current = window.requestAnimationFrame(animate);
+        rowScrollAnimationFrameRef.current =
+          window.requestAnimationFrame(animate);
         return;
       }
 
@@ -1777,6 +1848,75 @@ export default function Home({ initialContent }: HomeProps) {
   }, []);
 
   useEffect(() => {
+    let isCancelled = false;
+
+    async function loadDailyFeatured() {
+      try {
+        const response = await fetch(
+          `/api/home/featured?day=${encodeURIComponent(getDailyFeaturedDateKey())}`,
+          { cache: "no-store" },
+        );
+
+        if (!response.ok) {
+          return;
+        }
+
+        const data = (await response.json()) as {
+          ids?: number[];
+          dateKey?: string;
+        };
+
+        if (isCancelled) {
+          return;
+        }
+
+        if (Array.isArray(data.ids) && data.ids.length > 0) {
+          setDailyFeaturedIds(data.ids.filter((id) => typeof id === "number"));
+        }
+
+        if (typeof data.dateKey === "string" && data.dateKey) {
+          setFeaturedDayKey(data.dateKey);
+        }
+      } catch {
+        // Если API временно недоступен, оставляем клиентскую ежедневную подборку.
+      }
+    }
+
+    loadDailyFeatured();
+    const intervalId = window.setInterval(loadDailyFeatured, 60 * 60 * 1000);
+
+    return () => {
+      isCancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, []);
+
+  useEffect(() => {
+    setFeaturedIndex(0);
+  }, [featuredContentPoolKey]);
+
+  useEffect(() => {
+    const track = featuredRouletteRef.current;
+    const activeButton = track?.querySelector<HTMLButtonElement>(
+      `[data-featured-roulette-index="${featuredIndex}"]`,
+    );
+
+    if (!track || !activeButton) {
+      return;
+    }
+
+    const targetTop =
+      activeButton.offsetTop -
+      track.clientHeight / 2 +
+      activeButton.clientHeight / 2;
+
+    track.scrollTo({
+      top: Math.max(0, targetTop),
+      behavior: "smooth",
+    });
+  }, [featuredIndex, featuredContentPoolKey]);
+
+  useEffect(() => {
     setPopularVisibleRows(4);
   }, [search, selectedType, selectedGenre]);
 
@@ -1791,15 +1931,21 @@ export default function Home({ initialContent }: HomeProps) {
     }
 
     const intervalId = window.setInterval(() => {
-      setFeaturedIndex((currentIndex) =>
-        (currentIndex + 1) % featuredContentPool.length,
+      setFeaturedIndex(
+        (currentIndex) => (currentIndex + 1) % featuredContentPool.length,
       );
     }, FEATURED_ROTATION_INTERVAL_MS);
 
     return () => {
       window.clearInterval(intervalId);
     };
-  }, [featuredContentPool.length, selectedItem, trailerItem, isAuthModalOpen]);
+  }, [
+    featuredContentPool.length,
+    featuredContentPoolKey,
+    selectedItem,
+    trailerItem,
+    isAuthModalOpen,
+  ]);
 
   useEffect(() => {
     return setupMovieRowObserver(
@@ -2026,7 +2172,8 @@ export default function Home({ initialContent }: HomeProps) {
       return;
     }
 
-    const elementTop = searchElement.getBoundingClientRect().top + window.scrollY;
+    const elementTop =
+      searchElement.getBoundingClientRect().top + window.scrollY;
     const viewportHeight = window.innerHeight || 720;
     const isMobileWidth = window.innerWidth <= 768;
     const offset = isMobileWidth
@@ -2089,36 +2236,11 @@ export default function Home({ initialContent }: HomeProps) {
           position: relative;
           overflow: hidden;
           isolation: isolate;
-        }
-
-        .kinoluma-home > section:first-of-type .featured-backdrop,
-        .kinoluma-home > section:first-of-type .featured-poster-backdrop,
-        .kinoluma-home > section:first-of-type img[class*="featured-backdrop"],
-        .kinoluma-home > section:first-of-type img[class*="featured-poster-backdrop"] {
-          position: absolute !important;
-          inset: 0 !important;
-          top: 0 !important;
-          right: 0 !important;
-          bottom: 0 !important;
-          left: 0 !important;
-          width: 100% !important;
-          height: 100% !important;
-          min-width: 100% !important;
-          max-width: none !important;
-          object-fit: cover !important;
-          object-position: center center !important;
-          z-index: 0 !important;
-          opacity: 1 !important;
-        }
-
-        .kinoluma-home > section:first-of-type .featured-backdrop img,
-        .kinoluma-home > section:first-of-type .featured-poster-backdrop img {
-          width: 100% !important;
-          height: 100% !important;
-          min-width: 100% !important;
-          max-width: none !important;
-          object-fit: cover !important;
-          object-position: center center !important;
+          background:
+            radial-gradient(circle at 78% 18%, rgba(255, 255, 255, 0.16), transparent 25%),
+            radial-gradient(circle at 63% 72%, rgba(115, 115, 115, 0.16), transparent 34%),
+            radial-gradient(circle at 18% 22%, rgba(255, 255, 255, 0.08), transparent 24%),
+            linear-gradient(135deg, #020202 0%, #080808 34%, #121212 58%, #050505 100%);
         }
 
         .kinoluma-home > section:first-of-type::before {
@@ -2128,15 +2250,37 @@ export default function Home({ initialContent }: HomeProps) {
           z-index: 1;
           pointer-events: none;
           background:
-            linear-gradient(90deg, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.98) 20%, rgba(0, 0, 0, 0.84) 40%, rgba(0, 0, 0, 0.46) 64%, rgba(0, 0, 0, 0.16) 100%),
-            linear-gradient(180deg, rgba(0, 0, 0, 0.46) 0%, rgba(0, 0, 0, 0.08) 42%, rgba(0, 0, 0, 0.78) 100%);
+            linear-gradient(90deg, rgba(0, 0, 0, 0.96) 0%, rgba(0, 0, 0, 0.84) 38%, rgba(0, 0, 0, 0.56) 68%, rgba(0, 0, 0, 0.82) 100%),
+            linear-gradient(180deg, rgba(0, 0, 0, 0.24) 0%, rgba(0, 0, 0, 0.08) 42%, rgba(0, 0, 0, 0.88) 100%),
+            repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.055) 0 1px, transparent 1px 84px);
         }
 
-        .kinoluma-home > section:first-of-type .featured-copy {
+        .kinoluma-home > section:first-of-type::after {
+          content: "K";
+          position: absolute;
+          right: clamp(-80px, -4vw, -20px);
+          top: 50%;
+          z-index: 0;
+          transform: translateY(-50%) rotate(-8deg);
+          font-size: clamp(330px, 34vw, 720px);
+          line-height: 0.8;
+          font-weight: 950;
+          letter-spacing: -0.18em;
+          color: rgba(255, 255, 255, 0.055);
+          text-shadow: 0 0 90px rgba(255, 255, 255, 0.08);
+          pointer-events: none;
+          user-select: none;
+        }
+
+        .kinoluma-home > section:first-of-type > * {
           position: relative;
           z-index: 3;
         }
 
+        .kinoluma-home > section:first-of-type .featured-copy {
+          position: relative;
+          z-index: 4;
+        }
 
         .kinoluma-more-button-wrap {
           width: 100%;
@@ -2413,7 +2557,7 @@ export default function Home({ initialContent }: HomeProps) {
         }
 
         .featured-progress {
-          animation: featuredProgress 30000ms linear both;
+          animation: featuredProgress 15000ms linear both;
           transform-origin: left center;
         }
 
@@ -2570,7 +2714,7 @@ export default function Home({ initialContent }: HomeProps) {
         .movie-card-original {
           margin-top: 4px;
           height: 20px;
-          font-size: 14px;
+          font-size: 13px;
           line-height: 20px;
           color: #737373;
         }
@@ -2722,6 +2866,48 @@ export default function Home({ initialContent }: HomeProps) {
           -webkit-line-clamp: 3;
         }
 
+        .kinoluma-top-search-section {
+          isolation: isolate;
+        }
+
+        .kinoluma-top-search-section::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          background:
+            radial-gradient(circle at 18% 0%, rgba(255,255,255,0.12), transparent 30%),
+            radial-gradient(circle at 82% 30%, rgba(255,255,255,0.08), transparent 32%);
+          opacity: 0.72;
+        }
+
+        .kinoluma-top-search-shell {
+          position: relative;
+          overflow: visible;
+        }
+
+        .kinoluma-top-search-input {
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 18px 48px rgba(0,0,0,0.28);
+        }
+
+        .desktop-header-search {
+          margin-left: clamp(18px, 4vw, 72px);
+          margin-right: clamp(18px, 3vw, 54px);
+        }
+
+        .desktop-header-search-input {
+          box-shadow:
+            inset 0 1px 0 rgba(255,255,255,0.08),
+            0 14px 44px rgba(0,0,0,0.30);
+        }
+
+        .desktop-header-search-input:focus {
+          box-shadow:
+            inset 0 1px 0 rgba(255,255,255,0.12),
+            0 0 0 1px rgba(255,255,255,0.12),
+            0 18px 58px rgba(0,0,0,0.48);
+        }
+
         @keyframes searchSuggestionPanelIn {
           from {
             opacity: 0;
@@ -2781,8 +2967,355 @@ export default function Home({ initialContent }: HomeProps) {
           overflow: hidden;
         }
 
+        .featured-side-rail {
+          position: relative;
+          z-index: 4;
+          width: clamp(560px, 38vw, 760px);
+          flex: 0 0 clamp(560px, 38vw, 760px);
+          align-self: center;
+          margin-left: auto;
+          display: flex;
+          flex-direction: row-reverse;
+          align-items: stretch;
+          justify-content: flex-start;
+          gap: 16px;
+          height: clamp(430px, 58vh, 560px);
+          max-height: calc(100vh - 180px);
+          min-height: 430px;
+        }
+
+        .featured-roulette {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          flex: 1 1 0;
+          min-width: 0;
+          min-height: 0;
+          display: flex;
+          flex-direction: column;
+          border-radius: 30px;
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          background:
+            radial-gradient(circle at 50% 0%, rgba(255,255,255,0.14), transparent 43%),
+            radial-gradient(circle at 100% 18%, rgba(255,255,255,0.08), transparent 36%),
+            linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.025)),
+            rgba(4,4,4,0.72);
+          box-shadow:
+            0 34px 110px rgba(0,0,0,0.62),
+            0 0 0 1px rgba(255,255,255,0.04) inset,
+            inset 0 1px 0 rgba(255,255,255,0.10);
+          backdrop-filter: blur(22px);
+          -webkit-backdrop-filter: blur(22px);
+          overflow: hidden;
+        }
+
+        .featured-roulette::before,
+        .featured-roulette::after {
+          content: "";
+          position: absolute;
+          left: 0;
+          right: 0;
+          z-index: 3;
+          height: 70px;
+          pointer-events: none;
+        }
+
+        .featured-roulette::before {
+          top: 66px;
+          background: linear-gradient(180deg, rgba(5,5,5,0.96), rgba(5,5,5,0));
+        }
+
+        .featured-roulette::after {
+          bottom: 58px;
+          background: linear-gradient(0deg, rgba(5,5,5,0.96), rgba(5,5,5,0));
+        }
+
+        .featured-roulette-head {
+          position: relative;
+          z-index: 4;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 14px;
+          padding: 18px 16px 12px;
+          border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .featured-roulette-title {
+          font-size: 11px;
+          font-weight: 950;
+          letter-spacing: 0.24em;
+          text-transform: uppercase;
+          color: rgba(255,255,255,0.72);
+        }
+
+        .featured-roulette-count {
+          border-radius: 999px;
+          border: 1px solid rgba(255,255,255,0.12);
+          background: rgba(255,255,255,0.06);
+          padding: 6px 10px;
+          font-size: 11px;
+          font-weight: 950;
+          color: rgba(255,255,255,0.72);
+        }
+
+        .featured-roulette-track {
+          position: relative;
+          z-index: 2;
+          flex: 1 1 auto;
+          min-height: 0;
+          overflow-y: auto;
+          overscroll-behavior-y: contain;
+          padding: 14px 10px 14px;
+          scroll-snap-type: none;
+          scrollbar-width: thin;
+          scrollbar-color: rgba(255,255,255,0.24) transparent;
+          touch-action: pan-y;
+        }
+
+        .featured-roulette-track::-webkit-scrollbar {
+          width: 6px;
+        }
+
+        .featured-roulette-track::-webkit-scrollbar-track {
+          background: transparent;
+        }
+
+        .featured-roulette-track::-webkit-scrollbar-thumb {
+          border-radius: 999px;
+          background: rgba(255,255,255,0.22);
+        }
+
+        .featured-roulette-item {
+          display: grid;
+          grid-template-columns: 48px minmax(0, 1fr);
+          gap: 10px;
+          width: 100%;
+          min-height: 72px;
+          align-items: center;
+          scroll-snap-align: center;
+          border-radius: 22px;
+          border: 1px solid transparent;
+          padding: 9px;
+          color: #ffffff;
+          text-align: left;
+          opacity: 0.58;
+          transform: scale(0.96);
+          transition:
+            opacity 220ms ease,
+            transform 240ms cubic-bezier(0.16, 1, 0.3, 1),
+            border-color 220ms ease,
+            background 220ms ease,
+            box-shadow 240ms ease;
+        }
+
+        .featured-roulette-item:hover {
+          opacity: 0.9;
+          transform: scale(0.985);
+          background: rgba(255,255,255,0.055);
+          border-color: rgba(255,255,255,0.10);
+        }
+
+        .featured-roulette-item.is-active {
+          opacity: 1;
+          transform: scale(1);
+          border-color: rgba(255,255,255,0.22);
+          background:
+            radial-gradient(circle at 0% 0%, rgba(255,255,255,0.14), transparent 46%),
+            rgba(255,255,255,0.08);
+          box-shadow:
+            0 18px 54px rgba(0,0,0,0.44),
+            inset 0 1px 0 rgba(255,255,255,0.14);
+        }
+
+        .featured-roulette-poster {
+          position: relative;
+          width: 48px;
+          aspect-ratio: 2 / 3;
+          overflow: hidden;
+          border-radius: 14px;
+          background: #111111;
+          box-shadow: 0 14px 34px rgba(0,0,0,0.42);
+        }
+
+        .featured-roulette-poster img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+        }
+
+        .featured-roulette-number {
+          position: absolute;
+          left: 5px;
+          top: 5px;
+          display: inline-flex;
+          min-width: 22px;
+          height: 22px;
+          align-items: center;
+          justify-content: center;
+          border-radius: 999px;
+          background: rgba(0,0,0,0.74);
+          border: 1px solid rgba(255,255,255,0.14);
+          font-size: 10px;
+          font-weight: 950;
+          color: rgba(255,255,255,0.92);
+          backdrop-filter: blur(10px);
+        }
+
+        .featured-roulette-name {
+          min-width: 0;
+        }
+
+        .featured-roulette-name strong {
+          display: block;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          font-size: 14px;
+          line-height: 1.15;
+          font-weight: 950;
+          color: #ffffff;
+        }
+
+        .featured-roulette-name span {
+          margin-top: 6px;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+          color: rgba(255,255,255,0.58);
+          font-size: 10px;
+          font-weight: 850;
+        }
+
+        .featured-roulette-foot {
+          position: relative;
+          z-index: 4;
+          display: grid;
+          grid-template-columns: 38px minmax(0, 1fr) 38px;
+          gap: 8px;
+          align-items: center;
+          padding: 10px 12px 14px;
+          border-top: 1px solid rgba(255,255,255,0.08);
+          background: rgba(0,0,0,0.22);
+        }
+
+        .featured-roulette-arrow {
+          display: inline-flex;
+          height: 36px;
+          width: 36px;
+          align-items: center;
+          justify-content: center;
+          border-radius: 999px;
+          border: 1px solid rgba(255,255,255,0.13);
+          background: rgba(255,255,255,0.055);
+          color: white;
+          font-size: 18px;
+          font-weight: 950;
+          transition: transform 180ms ease, background 180ms ease, border-color 180ms ease;
+        }
+
+        .featured-roulette-arrow:hover {
+          transform: translateY(-2px);
+          border-color: rgba(255,255,255,0.25);
+          background: rgba(255,255,255,0.12);
+        }
+
+        .featured-roulette-hint {
+          min-width: 0;
+          text-align: center;
+          font-size: 11px;
+          font-weight: 850;
+          line-height: 1.35;
+          color: rgba(255,255,255,0.46);
+        }
+
+        .featured-roulette.is-recent {
+          flex: 1 1 0;
+          min-height: 0;
+        }
+
+        .featured-roulette.is-recent .featured-roulette-track {
+          flex: 1 1 auto;
+          min-height: 0;
+        }
+
+        .featured-roulette.is-recent .featured-roulette-item {
+          min-height: 72px;
+          opacity: 0.72;
+        }
+
+        .featured-roulette.is-recent .featured-roulette-poster {
+          width: 48px;
+          border-radius: 13px;
+        }
+
+        .featured-roulette.is-recent .featured-roulette-item:hover {
+          opacity: 1;
+        }
+
+        .featured-roulette.is-recent .featured-roulette-item.is-active {
+          border-color: rgba(255,255,255,0.13);
+          background: rgba(255,255,255,0.055);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.11);
+        }
+
         .mobile-featured-poster-card {
-          display: none;
+          display: block;
+          width: clamp(176px, 14vw, 246px);
+          aspect-ratio: 2 / 3;
+          flex: 0 0 auto;
+          border-radius: 28px;
+          border: 1px solid rgba(255, 255, 255, 0.16);
+          background: linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02)), #080808;
+          box-shadow:
+            0 34px 110px rgba(0, 0, 0, 0.7),
+            0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+          transform: translateZ(0);
+          transition:
+            transform 260ms cubic-bezier(0.16, 1, 0.3, 1),
+            border-color 220ms ease,
+            box-shadow 260ms ease;
+        }
+
+        .mobile-featured-poster-card:hover {
+          transform: translateY(-5px) scale(1.012);
+          border-color: rgba(255, 255, 255, 0.28);
+          box-shadow:
+            0 42px 130px rgba(0, 0, 0, 0.78),
+            0 0 38px rgba(255, 255, 255, 0.08);
+        }
+
+        .mobile-featured-poster-card::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          border-radius: inherit;
+          box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+          pointer-events: none;
+        }
+
+        @media (max-width: 1500px) {
+          .featured-side-rail {
+            width: clamp(500px, 36vw, 600px);
+            flex-basis: clamp(500px, 36vw, 600px);
+            gap: 12px;
+          }
+
+          .featured-roulette-title {
+            font-size: 10px;
+            letter-spacing: 0.18em;
+          }
+
+          .featured-roulette-name strong {
+            font-size: 12px;
+          }
+        }
+
+        @media (max-width: 1180px) {
+          .featured-side-rail {
+            display: none !important;
+          }
         }
 
         @media (max-width: 640px) {
@@ -2914,6 +3447,20 @@ export default function Home({ initialContent }: HomeProps) {
             outline-offset: 6px;
           }
 
+          @media (max-width: 1180px) {
+            .desktop-header-search {
+              max-width: 320px;
+              margin-left: 18px;
+              margin-right: 18px;
+              padding-left: 0;
+              padding-right: 0;
+            }
+
+            .desktop-nav {
+              gap: 18px;
+            }
+          }
+
           @media (max-width: 768px) {
           .kinoluma-home {
             background:
@@ -2985,6 +3532,7 @@ export default function Home({ initialContent }: HomeProps) {
             gap: 14px;
             background:
               radial-gradient(circle at 78% 12%, rgba(255,255,255,0.12), transparent 26%),
+              radial-gradient(circle at 18% 18%, rgba(255,255,255,0.06), transparent 24%),
               linear-gradient(180deg, #0d0d0d 0%, #050505 58%, #000000 100%);
           }
 
@@ -2999,15 +3547,6 @@ export default function Home({ initialContent }: HomeProps) {
             pointer-events: none;
           }
 
-          .featured-poster-backdrop {
-            display: block !important;
-            inset: 68px 0 0 auto;
-            width: 72%;
-            opacity: 0.18;
-            filter: blur(1px) saturate(1.05);
-            mask-image: linear-gradient(90deg, transparent 0%, black 42%, black 100%);
-            -webkit-mask-image: linear-gradient(90deg, transparent 0%, black 42%, black 100%);
-          }
 
           .mobile-featured-poster-card {
             display: block;
@@ -3089,6 +3628,15 @@ export default function Home({ initialContent }: HomeProps) {
               linear-gradient(180deg, rgba(18,18,18,0.96), rgba(8,8,8,0.98));
           }
 
+          .kinoluma-top-search-section {
+            padding: 88px 14px 14px !important;
+          }
+
+          .kinoluma-top-search-shell {
+            border-radius: 22px !important;
+            padding: 14px !important;
+          }
+
           .mobile-search-input {
             min-height: 54px;
             border-radius: 18px;
@@ -3108,7 +3656,7 @@ export default function Home({ initialContent }: HomeProps) {
 
           .mobile-suggestion-item {
             gap: 12px;
-            padding: 10px;
+            padding: 9px;
           }
 
           .mobile-suggestion-item img {
@@ -3368,7 +3916,12 @@ export default function Home({ initialContent }: HomeProps) {
 
       <header className="mobile-header fixed left-0 top-0 z-50 flex w-full items-center justify-between border-b border-white/10 bg-black/80 backdrop-blur">
         <div className="mobile-brand-wrap flex items-center">
-          <a href="/" aria-label="KinoLuma" className="mobile-logo-link shrink-0" draggable={false}>
+          <a
+            href="/"
+            aria-label="KinoLuma"
+            className="mobile-logo-link shrink-0"
+            draggable={false}
+          >
             <img
               src="/kinoluma-icon.png"
               alt="KinoLuma"
@@ -3377,7 +3930,10 @@ export default function Home({ initialContent }: HomeProps) {
             />
           </a>
 
-          <nav className="desktop-nav hidden text-sm text-neutral-400 md:flex" aria-label="Основная навигация">
+          <nav
+            className="desktop-nav hidden text-sm text-neutral-400 md:flex"
+            aria-label="Основная навигация"
+          >
             <button
               type="button"
               onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
@@ -3425,6 +3981,102 @@ export default function Home({ initialContent }: HomeProps) {
           </nav>
         </div>
 
+        <div
+          id="kinoluma-search-section"
+          className="desktop-header-search relative z-50 hidden min-w-[280px] flex-1 justify-center px-6 md:flex"
+        >
+          <div className="desktop-header-search-inner relative w-full max-w-[460px]">
+            <label htmlFor="kinoluma-search" className="sr-only">
+              Поиск по KinoLuma
+            </label>
+            <input
+              id="kinoluma-search"
+              ref={searchInputRef}
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              onFocus={() => setIsSearchFocused(true)}
+              onBlur={() => {
+                window.setTimeout(() => setIsSearchFocused(false), 140);
+              }}
+              placeholder="Поиск фильмов и сериалов..."
+              className="desktop-header-search-input mobile-search-input w-full rounded-full border border-white/10 bg-white/[0.045] px-5 py-3 text-sm font-semibold text-white outline-none placeholder:text-neutral-600 transition duration-200 focus:border-white/35 focus:bg-black/80"
+            />
+
+            {shouldRenderSearchSuggestions && (
+              <div className="mobile-suggestions absolute left-0 right-0 top-full z-[70] mt-3 overflow-hidden rounded-2xl border border-white/10 bg-black/95 shadow-[0_24px_80px_rgba(0,0,0,0.72)] backdrop-blur-xl">
+                <div className="border-b border-white/10 px-4 py-3 text-xs font-black uppercase tracking-[0.28em] text-neutral-500">
+                  Быстрые подсказки
+                </div>
+
+                <div className="max-h-[430px] overflow-y-auto p-2">
+                  {displayedSearchSuggestions.map((item) => {
+                    const isLeavingSuggestion =
+                      leavingSearchSuggestionIds.includes(item.id);
+
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => {
+                          if (isLeavingSuggestion) {
+                            return;
+                          }
+
+                          setSearch(item.title);
+                          setIsSearchFocused(false);
+                          openDetails(item);
+                        }}
+                        className={`mobile-suggestion-item search-suggestion-motion flex w-full items-center gap-4 rounded-xl p-3 text-left transition duration-200 hover:bg-white/10 ${
+                          isLeavingSuggestion ? "is-leaving" : ""
+                        }`}
+                        aria-hidden={isLeavingSuggestion}
+                        tabIndex={isLeavingSuggestion ? -1 : 0}
+                      >
+                        <img
+                          src={item.poster}
+                          alt={item.title}
+                          className="h-20 w-14 shrink-0 rounded-lg object-cover bg-neutral-900"
+                          loading="lazy"
+                          referrerPolicy="no-referrer"
+                          onError={(event) => {
+                            event.currentTarget.onerror = null;
+                            event.currentTarget.src = getPosterFallback(
+                              item.title,
+                              item.originalTitle,
+                              item.type,
+                            );
+                          }}
+                        />
+
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-black text-white">
+                            {item.title}
+                          </span>
+                          <span className="mt-1 block truncate text-xs font-bold text-neutral-500">
+                            {item.originalTitle}
+                          </span>
+                          <span className="mt-2 flex flex-wrap gap-2 text-[11px] font-black text-neutral-300">
+                            <span className="rounded-full bg-white/10 px-2 py-1">
+                              ★ {item.rating}
+                            </span>
+                            <span className="rounded-full bg-white/10 px-2 py-1">
+                              {item.year}
+                            </span>
+                            <span className="rounded-full bg-white/10 px-2 py-1">
+                              {item.type}
+                            </span>
+                          </span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
         {currentUser ? (
           <div className="mobile-user-area flex items-center gap-3">
             <button
@@ -3462,26 +4114,7 @@ export default function Home({ initialContent }: HomeProps) {
         )}
       </header>
 
-      <section className="mobile-hero relative flex min-h-[720px] items-center overflow-hidden bg-gradient-to-r from-black via-neutral-950 to-neutral-900 px-8 pt-24">
-        <div className="featured-poster-backdrop absolute inset-y-0 right-0 hidden w-1/2 overflow-hidden opacity-25 lg:block">
-          <img
-            key={`featured-backdrop-${featuredContent.id}`}
-            src={featuredBackdropImage}
-            alt={featuredContent.title}
-            className="featured-backdrop h-full w-full object-cover"
-            onError={(event) => {
-              event.currentTarget.onerror = null;
-              event.currentTarget.src = getPosterFallback(
-                featuredContent.title,
-                featuredContent.originalTitle,
-                featuredContent.type,
-              );
-            }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-black via-black/45 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30" />
-        </div>
-
+      <section className="mobile-hero relative flex min-h-[720px] items-center gap-8 overflow-hidden bg-black px-8 pt-16 lg:gap-10">
         <button
           type="button"
           onClick={() => openDetails(featuredContent)}
@@ -3490,7 +4123,7 @@ export default function Home({ initialContent }: HomeProps) {
         >
           <img
             key={`mobile-featured-poster-${featuredContent.id}`}
-            src={featuredBackdropImage}
+            src={featuredPosterImage}
             alt={`Обложка: ${featuredContent.title}`}
             loading="eager"
             decoding="async"
@@ -3514,15 +4147,6 @@ export default function Home({ initialContent }: HomeProps) {
 
           <div className="absolute right-3 top-3 rounded-full bg-white px-3 py-1 text-[11px] font-black text-black shadow-[0_12px_30px_rgba(0,0,0,0.45)]">
             ★ {featuredContent.rating}
-          </div>
-
-          <div className="absolute inset-x-0 bottom-0 p-4">
-            <p className="text-xs font-bold uppercase tracking-[0.28em] text-white/55">
-              Обложка
-            </p>
-            <p className="mt-1 text-lg font-black leading-none text-white">
-              {featuredContent.title}
-            </p>
           </div>
         </button>
 
@@ -3598,98 +4222,177 @@ export default function Home({ initialContent }: HomeProps) {
             </button>
           </div>
         </div>
+
+        <div
+          className="featured-side-rail hidden xl:flex"
+          aria-label="Правая колонка подборок"
+        >
+          <aside className="featured-roulette" aria-label="Популярное сейчас">
+            <div className="featured-roulette-head">
+              <span className="featured-roulette-title">Популярное сейчас</span>
+              <span className="featured-roulette-count">
+                {featuredIndex + 1} / {featuredContentPool.length}
+              </span>
+            </div>
+
+            <div ref={featuredRouletteRef} className="featured-roulette-track">
+              {featuredContentPool.map((item, index) => {
+                const isActive = index === featuredIndex;
+
+                return (
+                  <button
+                    key={`featured-roulette-${item.id}`}
+                    type="button"
+                    data-featured-roulette-index={index}
+                    onClick={() => goToFeaturedSlide(index)}
+                    className={`featured-roulette-item ${isActive ? "is-active" : ""}`}
+                    aria-current={isActive ? "true" : undefined}
+                    aria-label={`Показать слайд: ${item.title}`}
+                  >
+                    <span className="featured-roulette-poster">
+                      <img
+                        src={getFeaturedPosterImage(item)}
+                        alt={`Постер: ${item.title}`}
+                        loading="lazy"
+                        decoding="async"
+                        referrerPolicy="no-referrer"
+                        onError={(event) => {
+                          event.currentTarget.onerror = null;
+                          event.currentTarget.src = getPosterFallback(
+                            item.title,
+                            item.originalTitle,
+                            item.type,
+                          );
+                        }}
+                      />
+                      <span className="featured-roulette-number">
+                        {index + 1}
+                      </span>
+                    </span>
+
+                    <span className="featured-roulette-name">
+                      <strong>{item.title}</strong>
+                      <span>
+                        <em className="not-italic">★ {item.rating}</em>
+                        <em className="not-italic">{item.year}</em>
+                        <em className="not-italic">{item.type}</em>
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="featured-roulette-foot">
+              <button
+                type="button"
+                onClick={() => goToFeaturedSlide(featuredIndex - 1)}
+                className="featured-roulette-arrow"
+                aria-label="Предыдущий слайд"
+              >
+                ↑
+              </button>
+
+              <p className="featured-roulette-hint">
+                Выбирай фильм из подборки
+              </p>
+
+              <button
+                type="button"
+                onClick={() => goToFeaturedSlide(featuredIndex + 1)}
+                className="featured-roulette-arrow"
+                aria-label="Следующий слайд"
+              >
+                ↓
+              </button>
+            </div>
+          </aside>
+
+          <aside
+            className="featured-roulette is-recent"
+            aria-label="Обновилось недавно"
+          >
+            <div className="featured-roulette-head">
+              <span className="featured-roulette-title">
+                Обновилось недавно
+              </span>
+              <span className="featured-roulette-count">
+                {recentlyUpdatedPool.length}
+              </span>
+            </div>
+
+            <div ref={recentRouletteRef} className="featured-roulette-track">
+              {recentlyUpdatedPool.map((item, index) => (
+                <button
+                  key={`recent-roulette-${item.id}`}
+                  type="button"
+                  onClick={() => openDetails(item)}
+                  className="featured-roulette-item"
+                  aria-label={`Открыть: ${item.title}`}
+                >
+                  <span className="featured-roulette-poster">
+                    <img
+                      src={getFeaturedPosterImage(item)}
+                      alt={`Постер: ${item.title}`}
+                      loading="lazy"
+                      decoding="async"
+                      referrerPolicy="no-referrer"
+                      onError={(event) => {
+                        event.currentTarget.onerror = null;
+                        event.currentTarget.src = getPosterFallback(
+                          item.title,
+                          item.originalTitle,
+                          item.type,
+                        );
+                      }}
+                    />
+                    <span className="featured-roulette-number">
+                      {index + 1}
+                    </span>
+                  </span>
+
+                  <span className="featured-roulette-name">
+                    <strong>{item.title}</strong>
+                    <span>
+                      <em className="not-italic">★ {item.rating}</em>
+                      <em className="not-italic">{item.year}</em>
+                      <em className="not-italic">{item.type}</em>
+                    </span>
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            <div className="featured-roulette-foot">
+              <button
+                type="button"
+                onClick={() => scrollRoulette(recentRouletteRef, -1)}
+                className="featured-roulette-arrow"
+                aria-label="Прокрутить обновления вверх"
+              >
+                ↑
+              </button>
+
+              <p className="featured-roulette-hint">Новые карточки каталога</p>
+
+              <button
+                type="button"
+                onClick={() => scrollRoulette(recentRouletteRef, 1)}
+                className="featured-roulette-arrow"
+                aria-label="Прокрутить обновления вниз"
+              >
+                ↓
+              </button>
+            </div>
+          </aside>
+        </div>
       </section>
 
       <section
-        id="kinoluma-search-section"
+        id="kinoluma-filter-section"
         className="mobile-filters-section border-y border-white/10 bg-neutral-950 px-8 py-8"
       >
         <div className="flex flex-col gap-6">
-          <div className="relative">
-            <label className="mb-3 block text-sm font-bold text-neutral-400">
-              Поиск по названию
-            </label>
-
-            <input
-              id="kinoluma-search"
-              ref={searchInputRef}
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              onFocus={() => setIsSearchFocused(true)}
-              onBlur={() => {
-                window.setTimeout(() => setIsSearchFocused(false), 140);
-              }}
-              placeholder="Например: Наруто, Начало, Матрица, Inception..."
-              className="mobile-search-input w-full rounded-xl border border-white/10 bg-black px-5 py-4 text-white outline-none placeholder:text-neutral-600 transition duration-200 focus:border-white/40"
-            />
-
-            {shouldRenderSearchSuggestions && (
-              <div className="mobile-suggestions absolute left-0 right-0 top-full z-50 mt-3 overflow-hidden rounded-2xl border border-white/10 bg-black/95 shadow-[0_24px_80px_rgba(0,0,0,0.72)] backdrop-blur-xl">
-                <div className="border-b border-white/10 px-4 py-3 text-xs font-black uppercase tracking-[0.28em] text-neutral-500">
-                  Быстрые подсказки
-                </div>
-
-                <div className="max-h-[430px] overflow-y-auto p-2">
-                  {displayedSearchSuggestions.map((item) => {
-                    const isLeavingSuggestion = leavingSearchSuggestionIds.includes(item.id);
-
-                    return (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onMouseDown={(event) => event.preventDefault()}
-                        onClick={() => {
-                          if (isLeavingSuggestion) {
-                            return;
-                          }
-
-                          setSearch(item.title);
-                          setIsSearchFocused(false);
-                          openDetails(item);
-                        }}
-                        className={`mobile-suggestion-item search-suggestion-motion flex w-full items-center gap-4 rounded-xl p-3 text-left transition duration-200 hover:bg-white/10 ${
-                          isLeavingSuggestion ? "is-leaving" : ""
-                        }`}
-                        aria-hidden={isLeavingSuggestion}
-                        tabIndex={isLeavingSuggestion ? -1 : 0}
-                      >
-                        <img
-                          src={item.poster}
-                          alt={item.title}
-                          className="h-20 w-14 shrink-0 rounded-lg object-cover bg-neutral-900"
-                          loading="lazy"
-                          referrerPolicy="no-referrer"
-                          onError={(event) => {
-                            event.currentTarget.onerror = null;
-                            event.currentTarget.src = getPosterFallback(
-                              item.title,
-                              item.originalTitle,
-                              item.type,
-                            );
-                          }}
-                        />
-
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate text-sm font-black text-white">
-                            {item.title}
-                          </span>
-                          <span className="mt-1 block truncate text-xs font-bold text-neutral-500">
-                            {item.originalTitle}
-                          </span>
-                          <span className="mt-2 flex flex-wrap gap-2 text-[11px] font-black text-neutral-300">
-                            <span className="rounded-full bg-white/10 px-2 py-1">★ {item.rating}</span>
-                            <span className="rounded-full bg-white/10 px-2 py-1">{item.year}</span>
-                            <span className="rounded-full bg-white/10 px-2 py-1">{item.type}</span>
-                          </span>
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-
           <div>
             <p className="mb-3 text-sm font-bold text-neutral-400">
               Тип контента
@@ -3795,10 +4498,9 @@ export default function Home({ initialContent }: HomeProps) {
             </p>
           </div>
 
-          {(search || selectedType !== "Все" || selectedGenre !== "Все") && (
+          {(selectedType !== "Все" || selectedGenre !== "Все") && (
             <button
               onClick={() => {
-                setSearch("");
                 setSelectedType("Все");
                 setSelectedGenre("Все");
               }}
@@ -3828,12 +4530,17 @@ export default function Home({ initialContent }: HomeProps) {
               <div className="kinoluma-more-button-wrap">
                 <button
                   type="button"
-                  onClick={() => setPopularVisibleRows((currentRows) => currentRows + 4)}
+                  onClick={() =>
+                    setPopularVisibleRows((currentRows) => currentRows + 4)
+                  }
                   className="kinoluma-more-button"
                 >
                   <span>Ещё</span>
 
-                  <span className="kinoluma-more-button-icon" aria-hidden="true">
+                  <span
+                    className="kinoluma-more-button-icon"
+                    aria-hidden="true"
+                  >
                     <svg
                       viewBox="0 0 24 24"
                       className="h-4 w-4"
@@ -3871,8 +4578,8 @@ export default function Home({ initialContent }: HomeProps) {
           </h3>
 
           <p className="mt-2 max-w-2xl text-sm text-neutral-500">
-            Карточки собраны плотнее: описание и жанры подняты выше, а кнопки
-            не прилипают к нижнему краю.
+            Карточки собраны плотнее: описание и жанры подняты выше, а кнопки не
+            прилипают к нижнему краю.
           </p>
         </div>
 
@@ -4020,7 +4727,7 @@ export default function Home({ initialContent }: HomeProps) {
                     isWatchLater={watchLaterIds.includes(item.id)}
                     onOpenDetails={openDetails}
                     onOpenTrailer={openTrailer}
-                    />
+                  />
                 ))}
               </div>
             </div>
@@ -4073,9 +4780,7 @@ export default function Home({ initialContent }: HomeProps) {
                 {selectedItem.type}
               </p>
 
-              <h3 className="mt-3 text-4xl font-black">
-                {selectedItem.title}
-              </h3>
+              <h3 className="mt-3 text-4xl font-black">{selectedItem.title}</h3>
 
               <p className="mt-2 text-xl font-bold text-neutral-500">
                 {selectedItem.originalTitle}
@@ -4154,7 +4859,9 @@ export default function Home({ initialContent }: HomeProps) {
                         : "Понравилось"
                     }
                   >
-                    <HeartIcon filled={likedItemIds.includes(selectedItem.id)} />
+                    <HeartIcon
+                      filled={likedItemIds.includes(selectedItem.id)}
+                    />
                   </ModalIconButton>
 
                   <ModalIconButton
@@ -4360,7 +5067,10 @@ export default function Home({ initialContent }: HomeProps) {
         </div>
       )}
       {!selectedItem && !trailerItem && !isAuthModalOpen && (
-        <MobileBottomNav onSearch={focusMobileSearch} onRandom={openRandomPick} />
+        <MobileBottomNav
+          onSearch={focusMobileSearch}
+          onRandom={openRandomPick}
+        />
       )}
     </main>
   );

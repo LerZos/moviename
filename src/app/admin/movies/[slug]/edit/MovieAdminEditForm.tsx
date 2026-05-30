@@ -70,6 +70,13 @@ function getRendexContentType(value: unknown) {
     : "movie";
 }
 
+function isLegacyStandaloneVibixPlayer(item: Record<string, unknown>) {
+  const type = valueToString(item.type || item.provider).trim().toLowerCase();
+  const provider = valueToString(item.provider).trim().toLowerCase();
+
+  return type === "vibix" || type === "vibix-iframe" || provider === "vibix";
+}
+
 function buildCollapseKinopoiskUrl(kinopoiskId: string) {
   const id = kinopoiskId.trim().match(/\d+/)?.[0] || "";
   return id
@@ -216,6 +223,10 @@ function parsePlayers(
         };
       }
 
+      if (type === "vibix" || type === "vibix-iframe") {
+        return null;
+      }
+
       if (type === "rendex") {
         const explicitType =
           parts[2] &&
@@ -281,6 +292,10 @@ function playersToText(players: unknown, fallbackMovieType = "") {
       }
 
       const item = player as Record<string, unknown>;
+      if (isLegacyStandaloneVibixPlayer(item)) {
+        return "";
+      }
+
       const name =
         typeof item.name === "string" && item.name.trim()
           ? item.name.trim()

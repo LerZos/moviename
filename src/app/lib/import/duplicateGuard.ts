@@ -204,7 +204,13 @@ function getInputKinopoiskId(input: DuplicateLookupInput) {
     toCleanInt(input.kinopoiskId) ??
     toCleanInt(getRawValue(input.rawJson, ['kinopoisk_id'])) ??
     toCleanInt(getRawValue(input.rawJson, ['kinopoiskId'])) ??
+    toCleanInt(getRawValue(input.rawJson, ['kp_id'])) ??
+    toCleanInt(getRawValue(input.rawJson, ['kpId'])) ??
     toCleanInt(getRawValue(input.rawJson, ['id_kinopoisk'])) ??
+    toCleanInt(getRawValue(input.rawJson, ['vibix', 'kp_id'])) ??
+    toCleanInt(getRawValue(input.rawJson, ['vibix', 'kinopoisk_id'])) ??
+    toCleanInt(getRawValue(input.rawJson, ['candidate', 'raw_json', 'kp_id'])) ??
+    toCleanInt(getRawValue(input.rawJson, ['candidate', 'raw_json', 'kinopoisk_id'])) ??
     toCleanInt(getRawValue(input.rawJson, ['external_ids', 'kinopoisk_id']))
   );
 }
@@ -214,6 +220,8 @@ function getInputImdbId(input: DuplicateLookupInput) {
     input.imdbId ??
       (getRawValue(input.rawJson, ['imdb_id']) as string | null) ??
       (getRawValue(input.rawJson, ['imdbId']) as string | null) ??
+      (getRawValue(input.rawJson, ['vibix', 'imdb_id']) as string | null) ??
+      (getRawValue(input.rawJson, ['candidate', 'raw_json', 'imdb_id']) as string | null) ??
       (getRawValue(input.rawJson, ['external_ids', 'imdb_id']) as string | null),
   );
 }

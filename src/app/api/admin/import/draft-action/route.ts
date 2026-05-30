@@ -90,8 +90,8 @@ function buildActionUpdate(action: DraftAction, reason: string | null) {
   if (action === 'reject') {
     return {
       update: {
-        status: 'rejected',
-        moderation_notes: note || 'Отклонено вручную в админке',
+        status: 'deleted',
+        moderation_notes: note || 'Отклонено и скрыто вручную в админке',
       },
       decision: 'reject',
     };
@@ -122,8 +122,8 @@ function buildActionUpdate(action: DraftAction, reason: string | null) {
   if (action === 'duplicate') {
     return {
       update: {
-        status: 'rejected',
-        moderation_notes: note || 'Дубль — отклонено вручную',
+        status: 'deleted',
+        moderation_notes: note || 'Дубль — скрыто вручную',
       },
       decision: 'duplicate',
     };

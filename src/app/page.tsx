@@ -3,6 +3,9 @@ import HomeClient from "./HomeClient";
 
 import { getHomePageJsonLd, siteUrl } from "./lib/seo";
 import { getPublicMovies } from "./lib/movies/movieOverrides";
+import { getDailyFeaturedDateKey, getDailyFeaturedItems } from "./lib/home/dailyFeatured";
+
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -53,6 +56,8 @@ export const metadata: Metadata = {
 
 export default async function Page() {
   const publicMovies = await getPublicMovies();
+  const dailyFeatured = getDailyFeaturedItems(publicMovies);
+  const dailyFeaturedDateKey = getDailyFeaturedDateKey();
 
   return (
     <>
@@ -62,7 +67,11 @@ export default async function Page() {
           __html: JSON.stringify(getHomePageJsonLd()),
         }}
       />
-      <HomeClient initialContent={publicMovies} />
+      <HomeClient
+        initialContent={publicMovies}
+        initialFeaturedIds={dailyFeatured.map((item) => item.id)}
+        initialFeaturedDateKey={dailyFeaturedDateKey}
+      />
     </>
   );
 }

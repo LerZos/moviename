@@ -209,7 +209,7 @@ function buildCollapseIframePlayer(
   };
 }
 
-function buildVibixIframePlayer(
+export function buildVibixIframePlayer(
   name: string,
   url: unknown,
   index = 0,
@@ -265,10 +265,16 @@ export function canAutoGeneratePlayers(input: AutoPlayerInput) {
     type === "series" ||
     type === "serial" ||
     type === "tv" ||
+    type === "cartoon" ||
+    type === "animation" ||
+    type === "documentary" ||
     type.includes("фильм") ||
     type.includes("сериал") ||
-    type.includes("мультфильм") ||
-    type.includes("документ")
+    type.includes("мульт") ||
+    type.includes("документ") ||
+    type.includes("cartoon") ||
+    type.includes("animation") ||
+    type.includes("documentary")
   );
 }
 
@@ -866,7 +872,8 @@ function normalizePlayer(
   return {
     id: cleanString(item.id) || `player-${index + 1}`,
     name,
-    type: type === "vibix" || type === "vibix-iframe" ? "vibix-iframe" : "iframe",
+    type:
+      type === "vibix" || type === "vibix-iframe" ? "vibix-iframe" : "iframe",
     provider: cleanString(item.provider),
     embedUrl,
   };

@@ -4,13 +4,13 @@ import {
   findDuplicateMovie,
   serializeDuplicateMatch,
 } from "./duplicateGuard";
-import { buildCollapseImdbUrl, buildCollapseKinopoiskUrl } from "../players";
 import {
   fetchVibixLinks,
   getVibixConfig,
   type VibixVideo,
   type VibixVideoType,
 } from "./vibixApi";
+import { findBestMovieImages } from "./movieImages";
 import type { MovieType } from "./types";
 
 export type ImportVibixCandidatesOptions = {
@@ -78,37 +78,102 @@ function getRendexType(video: VibixVideo) {
   return normalizeMovieType(video.type) === "series" ? "series" : "movie";
 }
 
+function getHtmlDataAttribute(source: unknown, attributeName: string) {
+  const text = cleanText(source);
+  if (!text) return "";
+
+  const escapedAttribute = attributeName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = new RegExp(
+    `\\b${escapedAttribute}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>]+))`,
+    "i",
+  );
+  const match = text.match(pattern);
+
+  return cleanText(match?.[1] || match?.[2] || match?.[3]);
+}
+
+function getVibixRendexVideoId(video: VibixVideo) {
+  const record = asRecord(video);
+  const candidates = [
+    record.iframe_video_id,
+    record.iframeVideoId,
+    record.rendex_video_id,
+    record.rendexVideoId,
+    record.video_id,
+    record.videoId,
+    record.player_id,
+    record.playerId,
+    getHtmlDataAttribute(record.embed_code || record.embedCode, "data-id"),
+    video.id,
+  ];
+
+  for (const candidate of candidates) {
+    const id = cleanInt(candidate);
+    if (id && id > 0) return id;
+  }
+
+  return null;
+}
+
 function buildFactoriosUrl(kpId: number) {
   return `https://tarantino.factorios.live/show/kinopoisk/${kpId}`;
 }
 
-function buildVibixPlayers(video: VibixVideo) {
-  const config = getVibixConfig();
-  const videoId = cleanInt(video.id);
+function addCollapseParams(url: string) {
+  return `${url}${url.includes("?") ? "&" : "?"}sharing=false&episodesOpen=false`;
+}
+
+function buildCollapseUrl(video: VibixVideo) {
   const kpId = getKinopoiskId(video);
   const imdbId = getImdbId(video);
-  const players: Array<Record<string, unknown>> = [];
-  const collapseUrl = kpId
-    ? buildCollapseKinopoiskUrl(kpId)
-    : buildCollapseImdbUrl(imdbId);
 
-  if (collapseUrl) {
+  if (kpId && kpId > 0) {
+    return {
+      id: `collapse-kp-${kpId}`,
+      kind: "kp",
+      contentId: String(kpId),
+      embedUrl: addCollapseParams(`https://api.ortified.ws/embed/kp/${kpId}`),
+    };
+  }
+
+  if (imdbId) {
+    return {
+      id: `collapse-imdb-${imdbId}`,
+      kind: "imdb",
+      contentId: imdbId,
+      embedUrl: addCollapseParams(
+        `https://api.ortified.ws/embed/imdb/${imdbId}`,
+      ),
+    };
+  }
+
+  return null;
+}
+
+function buildVibixPlayers(video: VibixVideo) {
+  const config = getVibixConfig();
+  const videoId = getVibixRendexVideoId(video);
+  const kpId = getKinopoiskId(video);
+  const collapse = buildCollapseUrl(video);
+  const players: Array<Record<string, unknown>> = [];
+
+  if (collapse) {
     players.push({
-      id: kpId ? `collapse-kp-${kpId}` : `collapse-imdb-${imdbId}`,
+      id: collapse.id,
       name: "Основной",
       type: "collapse",
       provider: "collapse",
-      contentKind: kpId ? "kp" : "imdb",
-      contentType: kpId ? "kp" : "imdb",
-      contentId: kpId ? String(kpId) : imdbId,
-      embedUrl: collapseUrl,
+      embedUrl: collapse.embedUrl,
+      contentKind: collapse.kind,
+      contentType: collapse.kind,
+      contentId: collapse.contentId,
     });
   }
 
   if (videoId && videoId > 0) {
     players.push({
       id: `rendex-${videoId}`,
-      name: collapseUrl ? "Запасной 1" : "Основной",
+      name: collapse ? "Запасной 1" : "Основной",
       type: "rendex",
       provider: "rendex",
       publisherId: config.publisherId,
@@ -128,22 +193,35 @@ function buildVibixPlayers(video: VibixVideo) {
   if (kpId && kpId > 0) {
     players.push({
       id: `factorios-${kpId}`,
-      name: collapseUrl || videoId ? `Запасной ${players.length}` : "Основной",
+      name: players.length > 0 ? `Запасной ${players.length}` : "Основной",
       type: "iframe",
       provider: "factorios",
       embedUrl: buildFactoriosUrl(kpId),
     });
-  } else if (cleanText(video.iframe_url)) {
-    players.push({
-      id: `vibix-iframe-${videoId || "video"}`,
-      name: collapseUrl || videoId ? `Запасной ${players.length}` : "Основной",
-      type: "iframe",
-      provider: "vibix",
-      embedUrl: cleanText(video.iframe_url),
-    });
   }
 
-  return players;
+  return players.slice(0, 3);
+}
+
+async function findBetterImagesForVibixVideo(video: VibixVideo) {
+  try {
+    return await findBestMovieImages({
+      title: normalizeTitle(video),
+      originalTitle: normalizeOriginalTitle(video),
+      year: cleanInt(video.year),
+      type: normalizeMovieType(video.type),
+      kinopoiskId: getKinopoiskId(video),
+      imdbId: getImdbId(video),
+    });
+  } catch (error) {
+    console.warn("[KinoLuma import] Vibix poster fallback failed:", {
+      title: normalizeTitle(video),
+      year: cleanInt(video.year),
+      error: error instanceof Error ? error.message : error,
+    });
+
+    return { posterUrl: null, backdropUrl: null, source: null };
+  }
 }
 
 function hasAnimeMarker(video: VibixVideo) {
@@ -161,9 +239,9 @@ function hasAnimeMarker(video: VibixVideo) {
   return text.includes("аниме") || text.includes("anime");
 }
 
-function normalizeCandidate(video: VibixVideo) {
+async function normalizeCandidate(video: VibixVideo) {
   if (hasAnimeMarker(video)) return null;
-  const videoId = cleanInt(video.id);
+  const videoId = getVibixRendexVideoId(video);
   const title = normalizeTitle(video);
   const originalTitle = normalizeOriginalTitle(video);
   const year = cleanInt(video.year);
@@ -175,6 +253,12 @@ function normalizeCandidate(video: VibixVideo) {
     return null;
   }
 
+  const betterImages = await findBetterImagesForVibixVideo(video);
+  const posterUrl =
+    betterImages.posterUrl || cleanText(video.poster_url) || null;
+  const backdropUrl =
+    betterImages.backdropUrl || cleanText(video.backdrop_url) || null;
+
   return {
     source: "vibix",
     source_id: `vibix:${videoId}`,
@@ -185,11 +269,18 @@ function normalizeCandidate(video: VibixVideo) {
     status: "new",
     raw_json: {
       vibix: video,
+      poster_url: posterUrl,
+      backdrop_url: backdropUrl,
       kinopoisk_id: kinopoiskId,
       kp_id: kinopoiskId,
       imdb_id: imdbId,
       kinoluma: {
         players: buildVibixPlayers(video),
+        poster_source: betterImages.source || (posterUrl ? "vibix" : null),
+        backdrop_source: betterImages.source || (backdropUrl ? "vibix" : null),
+        image_enriched_at: betterImages.source
+          ? new Date().toISOString()
+          : null,
         imported_from: "vibix",
         imported_at: new Date().toISOString(),
       },
@@ -247,13 +338,14 @@ export async function importVibixCandidates(
     const response = await fetchVibixLinks({ type, page, limit });
     const videos = Array.isArray(response.data) ? response.data : [];
     type NormalizedVibixCandidate = NonNullable<
-      ReturnType<typeof normalizeCandidate>
+      Awaited<ReturnType<typeof normalizeCandidate>>
     >;
-    const normalized = videos
-      .map(normalizeCandidate)
-      .filter((candidate): candidate is NormalizedVibixCandidate =>
-        Boolean(candidate),
-      );
+    const normalizedCandidates = await Promise.all(
+      videos.map((video) => normalizeCandidate(video)),
+    );
+    const normalized = normalizedCandidates.filter(
+      (candidate): candidate is NormalizedVibixCandidate => Boolean(candidate),
+    );
 
     const freshCandidates: typeof normalized = [];
     const duplicates: unknown[] = [];

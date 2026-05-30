@@ -592,6 +592,23 @@ export default function ImportDashboardClient() {
     setMessage(null);
 
     try {
+      await fetch("/api/admin/import/cleanup-duplicates", {
+        method: "POST",
+        cache: "no-store",
+        headers: {
+          "Content-Type": "application/json",
+          "x-kinoluma-admin-secret": secret.trim(),
+        },
+        body: JSON.stringify({
+          includeDrafts: true,
+          includeAllCandidateStatuses: true,
+          deleteCandidateDuplicates: true,
+          deleteFailedCandidates: true,
+          deleteDraftsWithoutKinopoisk: true,
+          deleteRejectedDrafts: true,
+        }),
+      }).catch(() => null);
+
       const response = await fetch("/api/admin/import/list", {
         cache: "no-store",
         headers: {
@@ -672,21 +689,11 @@ export default function ImportDashboardClient() {
     );
   }
 
-  function importVibix(type: "movie" | "serial") {
+  function deleteCandidate(candidateId: string) {
     return runPost(
-      "/api/admin/import/vibix",
-      { type, page: 1, limit: 30 },
-      type === "movie"
-        ? "Vibix: фильмы добавлены в кандидаты"
-        : "Vibix: сериалы добавлены в кандидаты",
-    );
-  }
-
-  function syncSiteWithVibix() {
-    return runPost(
-      "/api/admin/import/vibix/sync-site",
-      { mode: "missing", limit: 1000, makePrimary: false },
-      "Vibix подключён к фильмам сайта",
+      "/api/admin/import/delete-candidate",
+      { candidateId },
+      "Кандидат удалён из очереди",
     );
   }
 
@@ -882,47 +889,9 @@ export default function ImportDashboardClient() {
               <div className="dashboard-actions">
                 <button
                   type="button"
-                  onClick={() => void processNext()}
-                  disabled={
-                    isLoading || isWorking || !data?.counts.newCandidates
-                  }
-                  className="primary-button"
-                >
-                  <Sparkles size={18} strokeWidth={2.4} aria-hidden="true" />
-                  Создать следующий черновик
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void importVibix("movie")}
-                  disabled={isLoading || isWorking}
-                  className="secondary-button"
-                >
-                  <Database size={18} strokeWidth={2.4} aria-hidden="true" />
-                  Vibix: фильмы
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void importVibix("serial")}
-                  disabled={isLoading || isWorking}
-                  className="secondary-button"
-                >
-                  <Layers3 size={18} strokeWidth={2.4} aria-hidden="true" />
-                  Vibix: сериалы
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void syncSiteWithVibix()}
-                  disabled={isLoading || isWorking}
-                  className="secondary-button"
-                >
-                  <PlayCircle size={18} strokeWidth={2.4} aria-hidden="true" />
-                  Vibix: подключить сайт
-                </button>
-                <button
-                  type="button"
                   onClick={() => void loadData()}
                   disabled={isLoading || isWorking}
-                  className="secondary-button"
+                  className="primary-button"
                 >
                   <RefreshCcw size={18} strokeWidth={2.4} aria-hidden="true" />
                   Обновить данные
@@ -1068,6 +1037,7 @@ export default function ImportDashboardClient() {
               onSearchChange={setCandidateSearch}
               isWorking={isWorking}
               onProcess={processNext}
+              onDelete={deleteCandidate}
             />
           ) : null}
 
@@ -1101,6 +1071,7 @@ export default function ImportDashboardClient() {
                     candidates={failedCandidates}
                     isWorking={isWorking}
                     onProcess={processNext}
+                    onDelete={deleteCandidate}
                   />
                 </div>
               ) : null}
@@ -1269,6 +1240,7 @@ function CandidateList({
   onSearchChange,
   isWorking,
   onProcess,
+  onDelete,
 }: {
   candidates: Candidate[];
   totalCount?: number;
@@ -1276,6 +1248,7 @@ function CandidateList({
   onSearchChange?: (value: string) => void;
   isWorking: boolean;
   onProcess: (candidateId?: string) => void;
+  onDelete: (candidateId: string) => void;
 }) {
   const isFiltering = Boolean(searchValue.trim());
 
@@ -1320,6 +1293,7 @@ function CandidateList({
               candidate={candidate}
               isWorking={isWorking}
               onProcess={onProcess}
+              onDelete={onDelete}
             />
           ))}
         </div>
@@ -1332,10 +1306,12 @@ function CandidateCard({
   candidate,
   isWorking,
   onProcess,
+  onDelete,
 }: {
   candidate: Candidate;
   isWorking: boolean;
   onProcess: (candidateId?: string) => void;
+  onDelete: (candidateId: string) => void;
 }) {
   const poster =
     candidate.poster_url ||
@@ -1389,15 +1365,32 @@ function CandidateCard({
             <Info label="Создан" value={formatDate(candidate.created_at)} />
           </div>
 
-          <button
-            type="button"
-            onClick={() => onProcess(candidate.id)}
-            disabled={isWorking}
-            className="primary-button card-button"
-          >
-            <Sparkles size={17} strokeWidth={2.4} aria-hidden="true" />
-            Создать черновик
-          </button>
+          <div className="candidate-card-actions">
+            <button
+              type="button"
+              onClick={() => onProcess(candidate.id)}
+              disabled={isWorking}
+              className="primary-button card-button"
+            >
+              <Sparkles size={17} strokeWidth={2.4} aria-hidden="true" />
+              Создать черновик
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const title = candidate.title || candidate.original_title || "кандидат";
+                const confirmed = window.confirm(
+                  `Удалить «${title}» из кандидатов? Он не уйдёт в ошибки и исчезнет из очереди.`,
+                );
+                if (confirmed) onDelete(candidate.id);
+              }}
+              disabled={isWorking}
+              className="secondary-button danger-action card-button"
+            >
+              <Trash2 size={17} strokeWidth={2.4} aria-hidden="true" />
+              Удалить
+            </button>
+          </div>
         </div>
       </div>
     </article>
@@ -2273,12 +2266,17 @@ const adminImportStyles = `
 
   .top-actions,
   .dashboard-actions,
+  .candidate-card-actions,
   .draft-actions-top,
   .draft-actions-bottom {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 10px;
+  }
+
+  .candidate-card-actions {
+    margin-top: 14px;
   }
 
   .ghost-button,

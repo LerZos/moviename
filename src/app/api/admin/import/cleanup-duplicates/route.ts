@@ -64,7 +64,20 @@ async function markCandidateDuplicate(candidate: CandidateRow, duplicate: unknow
   if (error) throw error;
 }
 
-async function softDeleteDraft(draft: DraftRow, reason: unknown) {
+async function hardDeleteCandidate(candidateId: string) {
+  const { error } = await supabaseAdmin
+    .from('import_candidates')
+    .delete()
+    .eq('id', candidateId);
+
+  if (error) throw error;
+}
+
+async function softDeleteDraft(
+  draft: DraftRow,
+  reason: unknown,
+  moderationNote = 'Скрыто автоматически: дубль уже существующего фильма',
+) {
   const rawJson = asRecord(draft.raw_json);
 
   const { error } = await supabaseAdmin
@@ -76,7 +89,7 @@ async function softDeleteDraft(draft: DraftRow, reason: unknown) {
         kinoluma_deleted_reason: reason,
         kinoluma_deleted_at: nowIso(),
       },
-      moderation_notes: 'Скрыто автоматически: дубль уже существующего фильма',
+      moderation_notes: moderationNote,
       updated_at: nowIso(),
     })
     .eq('id', draft.id);
@@ -84,7 +97,10 @@ async function softDeleteDraft(draft: DraftRow, reason: unknown) {
   if (error) throw error;
 }
 
-async function cleanupCandidateDuplicates(options: { includeAllCandidateStatuses: boolean }) {
+async function cleanupCandidateDuplicates(options: {
+  includeAllCandidateStatuses: boolean;
+  deleteCandidateDuplicates: boolean;
+}) {
   let query = supabaseAdmin
     .from('import_candidates')
     .select('id, source_id, title, original_title, year, status, raw_json')
@@ -114,7 +130,12 @@ async function cleanupCandidateDuplicates(options: { includeAllCandidateStatuses
 
     markedDuplicate += 1;
     const serialized = serializeDuplicateMatch(duplicate);
-    await markCandidateDuplicate(candidate, serialized);
+
+    if (options.deleteCandidateDuplicates) {
+      await hardDeleteCandidate(candidate.id);
+    } else {
+      await markCandidateDuplicate(candidate, serialized);
+    }
 
     if (examples.length < 30) {
       examples.push({
@@ -184,6 +205,98 @@ async function cleanupDraftDuplicatesAgainstStaticMovies() {
   return { scanned, softDeleted, examples };
 }
 
+async function hardDeleteCandidatesByStatus(statuses: string[]) {
+  if (!statuses.length) return { deleted: 0 };
+
+  const { data, error: readError } = await supabaseAdmin
+    .from('import_candidates')
+    .select('id')
+    .in('status', statuses)
+    .limit(5000);
+
+  if (readError) throw readError;
+
+  const ids = (data ?? [])
+    .map((row) => (typeof row.id === 'string' ? row.id : null))
+    .filter((id): id is string => Boolean(id));
+
+  if (!ids.length) return { deleted: 0 };
+
+  const { error: deleteError } = await supabaseAdmin
+    .from('import_candidates')
+    .delete()
+    .in('id', ids);
+
+  if (deleteError) throw deleteError;
+
+  return { deleted: ids.length };
+}
+
+async function cleanupDraftsWithoutKinopoisk() {
+  const { data, error } = await supabaseAdmin
+    .from('movie_drafts')
+    .select('id, title, original_title, slug, year, tmdb_id, kinopoisk_id, imdb_id, status, raw_json')
+    .neq('status', 'deleted')
+    .is('kinopoisk_id', null)
+    .limit(5000);
+
+  if (error) throw error;
+
+  const drafts = (data ?? []) as DraftRow[];
+  let softDeleted = 0;
+  const examples: unknown[] = [];
+
+  for (const draft of drafts) {
+    softDeleted += 1;
+    await softDeleteDraft(
+      draft,
+      {
+        reason: 'missing_kinopoisk_id',
+        message: 'Черновик скрыт: в KinoLuma публикуем только фильмы с Kinopoisk ID.',
+      },
+      'Скрыто автоматически: нет Kinopoisk ID',
+    );
+
+    if (examples.length < 30) {
+      examples.push({
+        draftId: draft.id,
+        title: draft.title,
+        year: draft.year,
+        oldStatus: draft.status,
+      });
+    }
+  }
+
+  return { scanned: drafts.length, softDeleted, examples };
+}
+
+async function cleanupRejectedDrafts() {
+  const { data, error } = await supabaseAdmin
+    .from('movie_drafts')
+    .select('id, title, original_title, slug, year, tmdb_id, kinopoisk_id, imdb_id, status, raw_json')
+    .eq('status', 'rejected')
+    .limit(5000);
+
+  if (error) throw error;
+
+  const drafts = (data ?? []) as DraftRow[];
+  let softDeleted = 0;
+
+  for (const draft of drafts) {
+    softDeleted += 1;
+    await softDeleteDraft(
+      draft,
+      {
+        reason: 'rejected_cleanup',
+        message: 'Отклонённый черновик скрыт из импорта.',
+      },
+      'Скрыто автоматически: отклонённый черновик',
+    );
+  }
+
+  return { scanned: drafts.length, softDeleted };
+}
+
 export async function POST(request: Request) {
   const authError = assertAdminSecret(request);
   if (authError) return authError;
@@ -193,19 +306,45 @@ export async function POST(request: Request) {
     const payload = body as Record<string, unknown>;
     const includeDrafts = readBoolean(payload.includeDrafts);
     const includeAllCandidateStatuses = readBoolean(payload.includeAllCandidateStatuses);
+    const deleteCandidateDuplicates = readBoolean(payload.deleteCandidateDuplicates);
+    const deleteFailedCandidates = readBoolean(payload.deleteFailedCandidates);
+    const deleteDraftsWithoutKinopoisk = readBoolean(payload.deleteDraftsWithoutKinopoisk);
+    const deleteRejectedDrafts = readBoolean(payload.deleteRejectedDrafts);
 
-    const candidateCleanup = await cleanupCandidateDuplicates({ includeAllCandidateStatuses });
+    const candidateCleanup = await cleanupCandidateDuplicates({
+      includeAllCandidateStatuses,
+      deleteCandidateDuplicates,
+    });
+    const failedCandidateCleanup = deleteFailedCandidates
+      ? await hardDeleteCandidatesByStatus([
+          'failed',
+          'error',
+          'rejected',
+          'duplicate',
+          'deleted',
+          'missing_kinopoisk',
+        ])
+      : { deleted: 0 };
     const draftCleanup = includeDrafts
       ? await cleanupDraftDuplicatesAgainstStaticMovies()
       : { scanned: 0, softDeleted: 0, examples: [] as unknown[] };
+    const missingKinopoiskCleanup = deleteDraftsWithoutKinopoisk
+      ? await cleanupDraftsWithoutKinopoisk()
+      : { scanned: 0, softDeleted: 0, examples: [] as unknown[] };
+    const rejectedDraftCleanup = deleteRejectedDrafts
+      ? await cleanupRejectedDrafts()
+      : { scanned: 0, softDeleted: 0 };
 
     return Response.json({
       ok: true,
       message: includeDrafts
-        ? 'Жёсткая очистка дублей выполнена: кандидаты скрыты, импортные дубли существующих фильмов удалены из публикации.'
+        ? 'Очистка импорта выполнена: дубли, ошибки и черновики без Kinopoisk ID скрыты или удалены.'
         : 'Жёсткая очистка дублей кандидатов выполнена.',
       candidates: candidateCleanup,
+      failedCandidates: failedCandidateCleanup,
       drafts: draftCleanup,
+      missingKinopoiskDrafts: missingKinopoiskCleanup,
+      rejectedDrafts: rejectedDraftCleanup,
     });
   } catch (error) {
     return Response.json(

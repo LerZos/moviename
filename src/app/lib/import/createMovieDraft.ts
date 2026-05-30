@@ -18,6 +18,22 @@ export async function createMovieDraft(candidate: ImportCandidate) {
     .eq("id", candidate.id);
 
   const facts = await fetchMovieFacts(candidate);
+
+  if (!facts.kinopoiskId) {
+    await supabaseAdmin
+      .from("import_candidates")
+      .delete()
+      .eq("id", candidate.id);
+
+    return {
+      created: false,
+      deleted: true,
+      reason: "missing_kinopoisk_id",
+      message:
+        "Кандидат удалён: KinoLuma создаёт черновики только для фильмов с Kinopoisk ID.",
+    };
+  }
+
   const slug = generateSlug(facts.title, facts.year);
   const duplicate = await checkDuplicates({
     tmdbId: facts.tmdbId,

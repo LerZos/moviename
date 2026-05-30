@@ -1,5 +1,6 @@
 import { tmdbFetch, tmdbImage } from './tmdb';
 import { fetchVibixByImdbId, fetchVibixByKinopoiskId, unwrapVibixVideo } from './vibixApi';
+import { findBestMovieImages } from './movieImages';
 import type { ImportCandidate, MovieFacts, MovieType } from './types';
 
 type TmdbGenre = { id: number; name: string };
@@ -91,7 +92,7 @@ async function fetchKinopoiskByTitle(
   originalTitle: string | null,
   year: number | null,
 ): Promise<NonNullable<KinopoiskSearchResponse['docs']>[number] | null> {
-  const token = process.env.KINOPOISK_DEV_TOKEN;
+  const token = process.env.KINOPOISK_DEV_TOKEN || process.env.KINOPOISK_API_KEY;
   if (!token || !title) return null;
 
   const url = new URL('https://api.kinopoisk.dev/v1.4/movie/search');
@@ -194,15 +195,26 @@ async function getVibixMovieFacts(candidate: ImportCandidate): Promise<MovieFact
   const year = cleanInt(vibix.year) ?? candidate.year ?? null;
   const kinopoiskId = cleanInt(vibix.kp_id) ?? cleanInt(vibix.kinopoisk_id) ?? cleanInt(raw.kp_id) ?? cleanInt(raw.kinopoisk_id);
   const imdbId = cleanString(vibix.imdb_id) || cleanString(raw.imdb_id) || null;
+  const type = detectVibixType(vibix.type || candidate.type);
+  const betterImages = await findBestMovieImages({
+    title,
+    originalTitle,
+    year,
+    type,
+    kinopoiskId,
+    imdbId,
+  });
+  const posterUrl = betterImages.posterUrl || cleanString(raw.poster_url) || cleanString(vibix.poster_url) || null;
+  const backdropUrl = betterImages.backdropUrl || cleanString(raw.backdrop_url) || cleanString(vibix.backdrop_url) || null;
 
   return {
     title,
     originalTitle,
     year,
-    type: detectVibixType(vibix.type || candidate.type),
+    type,
     genres: cleanStringArray(vibix.genre),
-    posterUrl: cleanString(vibix.poster_url) || null,
-    backdropUrl: cleanString(vibix.backdrop_url) || null,
+    posterUrl,
+    backdropUrl,
     tmdbId: null,
     kinopoiskId,
     imdbId,
@@ -213,7 +225,14 @@ async function getVibixMovieFacts(candidate: ImportCandidate): Promise<MovieFact
     rawJson: {
       candidate,
       vibix,
-      kinoluma,
+      poster_url: posterUrl,
+      backdrop_url: backdropUrl,
+      kinoluma: {
+        ...kinoluma,
+        poster_source: betterImages.source || kinoluma.poster_source || (posterUrl ? 'vibix' : null),
+        backdrop_source: betterImages.source || kinoluma.backdrop_source || (backdropUrl ? 'vibix' : null),
+        image_enriched_at: betterImages.source ? new Date().toISOString() : kinoluma.image_enriched_at,
+      },
     },
   };
 }

@@ -19,6 +19,7 @@ import {
 import {
   buildAutoPlayers,
   COLLAPSE_ACTUALIZE_SCRIPT_SRC,
+  getFallbackKinopoiskIdBySlug,
   isAnimeAutoPlayerInput,
 } from "../../lib/players";
 
@@ -79,12 +80,18 @@ function normalizePlayerButtonNames(players: PlayerProvider[]) {
   return players.map((player, index) => {
     const record = getPlayerRecord(player);
     const currentName = String(record.name || "").trim();
+    const lowerName = currentName.toLowerCase();
+    const isGenericName =
+      !currentName ||
+      lowerName === "основной" ||
+      lowerName.startsWith("запасной") ||
+      lowerName.startsWith("плеер");
 
     if (index === 0) {
-      return { ...record, name: currentName || "Основной" } as PlayerProvider;
+      return { ...record, name: "Основной" } as PlayerProvider;
     }
 
-    if (!currentName || currentName.toLowerCase() === "основной") {
+    if (isGenericName) {
       return { ...record, name: `Запасной ${index}` } as PlayerProvider;
     }
 
@@ -96,18 +103,35 @@ function getPlayerUniqueKey(player: PlayerProvider) {
   const record = getPlayerRecord(player);
   const type = String(record.type || record.provider || "iframe").toLowerCase();
   const embedUrl = String(player.embedUrl || "").trim();
-  const contentKind = String(record.contentKind || record.contentType || "").trim();
-  const contentId = String(record.contentId || record.rendexVideoId || "").trim();
+  const contentKind = String(
+    record.contentKind || record.contentType || "",
+  ).trim();
+  const contentId = String(
+    record.contentId || record.rendexVideoId || "",
+  ).trim();
 
   if (type === "rendex" && contentId) return `rendex:${contentId}`;
   if ((type === "collapse" || type === "collaps") && contentId) {
     return `collapse:${contentKind}:${contentId}`;
   }
-  if ((type === "vibix" || type === "vibix-iframe" || record.provider === "vibix") && embedUrl) {
+  if (
+    (type === "vibix" ||
+      type === "vibix-iframe" ||
+      record.provider === "vibix") &&
+    embedUrl
+  ) {
     return `vibix:${embedUrl}`;
   }
 
   return embedUrl ? `${type}:${embedUrl}` : `${type}:${player.id}`;
+}
+
+function isLegacyStandaloneVibixPlayer(player: PlayerProvider) {
+  const record = getPlayerRecord(player);
+  const type = String(record.type || record.provider || "").toLowerCase();
+  return (
+    type === "vibix" || type === "vibix-iframe" || record.provider === "vibix"
+  );
 }
 
 function mergeGeneratedAndManualPlayers(
@@ -152,7 +176,6 @@ function getRendexColor(player: PlayerProvider, key: string, fallback: string) {
   const value = record[key];
   return typeof value === "string" && value.trim() ? value.trim() : fallback;
 }
-
 
 function escapeHtmlAttribute(value: string) {
   return value
@@ -208,6 +231,32 @@ function readNumberArrayFromStorage(key: string) {
 
 function saveNumberArrayToStorage(key: string, ids: number[]) {
   window.localStorage.setItem(key, JSON.stringify(ids));
+}
+
+type VibixRendexResponse = {
+  ok?: boolean;
+  player?: {
+    contentId?: string;
+    contentType?: string;
+    publisherId?: string;
+  } | null;
+};
+
+type VibixRendexPlayerData = {
+  contentId: string;
+  contentType: string;
+  publisherId?: string;
+};
+
+async function readJsonSafely(response: Response) {
+  const text = await response.text();
+  if (!text.trim()) return null;
+
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return null;
+  }
 }
 
 function toggleId(ids: number[], itemId: number) {
@@ -312,41 +361,30 @@ export default function MoviePageClient({
   movie,
   allMovies = staticAllMovies,
 }: MoviePageClientProps) {
+  const [vibixRendexData, setVibixRendexData] =
+    useState<VibixRendexPlayerData | null>(null);
+
   const generatedPlayers = useMemo(
     () =>
       buildAutoPlayers({
         slug: movie.slug,
         kinopoiskId: movie.kinopoiskId,
         imdbId: movie.imdbId,
+        rendexVideoId: vibixRendexData?.contentId,
+        contentType: vibixRendexData?.contentType,
         movieType: movie.type,
         genres: movie.genres,
       }),
-    [movie.genres, movie.imdbId, movie.kinopoiskId, movie.slug, movie.type],
+    [
+      movie.genres,
+      movie.imdbId,
+      movie.kinopoiskId,
+      movie.slug,
+      movie.type,
+      vibixRendexData?.contentId,
+      vibixRendexData?.contentType,
+    ],
   );
-
-  const players = useMemo(() => {
-    if (
-      isAnimeAutoPlayerInput({
-        movieType: movie.type,
-        genres: movie.genres,
-      })
-    ) {
-      return DEFAULT_PLAYERS;
-    }
-
-    const realPlayers = (movie.players || []).filter(hasPlayablePlayer);
-
-    if (realPlayers.length > 0) {
-      return normalizePlayerButtonNames(
-        mergeGeneratedAndManualPlayers(generatedPlayers, realPlayers),
-      );
-    }
-
-    if (generatedPlayers.length > 0)
-      return normalizePlayerButtonNames(generatedPlayers);
-
-    return DEFAULT_PLAYERS;
-  }, [generatedPlayers, movie.genres, movie.players, movie.type]);
 
   const isAnimePlayerUnavailable = useMemo(
     () =>
@@ -356,6 +394,27 @@ export default function MoviePageClient({
       }),
     [movie.genres, movie.type],
   );
+
+  const players = useMemo(() => {
+    if (isAnimePlayerUnavailable) {
+      return DEFAULT_PLAYERS;
+    }
+
+    const realPlayers = (movie.players || [])
+      .filter(hasPlayablePlayer)
+      .filter((player) => !isLegacyStandaloneVibixPlayer(player));
+
+    const mergedPlayers =
+      realPlayers.length > 0
+        ? mergeGeneratedAndManualPlayers(generatedPlayers, realPlayers)
+        : generatedPlayers;
+
+    if (mergedPlayers.length > 0) {
+      return normalizePlayerButtonNames(mergedPlayers).slice(0, 3);
+    }
+
+    return DEFAULT_PLAYERS;
+  }, [generatedPlayers, isAnimePlayerUnavailable, movie.players]);
 
   const facts = useMemo(
     () =>
@@ -460,6 +519,79 @@ export default function MoviePageClient({
   const country = getFactValue(facts, "Страна", movie.type);
   const budget = getFactValue(facts, "Бюджет", ratingText);
   const studio = getFactValue(facts, "Студия", movie.originalTitle);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    let isCancelled = false;
+
+    async function loadVibixRendexData() {
+      setVibixRendexData(null);
+
+      const fallbackKinopoiskId =
+        movie.kinopoiskId || getFallbackKinopoiskIdBySlug(movie.slug);
+
+      if (isAnimePlayerUnavailable || (!fallbackKinopoiskId && !movie.imdbId)) {
+        return;
+      }
+
+      const params = new URLSearchParams();
+
+      if (fallbackKinopoiskId) {
+        params.set("kpId", String(fallbackKinopoiskId));
+      }
+
+      if (movie.imdbId) {
+        params.set("imdbId", String(movie.imdbId));
+      }
+
+      if (movie.type) {
+        params.set("movieType", movie.type);
+      }
+
+      try {
+        const response = await fetch(`/api/player/vibix?${params.toString()}`, {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          return;
+        }
+
+        const payload = (await readJsonSafely(
+          response,
+        )) as VibixRendexResponse | null;
+        const contentId = payload?.player?.contentId?.trim();
+
+        if (!isCancelled && contentId) {
+          setVibixRendexData({
+            contentId,
+            contentType:
+              payload?.player?.contentType?.trim() ||
+              (movie.type === "Сериал" ? "series" : "movie"),
+            publisherId: payload?.player?.publisherId?.trim(),
+          });
+        }
+      } catch (error) {
+        if ((error as Error).name !== "AbortError") {
+          setVibixRendexData(null);
+        }
+      }
+    }
+
+    void loadVibixRendexData();
+
+    return () => {
+      isCancelled = true;
+      controller.abort();
+    };
+  }, [
+    isAnimePlayerUnavailable,
+    movie.imdbId,
+    movie.kinopoiskId,
+    movie.slug,
+    movie.type,
+  ]);
 
   useEffect(() => {
     setPosterSrc(movie.poster);
