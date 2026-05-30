@@ -83,8 +83,8 @@ function getVibixVideoId(video: VibixVideo) {
   return cleanString(video.id);
 }
 
-function hasVibixIframe(video: VibixVideo | null) {
-  return Boolean(cleanString(video?.iframe_url));
+function hasVibixIframe(video: VibixVideo | null | undefined): video is VibixVideo {
+  return Boolean(video && cleanString(video.iframe_url));
 }
 
 function addVibixFrameParams(url: string) {
@@ -308,8 +308,8 @@ export async function POST(request: Request) {
         }
 
         const lookup = await findVibixVideo(movie);
-        const video = "video" in lookup ? lookup.video : lookup;
-        const lookupError = "error" in lookup ? lookup.error : "Vibix не найден";
+        const video = lookup && "video" in lookup ? lookup.video : lookup;
+        const lookupError = lookup && "error" in lookup ? lookup.error : "Vibix не найден";
 
         if (!video) {
           results.push(createResult(movie, "not_found", { reason: lookupError }));
