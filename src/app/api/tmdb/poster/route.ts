@@ -90,9 +90,15 @@ type TmdbImageItem = {
 };
 type TmdbImagesResponse = { posters?: TmdbImageItem[] };
 
+function getStringPath(item: unknown, key: "poster_path" | "file_path") {
+  if (!item || typeof item !== "object") return "";
+
+  const value = (item as Record<string, unknown>)[key];
+  return typeof value === "string" && value.startsWith("/") ? value : "";
+}
+
 function getPosterPath(item: TmdbDetails | TmdbSearchItem | TmdbImageItem | null | undefined) {
-  const posterPath = item?.poster_path || item?.file_path;
-  return posterPath && posterPath.startsWith("/") ? posterPath : "";
+  return getStringPath(item, "poster_path") || getStringPath(item, "file_path");
 }
 
 function getImageUrlFromPosterPath(path: string) {

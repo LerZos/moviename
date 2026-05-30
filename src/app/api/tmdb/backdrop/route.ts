@@ -103,16 +103,19 @@ type TmdbImageItem = {
 
 type TmdbImagesResponse = { backdrops?: TmdbImageItem[] };
 
-function getBackdropPath(item: TmdbDetails | TmdbSearchItem | TmdbImageItem | null | undefined) {
-  if (!item) return "";
+function getStringPath(item: unknown, key: "backdrop_path" | "file_path" | "poster_path") {
+  if (!item || typeof item !== "object") return "";
 
-  const path = "backdrop_path" in item ? item.backdrop_path : item.file_path;
-  return path && path.startsWith("/") ? path : "";
+  const value = (item as Record<string, unknown>)[key];
+  return typeof value === "string" && value.startsWith("/") ? value : "";
+}
+
+function getBackdropPath(item: TmdbDetails | TmdbSearchItem | TmdbImageItem | null | undefined) {
+  return getStringPath(item, "backdrop_path") || getStringPath(item, "file_path");
 }
 
 function getPosterPath(item: TmdbDetails | TmdbSearchItem | null | undefined) {
-  const path = item?.poster_path;
-  return path && path.startsWith("/") ? path : "";
+  return getStringPath(item, "poster_path");
 }
 
 function getImageUrl(path: string) {
