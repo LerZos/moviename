@@ -86,6 +86,13 @@ function warnSupabaseReadFallback(scope: string, error: unknown) {
   console.warn(`${scope}: ${getErrorMessage(error)}. Используем данные из movies.ts без Supabase-overrides.`);
 }
 
+function shouldLoadPublishedDraftMovies() {
+  // Публичная публикация movie_drafts не включена по умолчанию.
+  // После больших контент-паков этот запрос может тормозить next build и ловить
+  // Supabase statement timeout. Включай только осознанно через env.
+  return process.env.KINOLUMA_LOAD_PUBLISHED_DRAFTS === "true";
+}
+
 function mapDraftType(type: string | null): ContentType {
   if (type === "series" || type === "tv") return "Сериал";
   if (type === "anime") return "Аниме";
@@ -458,6 +465,10 @@ function draftToMovie(draft: MovieDraftRow): Movie | null {
 }
 
 async function getPublishedDraftMovies() {
+  if (!shouldLoadPublishedDraftMovies()) {
+    return [];
+  }
+
   try {
     const { data, error } = await supabaseAdmin
       .from("movie_drafts")
