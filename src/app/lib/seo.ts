@@ -328,6 +328,8 @@ export function getMovieSchemaType(movie: Movie) {
 
   if (movie.type === "Аниме") {
     const duration = getFactValue(movie, ["Длительность"]);
+  const budget = getFactValue(movie, ["Бюджет"]);
+  const contentRating = getFactValue(movie, ["Возраст", "Возрастной рейтинг", "MPAA"]);
     return duration?.toLowerCase().includes("серия") ? "TVSeries" : "Movie";
   }
 
@@ -425,6 +427,8 @@ export function getMovieJsonLd(movie: Movie) {
   const studio = getFactValue(movie, ["Студия"]);
   const country = getFactValue(movie, ["Страна"]);
   const duration = getFactValue(movie, ["Длительность"]);
+  const budget = getFactValue(movie, ["Бюджет"]);
+  const contentRating = getFactValue(movie, ["Возраст", "Возрастной рейтинг", "MPAA"]);
 
   const jsonLd: Record<string, unknown> = {
     "@context": "https://schema.org",
@@ -467,6 +471,8 @@ export function getMovieJsonLd(movie: Movie) {
     },
     countryOfOrigin: country,
     duration,
+    budget,
+    contentRating,
     productionCompany: studio
       ? {
           "@type": "Organization",
@@ -490,13 +496,15 @@ export function getMovieJsonLd(movie: Movie) {
           name: name.trim(),
         }))
       : undefined,
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: movie.rating,
-      bestRating: 10,
-      worstRating: 1,
-      ratingCount: 100,
-    },
+    aggregateRating: movie.rating > 0
+      ? {
+          "@type": "AggregateRating",
+          ratingValue: movie.rating,
+          bestRating: 10,
+          worstRating: 1,
+          ratingCount: 100,
+        }
+      : undefined,
     trailer: movie.trailerUrl
       ? {
           "@type": "VideoObject",
@@ -578,38 +586,75 @@ export function getMovieBreadcrumbJsonLd(movie: Movie) {
 
 export function getMovieFaqJsonLd(movie: Movie) {
   const kind = getSeoContentKind(movie);
+  const rating = movie.rating > 0 ? `${movie.rating.toFixed(1)} из 10` : undefined;
+  const budget = getFactValue(movie, ["Бюджет"]);
+  const heroes =
+    getFactValue(movie, ["Главные герои", "Главные персонажи"]) ||
+    movie.cast?.slice(0, 5).map((person) => `${person.name} — ${person.role}`).join(", ");
+
+  const mainEntity = [
+    {
+      "@type": "Question",
+      name: `О чём ${movie.title}?`,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: getMovieSchemaDescription(movie),
+      },
+    },
+    {
+      "@type": "Question",
+      name: `К какому жанру относится ${movie.title}?`,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: `${movie.title} (${movie.year}) — ${kind}. Основные жанры: ${movie.genres.join(", ")}.`,
+      },
+    },
+    {
+      "@type": "Question",
+      name: `Есть ли трейлер ${movie.title}?`,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: movie.trailerUrl
+          ? `Да, на странице ${movie.title} есть встроенный трейлер, описание, рейтинг, факты и информация перед просмотром.`
+          : `На странице ${movie.title} есть описание, жанры, рейтинг и подробная информация. Трейлер можно добавить после подключения корректной embed-ссылки.`,
+      },
+    },
+    rating
+      ? {
+          "@type": "Question",
+          name: `Какой рейтинг у ${movie.title}?`,
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: `Рейтинг ${movie.title} на KinoLuma: ${rating}. Оценка показана в карточке и может уточняться при обновлении каталога.`,
+          },
+        }
+      : undefined,
+    heroes
+      ? {
+          "@type": "Question",
+          name: `Кто главные герои ${movie.title}?`,
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: `В карточке ${movie.title} указаны главные герои: ${heroes}.`,
+          },
+        }
+      : undefined,
+    budget
+      ? {
+          "@type": "Question",
+          name: `Какой бюджет у ${movie.title}?`,
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: `В карточке ${movie.title} указан бюджет: ${budget}.`,
+          },
+        }
+      : undefined,
+  ].filter(Boolean);
 
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    mainEntity: [
-      {
-        "@type": "Question",
-        name: `О чём ${movie.title}?`,
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: getMovieSchemaDescription(movie),
-        },
-      },
-      {
-        "@type": "Question",
-        name: `К какому жанру относится ${movie.title}?`,
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: `${movie.title} (${movie.year}) — ${kind}. Основные жанры: ${movie.genres.join(", ")}.`,
-        },
-      },
-      {
-        "@type": "Question",
-        name: `Есть ли трейлер ${movie.title}?`,
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: movie.trailerUrl
-            ? `Да, на странице ${movie.title} есть встроенный трейлер и подробная информация о материале.`
-            : `На странице ${movie.title} есть описание, жанры, рейтинг и подробная информация. Трейлер можно добавить после подключения легальной embed-ссылки.`,
-        },
-      },
-    ],
+    mainEntity,
   };
 }
 

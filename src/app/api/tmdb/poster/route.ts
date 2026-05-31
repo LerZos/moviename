@@ -263,9 +263,10 @@ async function getPublicFindPoster(imdbId: string, mediaType: "movie" | "tv", ye
   findUrl.searchParams.set("language", "ru-RU");
 
   const html = await fetchTmdbHtml(findUrl);
-  const posterFromFindPage = extractPosterUrlFromHtml(html);
-  if (posterFromFindPage) return posterFromFindPage;
 
+  // Важно: не берём og:image со страницы /find.
+  // TMDB на таких страницах иногда отдаёт картинку первого случайного результата,
+  // из-за этого у мультфильмов может появиться чужой постер.
   const tmdbId = extractTmdbDetailsId(html, mediaType, year);
   return getPublicDetailsPoster(mediaType, tmdbId);
 }
@@ -278,9 +279,9 @@ async function getPublicSearchPoster(query: string, mediaType: "movie" | "tv", y
   searchUrl.searchParams.set("language", "ru-RU");
 
   const html = await fetchTmdbHtml(searchUrl);
-  const posterFromSearchPage = extractPosterUrlFromHtml(html);
-  if (posterFromSearchPage) return posterFromSearchPage;
 
+  // Важно: не берём og:image со страницы поиска.
+  // Это не постер конкретного фильма, а картинка страницы выдачи/первого результата.
   const tmdbId = extractTmdbDetailsId(html, mediaType, year);
   return getPublicDetailsPoster(mediaType, tmdbId);
 }
@@ -362,8 +363,28 @@ async function getPublicTmdbPoster(input: {
   return "";
 }
 
+function isSafeExternalPosterUrl(value: string) {
+  if (!value) return false;
+
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "https:") return false;
+    if (!/\.(jpg|jpeg|png|webp)(\?|$)/i.test(url.pathname + url.search)) return false;
+
+    // Разрешаем только нормальные постерные CDN, не произвольные ссылки.
+    return /(^|\.)(kinopoiskapiunofficial\.tech|kinopoisk\.ru|st\.kp\.yandex\.net|avatars\.mds\.yandex\.net|image\.openmoviedb\.com|image\.tmdb\.org|media\.themoviedb\.org)$/i.test(
+      url.hostname,
+    );
+  } catch {
+    return false;
+  }
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
+  const directPoster = cleanText(searchParams.get("posterUrl"));
+  if (isSafeExternalPosterUrl(directPoster)) return redirectTo(directPoster);
+
   const mediaType = getMediaType(searchParams.get("type")) as "movie" | "tv";
   const input = {
     mediaType,

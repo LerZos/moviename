@@ -207,6 +207,7 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
           <Link href="/collections">Подборки</Link>
           <Link href="/catalog/films">Фильмы</Link>
           <Link href="/catalog/series">Сериалы</Link>
+          <Link href="/catalog/cartoons">Мультфильмы</Link>
           <Link href="/">На главную</Link>
         </nav>
       </header>

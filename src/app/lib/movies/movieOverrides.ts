@@ -61,6 +61,31 @@ function cleanStringArray(value: unknown, limit = 12) {
     .slice(0, limit);
 }
 
+function chunkArray<T>(items: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+
+  return chunks;
+}
+
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) return error.message;
+
+  if (error && typeof error === "object" && "message" in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === "string" && message.trim()) return message;
+  }
+
+  return "unknown error";
+}
+
+function warnSupabaseReadFallback(scope: string, error: unknown) {
+  console.warn(`${scope}: ${getErrorMessage(error)}. Используем данные из movies.ts без Supabase-overrides.`);
+}
+
 function mapDraftType(type: string | null): ContentType {
   if (type === "series" || type === "tv") return "Сериал";
   if (type === "anime") return "Аниме";
@@ -433,53 +458,71 @@ function draftToMovie(draft: MovieDraftRow): Movie | null {
 }
 
 async function getPublishedDraftMovies() {
-  const { data, error } = await supabaseAdmin
-    .from("movie_drafts")
-    .select(
-      "id, title, original_title, slug, year, type, genres, poster_url, backdrop_url, tmdb_id, kinopoisk_id, imdb_id, actors, directors, description, long_description, trailer_url, trailer_embed_url, quality_score, raw_json, status, created_at, updated_at",
-    )
-    .eq("status", "published")
-    .order("updated_at", { ascending: false });
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("movie_drafts")
+      .select(
+        "id, title, original_title, slug, year, type, genres, poster_url, backdrop_url, tmdb_id, kinopoisk_id, imdb_id, actors, directors, description, long_description, trailer_url, trailer_embed_url, quality_score, raw_json, status, created_at, updated_at",
+      )
+      .eq("status", "published")
+      .order("updated_at", { ascending: false });
 
-  if (error) {
-    console.error(
-      "Не удалось загрузить опубликованные movie_drafts:",
-      error.message,
+    if (error) {
+      warnSupabaseReadFallback(
+        "Не удалось загрузить опубликованные movie_drafts",
+        error,
+      );
+      return [];
+    }
+
+    return ((data ?? []) as MovieDraftRow[])
+      .map(draftToMovie)
+      .filter((movie): movie is Movie => Boolean(movie));
+  } catch (error) {
+    warnSupabaseReadFallback(
+      "Не удалось загрузить опубликованные movie_drafts",
+      error,
     );
     return [];
   }
-
-  return ((data ?? []) as MovieDraftRow[])
-    .map(draftToMovie)
-    .filter((movie): movie is Movie => Boolean(movie));
 }
 
 async function getMovieOverridesBySlugs(slugs: string[]) {
   if (!slugs.length) return new Map<string, MovieOverrideData>();
 
-  const { data, error } = await supabaseAdmin
-    .from("movie_overrides")
-    .select("slug, data")
-    .in("slug", slugs);
-
-  if (error) {
-    console.error("Не удалось загрузить movie_overrides:", error.message);
-    return new Map<string, MovieOverrideData>();
-  }
-
   const result = new Map<string, MovieOverrideData>();
+  const uniqueSlugs = Array.from(new Set(slugs.map(cleanString).filter(Boolean)));
 
-  for (const row of data ?? []) {
-    const slug = cleanString((row as { slug?: unknown }).slug);
-    const overrideData = (row as { data?: unknown }).data;
+  // Важно: после больших контент-паков один .in("slug", 500+ slugs)
+  // превращается в слишком длинный URL для Supabase/PostgREST и может дать fetch failed.
+  // Поэтому грузим overrides маленькими пачками и не роняем публичный каталог.
+  for (const slugChunk of chunkArray(uniqueSlugs, 80)) {
+    try {
+      const { data, error } = await supabaseAdmin
+        .from("movie_overrides")
+        .select("slug, data")
+        .in("slug", slugChunk);
 
-    if (
-      slug &&
-      overrideData &&
-      typeof overrideData === "object" &&
-      !Array.isArray(overrideData)
-    ) {
-      result.set(slug, overrideData as MovieOverrideData);
+      if (error) {
+        warnSupabaseReadFallback("Не удалось загрузить movie_overrides", error);
+        continue;
+      }
+
+      for (const row of data ?? []) {
+        const slug = cleanString((row as { slug?: unknown }).slug);
+        const overrideData = (row as { data?: unknown }).data;
+
+        if (
+          slug &&
+          overrideData &&
+          typeof overrideData === "object" &&
+          !Array.isArray(overrideData)
+        ) {
+          result.set(slug, overrideData as MovieOverrideData);
+        }
+      }
+    } catch (error) {
+      warnSupabaseReadFallback("Не удалось загрузить movie_overrides", error);
     }
   }
 
@@ -529,27 +572,34 @@ export async function getPublicMovies(): Promise<Movie[]> {
 export async function getPublicBaseMovieBySlug(
   slug: string,
 ): Promise<Movie | null> {
-  const { data, error } = await supabaseAdmin
-    .from("movie_drafts")
-    .select(
-      "id, title, original_title, slug, year, type, genres, poster_url, backdrop_url, tmdb_id, kinopoisk_id, imdb_id, actors, directors, description, long_description, trailer_url, trailer_embed_url, quality_score, raw_json, status, created_at, updated_at",
-    )
-    .eq("slug", slug)
-    .eq("status", "published")
-    .maybeSingle();
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("movie_drafts")
+      .select(
+        "id, title, original_title, slug, year, type, genres, poster_url, backdrop_url, tmdb_id, kinopoisk_id, imdb_id, actors, directors, description, long_description, trailer_url, trailer_embed_url, quality_score, raw_json, status, created_at, updated_at",
+      )
+      .eq("slug", slug)
+      .eq("status", "published")
+      .maybeSingle();
 
-  if (error) {
-    console.error(
-      "Не удалось загрузить опубликованный movie_draft:",
-      error.message,
+    if (error) {
+      warnSupabaseReadFallback(
+        "Не удалось загрузить опубликованный movie_draft",
+        error,
+      );
+      return getBaseMovieBySlug(slug);
+    }
+
+    const draftMovie = data ? draftToMovie(data as MovieDraftRow) : null;
+
+    if (draftMovie) {
+      return draftMovie;
+    }
+  } catch (error) {
+    warnSupabaseReadFallback(
+      "Не удалось загрузить опубликованный movie_draft",
+      error,
     );
-    return getBaseMovieBySlug(slug);
-  }
-
-  const draftMovie = data ? draftToMovie(data as MovieDraftRow) : null;
-
-  if (draftMovie) {
-    return draftMovie;
   }
 
   return getBaseMovieBySlug(slug);
@@ -558,22 +608,27 @@ export async function getPublicBaseMovieBySlug(
 export async function getMovieOverrideData(
   slug: string,
 ): Promise<MovieOverrideData | null> {
-  const { data, error } = await supabaseAdmin
-    .from("movie_overrides")
-    .select("data")
-    .eq("slug", slug)
-    .maybeSingle();
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("movie_overrides")
+      .select("data")
+      .eq("slug", slug)
+      .maybeSingle();
 
-  if (error) {
-    console.error("Не удалось загрузить movie_overrides:", error.message);
+    if (error) {
+      warnSupabaseReadFallback("Не удалось загрузить movie_overrides", error);
+      return null;
+    }
+
+    if (!data?.data || typeof data.data !== "object") {
+      return null;
+    }
+
+    return data.data as MovieOverrideData;
+  } catch (error) {
+    warnSupabaseReadFallback("Не удалось загрузить movie_overrides", error);
     return null;
   }
-
-  if (!data?.data || typeof data.data !== "object") {
-    return null;
-  }
-
-  return data.data as MovieOverrideData;
 }
 
 export async function getMovieWithOverrides(

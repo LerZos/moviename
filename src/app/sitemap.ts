@@ -8,6 +8,18 @@ import {
   siteUrl,
 } from "./lib/seo";
 
+
+function getMovieSitemapPriority(type: string) {
+  if (type === "Фильм" || type === "Сериал") return 0.9;
+  if (type === "Документальный") return 0.86;
+  if (type === "Мультфильм") return 0.84;
+  return 0.8;
+}
+
+function getMovieChangeFrequency(type: string) {
+  return type === "Фильм" || type === "Сериал" ? "weekly" as const : "monthly" as const;
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
   const publicMovies = await getPublicMovies();
@@ -46,8 +58,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...publicMovies.map((movie) => ({
       url: `${siteUrl}/movie/${movie.slug}`,
       lastModified: now,
-      changeFrequency: "weekly" as const,
-      priority: 0.88,
+      changeFrequency: getMovieChangeFrequency(movie.type),
+      priority: getMovieSitemapPriority(movie.type),
     })),
   ];
 }

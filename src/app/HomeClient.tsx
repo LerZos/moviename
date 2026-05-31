@@ -5184,6 +5184,13 @@ export default function Home({
               Аниме
             </Link>
             <Link
+              href="/catalog/cartoons"
+              className="text-left transition duration-200 hover:text-white"
+              draggable={false}
+            >
+              Мультфильмы
+            </Link>
+            <Link
               href="/catalog/documentaries"
               className="text-left transition duration-200 hover:text-white"
               draggable={false}

@@ -79,6 +79,7 @@ export default function CollectionsIndexPage() {
           <Link href="/catalog/films">Фильмы</Link>
           <Link href="/catalog/series">Сериалы</Link>
           <Link href="/catalog/anime">Аниме</Link>
+          <Link href="/catalog/cartoons">Мультфильмы</Link>
           <Link href="/">На главную</Link>
         </nav>
       </header>
