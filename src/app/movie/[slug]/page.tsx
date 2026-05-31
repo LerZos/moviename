@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { movies } from "../../data/movies";
 import { getMovieWithOverrides, getPublicMovies } from "../../lib/movies/movieOverrides";
 import {
   absoluteUrl,
@@ -25,11 +24,10 @@ type MoviePageProps = {
 
 export const revalidate = 3600;
 
-export function generateStaticParams() {
-  return movies.map((movie) => ({
-    slug: movie.slug,
-  }));
-}
+// Не генерируем все страницы фильмов во время build.
+// Большой каталог живёт через ISR: страница создаётся по первому запросу
+// и дальше кешируется с revalidate. Sitemap при этом остаётся полным.
+export const dynamicParams = true;
 
 export async function generateMetadata({
   params,
