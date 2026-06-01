@@ -50,14 +50,6 @@ const catalogCategories: Record<string, CatalogCategory> = {
     description:
       "Добрые, красивые и энергичные мультфильмы для отдыха без лишней тяжести.",
   },
-  documentaries: {
-    type: "Документальный",
-    label: "Документальные",
-    title: "Все документальные",
-    subtitle: "Реальные истории и факты",
-    description:
-      "Документальные проекты, после которых хочется открыть ещё одну вкладку и стать экспертом на пять минут.",
-  },
 };
 
 const catalogNavItems = [
@@ -65,7 +57,6 @@ const catalogNavItems = [
   { key: "series", label: "Сериалы" },
   { key: "anime", label: "Аниме" },
   { key: "cartoons", label: "Мультфильмы" },
-  { key: "documentaries", label: "Документальные" },
 ];
 
 const cyrillicToLatinMap: Record<string, string> = {
@@ -119,6 +110,42 @@ function normalizeText(text: string) {
     .replaceAll("ё", "е")
     .replace(/[^a-zа-я0-9]+/g, " ")
     .trim();
+}
+
+function isExpectedRelease(item: Movie) {
+  const source = (item.source ?? "").toLowerCase();
+  const genres = item.genres.map((genre) => genre.toLowerCase());
+  const factsText = (item.facts ?? [])
+    .map((fact) => `${fact.label} ${fact.value}`)
+    .join(" ")
+    .toLowerCase();
+  const numericYear = Number.parseInt(item.year, 10);
+  const isFutureYear =
+    Number.isFinite(numericYear) && numericYear > new Date().getFullYear();
+
+  return (
+    source.includes("kinoluma-curated-expected") ||
+    source.includes("ожидаемых") ||
+    genres.some((genre) => genre.includes("ожидаем")) ||
+    factsText.includes("ожидаемый") ||
+    (item.rating <= 0 && isFutureYear)
+  );
+}
+
+function getRatingBadgeText(item: Movie) {
+  if (!Number.isFinite(item.rating) || item.rating <= 0) {
+    return isExpectedRelease(item) ? "Ждём" : "—";
+  }
+
+  return `★ ${Number.isInteger(item.rating) ? item.rating : item.rating.toFixed(1)}`;
+}
+
+function getRatingDetailsText(item: Movie) {
+  if (!Number.isFinite(item.rating) || item.rating <= 0) {
+    return isExpectedRelease(item) ? "Рейтинг появится после премьеры" : "Рейтинг уточняется";
+  }
+
+  return `★ ${Number.isInteger(item.rating) ? item.rating : item.rating.toFixed(1)} / 10`;
 }
 
 function readNumberArrayFromStorage(key: string) {
@@ -328,7 +355,7 @@ function CatalogMovieCard({
         <div className="catalog-card-poster-shade" />
 
         <span className="catalog-card-type">{item.type}</span>
-        <span className="catalog-card-rating">★ {item.rating}</span>
+        <span className="catalog-card-rating">{getRatingBadgeText(item)}</span>
       </button>
 
       <div className="catalog-card-body">
@@ -922,7 +949,7 @@ export default function CatalogCategoryPage({
 
               <div className="mt-5 flex flex-wrap gap-3">
                 <span className="rounded-full bg-white px-4 py-2 text-sm font-black text-black">
-                  ★ {selectedItem.rating} / 10
+                  {getRatingDetailsText(selectedItem)}
                 </span>
 
                 <span className="rounded-full border border-white/10 px-4 py-2 text-sm font-bold text-neutral-300">

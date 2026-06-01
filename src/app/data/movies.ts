@@ -1,6 +1,7 @@
 import { generatedKinoLumaMovies } from "./generatedMovies";
 import { generatedKinoLumaCartoons } from "./generatedCartoons";
 import { generatedKinopoiskRequestedMovies } from "./generatedKinopoiskRequested";
+import { curatedExpectedReleases } from "./curatedExpectedReleases";
 
 export type ContentType = "Фильм" | "Сериал" | "Аниме" | "Мультфильм" | "Документальный";
 
@@ -138,7 +139,8 @@ function getKinopoiskPoster(input: {
 
   const params = new URLSearchParams();
   params.set("kpId", id);
-  params.set("v", "kp-1");
+  // v=kp-2 нужен, чтобы браузер и Vercel не держали старый 302-редирект на /kinoluma-icon.png.
+  params.set("v", "kp-2");
 
   if (input.fallback && !input.fallback.startsWith("data:")) {
     params.set("fallback", input.fallback);
@@ -336,6 +338,26 @@ function trimMovieDescription(text: string, maxLength = 720) {
   return `${cleanText.slice(0, maxLength).replace(/\s+\S*$/, "")}.`;
 }
 
+function getMoviePosterFallback(movie: Movie) {
+  const currentPoster =
+    movie.poster &&
+    !movie.poster.startsWith("data:") &&
+    !movie.poster.includes("/api/kinopoisk/poster")
+      ? movie.poster
+      : "";
+
+  const tmdbPoster = getTmdbPoster({
+    tmdbId: movie.tmdbId,
+    imdbId: movie.imdbId,
+    title: movie.title,
+    originalTitle: movie.originalTitle,
+    year: movie.year,
+    type: movie.type,
+  });
+
+  return currentPoster || tmdbPoster;
+}
+
 function hydrateMovieContent(movie: Movie) {
   appendMovieFact(movie, "Год", movie.year);
   appendMovieFact(movie, "Тип", movie.type);
@@ -344,18 +366,16 @@ function hydrateMovieContent(movie: Movie) {
   if (movie.kinopoiskId) {
     appendMovieFact(movie, "Kinopoisk ID", movie.kinopoiskId);
 
-    if (!movie.poster.includes("/api/kinopoisk/poster")) {
-      const fallbackPoster = movie.poster && !movie.poster.startsWith("data:") ? movie.poster : "";
-      movie.poster = getKinopoiskPoster({
-        kinopoiskId: movie.kinopoiskId,
-        fallback: fallbackPoster,
-      });
+    const fallbackPoster = getMoviePosterFallback(movie);
+    movie.poster = getKinopoiskPoster({
+      kinopoiskId: movie.kinopoiskId,
+      fallback: fallbackPoster,
+    });
 
-      if (fallbackPoster) {
-        movie.posterFallbacks = Array.from(
-          new Set([...(movie.posterFallbacks ?? []), fallbackPoster]),
-        );
-      }
+    if (fallbackPoster) {
+      movie.posterFallbacks = Array.from(
+        new Set([...(movie.posterFallbacks ?? []), fallbackPoster]),
+      );
     }
   }
 
@@ -384,7 +404,7 @@ function hydrateMovieContent(movie: Movie) {
   }
 }
 
-export const movies: Movie[] = [
+const moviesRaw: Movie[] = [
   {
       id: 1,
       kinopoiskId: 4540126,
@@ -15736,10 +15756,79 @@ export const movies: Movie[] = [
   },
 
   ...generatedKinoLumaMovies,
+  ...curatedExpectedReleases,
   ...generatedKinopoiskRequestedMovies,
   ...generatedKinoLumaCartoons,
 
 ];
+
+const BLOCKED_PUBLIC_CONTENT_TYPES = new Set<ContentType>(["Документальный"]);
+
+const BLOCKED_PUBLIC_GENRE_PARTS = [
+  "документ",
+  "реальное тв",
+  "реалити",
+  "reality",
+  "ток-шоу",
+  "ток шоу",
+  "talk show",
+  "концерт",
+  "concert",
+  "музыка",
+  "music",
+  "новости",
+  "news",
+  "церемония",
+  "шоу",
+];
+
+function normalizePublicCatalogText(value: string) {
+  return value.toLowerCase().replaceAll("ё", "е").trim();
+}
+
+function getPublicCatalogYear(movie: Movie) {
+  const match = String(movie.year || "").match(/\d{4}/);
+  if (!match) return 0;
+
+  const year = Number(match[0]);
+  return Number.isFinite(year) ? year : 0;
+}
+
+function hasBlockedPublicGenre(movie: Movie) {
+  return (movie.genres ?? []).some((genre) => {
+    const normalizedGenre = normalizePublicCatalogText(String(genre));
+    return BLOCKED_PUBLIC_GENRE_PARTS.some((blockedGenre) => normalizedGenre.includes(blockedGenre));
+  });
+}
+
+function isCuratedExpectedRelease(movie: Movie) {
+  return normalizePublicCatalogText(movie.source || "") === "kinoluma-curated-expected";
+}
+
+function isExpectedGeneratedRelease(movie: Movie) {
+  if (isCuratedExpectedRelease(movie)) return false;
+
+  const source = normalizePublicCatalogText(movie.source || "");
+  const genres = (movie.genres ?? []).map((genre) => normalizePublicCatalogText(String(genre))).join(" ");
+  const year = getPublicCatalogYear(movie);
+  const currentYear = new Date().getFullYear();
+
+  if (source.includes("ожидаем") || genres.includes("ожидаем")) return true;
+  if (year >= currentYear && movie.rating <= 0.1) return true;
+
+  return false;
+}
+
+function isPublicCatalogMovie(movie: Movie) {
+  if (BLOCKED_PUBLIC_CONTENT_TYPES.has(movie.type)) return false;
+  if (hasBlockedPublicGenre(movie)) return false;
+  if (isExpectedGeneratedRelease(movie)) return false;
+
+  return true;
+}
+
+export const movies: Movie[] = moviesRaw.filter(isPublicCatalogMovie);
+
 
 movies.forEach(hydrateMovieContent);
 

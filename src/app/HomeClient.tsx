@@ -77,6 +77,42 @@ function getFeaturedPosterImage(item: ContentItem) {
   return item.poster;
 }
 
+function isExpectedRelease(item: ContentItem) {
+  const source = (item.source ?? "").toLowerCase();
+  const genres = item.genres.map((genre) => genre.toLowerCase());
+  const factsText = (item.facts ?? [])
+    .map((fact) => `${fact.label} ${fact.value}`)
+    .join(" ")
+    .toLowerCase();
+  const numericYear = Number.parseInt(item.year, 10);
+  const isFutureYear =
+    Number.isFinite(numericYear) && numericYear > new Date().getFullYear();
+
+  return (
+    source.includes("ожидаемых") ||
+    genres.some((genre) => genre.includes("ожидаем")) ||
+    factsText.includes("ожидаемый") ||
+    (item.rating <= 0 && isFutureYear)
+  );
+}
+
+
+function getRatingBadgeText(item: ContentItem) {
+  if (!Number.isFinite(item.rating) || item.rating <= 0) {
+    return isExpectedRelease(item) ? "Ждём" : "—";
+  }
+
+  return `★ ${Number.isInteger(item.rating) ? item.rating : item.rating.toFixed(1)}`;
+}
+
+function getRatingDetailsText(item: ContentItem) {
+  if (!Number.isFinite(item.rating) || item.rating <= 0) {
+    return isExpectedRelease(item) ? "Рейтинг появится после премьеры" : "Рейтинг уточняется";
+  }
+
+  return `★ ${Number.isInteger(item.rating) ? item.rating : item.rating.toFixed(1)} / 10`;
+}
+
 function escapeSvgText(text: string) {
   return text
     .replaceAll("&", "&amp;")
@@ -411,7 +447,6 @@ const types = [
   "Сериал",
   "Аниме",
   "Мультфильм",
-  "Документальный",
 ];
 
 const catalogSlugByType: Record<string, string> = {
@@ -419,7 +454,6 @@ const catalogSlugByType: Record<string, string> = {
   Сериал: "series",
   Аниме: "anime",
   Мультфильм: "cartoons",
-  Документальный: "documentaries",
 };
 
 function getSearchText(item: ContentItem) {
@@ -676,7 +710,7 @@ function MovieCard({
         </div>
 
         <div className="absolute right-3 top-3 rounded bg-white px-3 py-1 text-[11px] font-black text-black shadow-[0_8px_20px_rgba(0,0,0,0.35)]">
-          ★ {item.rating}
+          {getRatingBadgeText(item)}
         </div>
 
         {isWatchLater && (
@@ -991,7 +1025,6 @@ export default function Home({
   const filmsSectionRef = useRef<HTMLElement | null>(null);
   const seriesSectionRef = useRef<HTMLElement | null>(null);
   const animeSectionRef = useRef<HTMLElement | null>(null);
-  const documentarySectionRef = useRef<HTMLElement | null>(null);
 
   const [search, setSearch] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -1074,11 +1107,12 @@ export default function Home({
 
   const recentlyUpdatedPool = useMemo(() => {
     const featuredIds = new Set(featuredContentPool.map((item) => item.id));
-
-    return [...content]
+    const newestContent = [...content]
       .filter((item) => !featuredIds.has(item.id))
-      .sort((a, b) => b.id - a.id)
-      .slice(0, 12);
+      .sort((a, b) => b.id - a.id);
+    const releasedContent = newestContent.filter((item) => !isExpectedRelease(item));
+
+    return (releasedContent.length >= 6 ? releasedContent : newestContent).slice(0, 12);
   }, [content, featuredContentPoolKey]);
 
   const [featuredIndex, setFeaturedIndex] = useState(0);
@@ -1141,10 +1175,6 @@ export default function Home({
 
   const seriesShelfContent = useMemo(() => {
     return content.filter((item) => item.type === "Сериал");
-  }, [content]);
-
-  const documentaryShelfContent = useMemo(() => {
-    return content.filter((item) => item.type === "Документальный");
   }, [content]);
 
   const watchLaterContent = useMemo(() => {
@@ -3242,12 +3272,13 @@ export default function Home({
 
         .featured-roulette.is-recent .featured-roulette-item {
           min-height: 72px;
-          opacity: 0.72;
+          opacity: 0.92;
         }
 
         .featured-roulette.is-recent .featured-roulette-poster {
           width: 48px;
           border-radius: 13px;
+          background: radial-gradient(circle at 35% 18%, rgba(255,255,255,0.16), transparent 38%), #101010;
         }
 
         .featured-roulette.is-recent .featured-roulette-item:hover {
@@ -4996,7 +5027,7 @@ export default function Home({
             border-radius: 18px !important;
             border: 1px solid transparent !important;
             background: transparent !important;
-            opacity: 0.58 !important;
+            opacity: 0.9 !important;
             transform: none !important;
             box-shadow: none !important;
           }
@@ -5191,11 +5222,11 @@ export default function Home({
               Мультфильмы
             </Link>
             <Link
-              href="/catalog/documentaries"
+              href="/expected"
               className="text-left transition duration-200 hover:text-white"
               draggable={false}
             >
-              Документальные
+              Ожидаемые
             </Link>
             <button
               type="button"
@@ -5285,7 +5316,7 @@ export default function Home({
                           </span>
                           <span className="mt-2 flex flex-wrap gap-2 text-[11px] font-black text-neutral-300">
                             <span className="rounded-full bg-white/10 px-2 py-1">
-                              ★ {item.rating}
+                              {getRatingBadgeText(item)}
                             </span>
                             <span className="rounded-full bg-white/10 px-2 py-1">
                               {item.year}
@@ -5373,7 +5404,7 @@ export default function Home({
           </div>
 
           <div className="absolute right-3 top-3 rounded-full bg-white px-3 py-1 text-[11px] font-black text-black shadow-[0_12px_30px_rgba(0,0,0,0.45)]">
-            ★ {featuredContent.rating}
+            {getRatingBadgeText(featuredContent)}
           </div>
         </button>
 
@@ -5401,7 +5432,7 @@ export default function Home({
 
           <div className="mt-5 flex flex-wrap gap-3">
             <span className="rounded-full bg-white px-4 py-2 text-sm font-black text-black">
-              ★ {featuredContent.rating}
+              {getRatingBadgeText(featuredContent)}
             </span>
 
             <span className="rounded-full border border-white/10 px-4 py-2 text-sm font-bold text-neutral-300">
@@ -5500,7 +5531,7 @@ export default function Home({
                     <span className="featured-roulette-name">
                       <strong>{item.title}</strong>
                       <span>
-                        <em className="not-italic">★ {item.rating}</em>
+                        <em className="not-italic">{getRatingBadgeText(item)}</em>
                         <em className="not-italic">{item.year}</em>
                         <em className="not-italic">{item.type}</em>
                       </span>
@@ -5581,7 +5612,7 @@ export default function Home({
                   <span className="featured-roulette-name">
                     <strong>{item.title}</strong>
                     <span>
-                      <em className="not-italic">★ {item.rating}</em>
+                      <em className="not-italic">{getRatingBadgeText(item)}</em>
                       <em className="not-italic">{item.year}</em>
                       <em className="not-italic">{item.type}</em>
                     </span>
@@ -5897,19 +5928,6 @@ export default function Home({
         onOpenTrailer={openTrailer}
       />
 
-      <MovieShelf
-        label="Документальные"
-        title="Документальные истории"
-        description="Факты, расследования и реальные истории — когда хочется, чтобы кино не только развлекало, но и прокачивало кругозор."
-        items={documentaryShelfContent}
-        watchLaterIds={watchLaterIds}
-        sectionRef={documentarySectionRef}
-        openAllLabel="Все документальные"
-        onOpenAll={() => openCatalogPage("Документальный")}
-        onOpenDetails={openDetails}
-        onOpenTrailer={openTrailer}
-      />
-
       {watchLaterContent.length > 0 && (
         <section className="mobile-section border-t border-white/10 px-8 py-14">
           <div className="mb-6">
@@ -6015,7 +6033,7 @@ export default function Home({
 
               <div className="mt-5 flex flex-wrap gap-3">
                 <span className="rounded-full bg-white px-4 py-2 text-sm font-black text-black">
-                  ★ {selectedItem.rating} / 10
+                  {getRatingDetailsText(selectedItem)}
                 </span>
 
                 <span className="rounded-full border border-white/10 px-4 py-2 text-sm font-bold text-neutral-300">

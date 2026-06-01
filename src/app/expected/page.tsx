@@ -14,18 +14,18 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: "Ожидаемые фильмы — рейтинг ожиданий и будущие премьеры KinoLuma",
+  title: "Ожидаемые релизы — фильмы и мультфильмы KinoLuma",
   description: trimSeoText(
-    "Ожидаемые фильмы на KinoLuma: будущие премьеры, популярные релизы из рейтингов ожидания, постеры, жанры, описания и страницы фильмов.",
+    "Ожидаемые релизы на KinoLuma: ручная подборка будущих фильмов и мультфильмов без документалок, ток-шоу, концертов и случайного мусора.",
     190,
   ),
   alternates: {
     canonical: "/expected",
   },
   openGraph: {
-    title: "Ожидаемые фильмы — KinoLuma",
+    title: "Ожидаемые релизы — KinoLuma",
     description:
-      "Будущие премьеры и популярные ожидаемые фильмы с карточками KinoLuma.",
+      "Ручная подборка будущих фильмов и мультфильмов с карточками KinoLuma.",
     url: "/expected",
     siteName: "KinoLuma",
     locale: "ru_RU",
@@ -41,8 +41,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Ожидаемые фильмы — KinoLuma",
-    description: "Будущие премьеры и популярные ожидаемые фильмы.",
+    title: "Ожидаемые релизы — KinoLuma",
+    description: "Ручная подборка будущих фильмов и мультфильмов.",
     images: ["/kinoluma-icon.png"],
   },
   robots: {
@@ -58,44 +58,25 @@ export const metadata: Metadata = {
   },
 };
 
-function getYearNumber(year: string) {
-  const match = year.match(/\d{4}/);
-  if (!match) return 0;
+type PublicMovie = Awaited<ReturnType<typeof getPublicMovies>>[number];
 
-  const parsed = Number(match[0]);
-  return Number.isFinite(parsed) ? parsed : 0;
+function normalizeExpectedText(value: string) {
+  return value.toLowerCase().replaceAll("ё", "е").trim();
 }
 
-function hasExpectedMarker(movie: Awaited<ReturnType<typeof getPublicMovies>>[number]) {
-  const text = [
-    movie.description,
-    movie.longDescription,
-    ...movie.genres,
-    ...(movie.facts ?? []).flatMap((fact) => [fact.label, fact.value]),
-  ]
-    .join(" ")
-    .toLowerCase()
-    .replaceAll("ё", "е");
+function isCuratedExpectedRelease(movie: PublicMovie) {
+  return normalizeExpectedText(movie.source || "") === "kinoluma-curated-expected";
+}
 
-  return /ожида|премьер|будущ|planned-to-watch|await/.test(text);
+function getMoviePremiere(movie: PublicMovie) {
+  return movie.facts?.find((fact) => normalizeExpectedText(fact.label) === "премьера")?.value;
 }
 
 function getExpectedMovies(movies: Awaited<ReturnType<typeof getPublicMovies>>) {
-  const currentYear = new Date().getFullYear();
-
   return movies
-    .filter((movie) => movie.type === "Фильм")
-    .filter((movie) => {
-      const year = getYearNumber(movie.year);
-      return year >= currentYear || hasExpectedMarker(movie);
-    })
-    .sort((first, second) => {
-      const firstYear = getYearNumber(first.year) || 9999;
-      const secondYear = getYearNumber(second.year) || 9999;
-      if (firstYear !== secondYear) return firstYear - secondYear;
-      return second.rating - first.rating;
-    })
-    .slice(0, 120);
+    .filter(isCuratedExpectedRelease)
+    .sort((first, second) => first.id - second.id)
+    .slice(0, 80);
 }
 
 function getExpectedJsonLd(items: Awaited<ReturnType<typeof getPublicMovies>>) {
@@ -106,9 +87,9 @@ function getExpectedJsonLd(items: Awaited<ReturnType<typeof getPublicMovies>>) {
     "@type": "CollectionPage",
     "@id": `${pageUrl}#collection`,
     url: pageUrl,
-    name: "Ожидаемые фильмы KinoLuma",
+    name: "Ожидаемые релизы KinoLuma",
     description:
-      "Будущие премьеры и ожидаемые фильмы с карточками KinoLuma.",
+      "Ручная подборка будущих фильмов и мультфильмов с карточками KinoLuma.",
     inLanguage: "ru-RU",
     isPartOf: {
       "@id": `${siteUrl}#website`,
@@ -204,7 +185,7 @@ export default async function ExpectedMoviesPage() {
           __html: JSON.stringify(
             getBreadcrumbJsonLd([
               { name: "KinoLuma", url: "/" },
-              { name: "Ожидаемые фильмы", url: "/expected" },
+              { name: "Ожидаемые релизы", url: "/expected" },
             ]),
           ),
         }}
@@ -226,6 +207,7 @@ export default async function ExpectedMoviesPage() {
           <Link href="/catalog/films">Фильмы</Link>
           <Link href="/catalog/series">Сериалы</Link>
           <Link href="/catalog/cartoons">Мультфильмы</Link>
+          <Link href="/expected">Ожидаемые</Link>
           <Link href="/collections">Подборки</Link>
           <Link href="/">На главную</Link>
         </nav>
@@ -235,11 +217,10 @@ export default async function ExpectedMoviesPage() {
         <section className="collections-hero">
           <div>
             <p className="collection-kicker">Премьеры и ожидания</p>
-            <h1>Ожидаемые фильмы</h1>
-            <h2>Будущие премьеры и фильмы из рейтинга ожиданий</h2>
+            <h1>Ожидаемые релизы</h1>
+            <h2>Фильмы и мультфильмы, которые реально ждут</h2>
             <p>
-              Страница собирает будущие релизы KinoLuma. После генерации пакета из Kinopoisk.dev сюда
-              попадут фильмы из рейтинга ожиданий и будущих премьер без ручной подмены постеров.
+              Ручная подборка крупных будущих премьер: Marvel, DC, «Дюна», «Шрек», Pixar, Middle-earth и другие узнаваемые франшизы. Без документалок, ток-шоу, концертов и случайной каши из рейтингов ожидания.
             </p>
           </div>
 
@@ -252,10 +233,10 @@ export default async function ExpectedMoviesPage() {
         <section className="collection-section">
           <div className="collection-section-topline">
             <div>
-              <p className="collection-section-kicker">Kinopoisk-постеры</p>
-              <h2>Будущие релизы</h2>
+              <p className="collection-section-kicker">Ручная подборка</p>
+              <h2>Будущие релизы без мусора</h2>
             </div>
-            <img src={heroPoster} alt="Постер ожидаемого фильма" width={72} height={108} />
+            <img src={heroPoster} alt="Постер ожидаемого релиза" width={72} height={108} />
           </div>
 
           {expectedMovies.length > 0 ? (
@@ -266,7 +247,7 @@ export default async function ExpectedMoviesPage() {
                   <div className="expected-card-body">
                     <h3>{movie.title}</h3>
                     <p>
-                      {movie.year || "год уточняется"} · {movie.genres.slice(0, 3).join(", ") || "жанры уточняются"}
+                      {getMoviePremiere(movie) || movie.year || "дата уточняется"} · {movie.type} · {movie.genres.slice(0, 2).join(", ") || "жанры уточняются"}
                     </p>
                   </div>
                 </Link>
@@ -274,8 +255,7 @@ export default async function ExpectedMoviesPage() {
             </div>
           ) : (
             <div className="expected-empty">
-              Ожидаемые фильмы появятся здесь после запуска генератора Kinopoisk-пакета.
-              Это лучше, чем показывать пустую витрину с видом «склад закрыт на переучёт».
+              Ожидаемые релизы не найдены. Значит архив распаковался не туда или файл с ручной подборкой не попал в src/app/data.
             </div>
           )}
         </section>

@@ -14,7 +14,7 @@ const TARGET_TOTALS = {
   films: 100,
   series: 100,
   cartoons: 100,
-  expected: 60,
+  expected: 0,
 };
 
 const SELECT_FIELDS = [
@@ -79,7 +79,7 @@ const REQUESTS = [
   {
     bucket: "expected",
     label: "рейтинг ожидаемых фильмов Кинопоиска",
-    limit: 60,
+    limit: 0,
     queries: [
       { lists: ["planned-to-watch-films"], typeNumber: ["1"], year: [`${CURRENT_YEAR}-${FUTURE_YEAR_TO}`], sortField: ["votes.await"], sortType: ["-1"] },
       { typeNumber: ["1"], year: [`${CURRENT_YEAR}-${FUTURE_YEAR_TO}`], "votes.await": ["1000-99999999"], sortField: ["votes.await"], sortType: ["-1"] },
@@ -283,6 +283,30 @@ function isAnime(doc) {
   return typeNumber === 4 || type === "anime" || /(^|\s)аниме($|\s)|anime/.test(genres);
 }
 
+const REJECTED_PUBLIC_GENRE_PARTS = [
+  "документ",
+  "реальное тв",
+  "реалити",
+  "reality",
+  "ток-шоу",
+  "ток шоу",
+  "talk show",
+  "концерт",
+  "concert",
+  "музыка",
+  "music",
+  "новости",
+  "news",
+  "церемония",
+  "шоу",
+];
+
+function hasRejectedPublicGenre(doc) {
+  return genreNames(doc)
+    .map(normalizeText)
+    .some((genre) => REJECTED_PUBLIC_GENRE_PARTS.some((blockedGenre) => genre.includes(blockedGenre)));
+}
+
 function isOldOrSoviet(doc) {
   const year = cleanInt(doc.year) || 0;
   const countries = countryNames(doc).map(normalizeText).join(" ");
@@ -315,8 +339,29 @@ function peopleByProfession(doc, professions, limit) {
   );
 }
 
-function getPosterRoute(kpId) {
-  return `/api/kinopoisk/poster?kpId=${kpId}&v=kp-generated-1`;
+function getTmdbPosterRoute(input) {
+  const params = new URLSearchParams();
+
+  if (input.tmdbId) params.set("tmdbId", String(input.tmdbId));
+  if (input.imdbId) params.set("imdbId", input.imdbId);
+  if (input.title) params.set("title", input.title);
+  if (input.originalTitle) params.set("originalTitle", input.originalTitle);
+  if (input.year) params.set("year", String(input.year));
+  if (input.type) params.set("type", input.type);
+
+  params.set("quality", "high");
+  params.set("v", "3");
+
+  return `/api/tmdb/poster?${params.toString()}`;
+}
+
+function getPosterRoute(kpId, input = {}) {
+  const params = new URLSearchParams();
+  params.set("kpId", String(kpId));
+  params.set("v", "kp-generated-2");
+  params.set("fallback", getTmdbPosterRoute(input));
+
+  return `/api/kinopoisk/poster?${params.toString()}`;
 }
 
 function getSeoTypeLabel(type) {
@@ -518,6 +563,7 @@ function shouldSkipDoc(doc, bucket) {
   const kpId = cleanInt(doc.id);
   if (!kpId) return true;
   if (isAnime(doc)) return true;
+  if (hasRejectedPublicGenre(doc)) return true;
   if (bucket !== "expected" && isOldOrSoviet(doc)) return true;
   if (bucket === "cartoons") {
     const typeNumber = cleanInt(doc.typeNumber);
@@ -567,7 +613,14 @@ async function docToMovie(doc, bucket, usedSlugs, generatedIndex) {
     rating: bucket === "expected" ? 0 : getRating(doc),
     genres: bucket === "expected" ? uniq([...genres, "Ожидаемые"], 10) : genres,
     countries,
-    poster: getPosterRoute(kpId),
+    poster: getPosterRoute(kpId, {
+      tmdbId,
+      imdbId,
+      title,
+      originalTitle,
+      year,
+      type,
+    }),
     description,
     longDescription: buildLongDescription(doc, title, year, type, description, bucket),
     trailerUrl: "",
@@ -652,7 +705,7 @@ async function main() {
   const allMovies = [];
 
   console.log(`KinoLuma: найдено существующих Kinopoisk ID: ${existingIds.size}`);
-  console.log("Генерирую: 100 фильмов, 100 сериалов, 100 мультфильмов и страницу ожидаемых фильмов.");
+  console.log("Генерирую: 100 фильмов, 100 сериалов и 100 мультфильмов. Ожидаемые релизы, документалки, реальное ТВ, ток-шоу, концерты и музыка пропускаются.");
 
   for (const request of REQUESTS) {
     const items = await collectBucket(request, existingIds, usedSlugs, generatedState);
@@ -668,7 +721,7 @@ async function main() {
 
   console.log(`\nГотово: ${outputPath}`);
   console.log(`Всего добавлено в generatedKinopoiskRequestedMovies: ${allMovies.length}`);
-  console.log("Теперь запусти npm run build и проверь /expected, /catalog/films, /catalog/series, /catalog/cartoons.");
+  console.log("Теперь запусти npm run build и проверь /catalog/films, /catalog/series, /catalog/cartoons и поиск на главной.");
 }
 
 main().catch((error) => {

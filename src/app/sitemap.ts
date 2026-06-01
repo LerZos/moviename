@@ -11,7 +11,6 @@ import {
 
 function getMovieSitemapPriority(type: string) {
   if (type === "Фильм" || type === "Сериал") return 0.9;
-  if (type === "Документальный") return 0.86;
   if (type === "Мультфильм") return 0.84;
   return 0.8;
 }
@@ -32,16 +31,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 1,
     },
     {
-      url: `${siteUrl}/collections`,
+      url: `${siteUrl}/expected`,
       lastModified: now,
       changeFrequency: "weekly" as const,
       priority: 0.86,
     },
     {
-      url: `${siteUrl}/expected`,
+      url: `${siteUrl}/collections`,
       lastModified: now,
-      changeFrequency: "daily" as const,
-      priority: 0.88,
+      changeFrequency: "weekly" as const,
+      priority: 0.86,
     },
     ...seoCollections.map((collection) => ({
       url: `${siteUrl}/collections/${collection.slug}`,

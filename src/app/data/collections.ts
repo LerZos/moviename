@@ -17,7 +17,7 @@ function makeCollection(collection: SeoCollection) {
   return collection;
 }
 
-export const seoCollections: SeoCollection[] = [
+const rawSeoCollections: SeoCollection[] = [
   makeCollection({
     slug: "movies-like-interstellar",
     group: "Фильмы похожие на",
@@ -719,6 +719,10 @@ export const seoCollections: SeoCollection[] = [
     keywords: ["лучшие документальные фильмы", "документальные сериалы", "документалки на вечер", "познавательные фильмы"],
   }),
 ];
+
+export const seoCollections: SeoCollection[] = rawSeoCollections.filter(
+  (collection) => collection.group !== "Документалки" && !collection.slug.includes("documentaries"),
+);
 
 const collectionMap = new Map(seoCollections.map((collection) => [collection.slug, collection]));
 const movieMap = new Map(movies.map((movie) => [movie.slug, movie]));

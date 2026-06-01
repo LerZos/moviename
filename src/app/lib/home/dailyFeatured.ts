@@ -36,6 +36,25 @@ function getYearNumber(year: string) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function isExpectedRelease(item: Movie) {
+  const source = (item.source ?? "").toLowerCase();
+  const genres = (item.genres ?? []).map((genre) => genre.toLowerCase()).join(" ");
+  const factsText = (item.facts ?? [])
+    .map((fact) => `${fact.label} ${fact.value}`)
+    .join(" ")
+    .toLowerCase();
+  const year = getYearNumber(item.year);
+  const currentYear = new Date().getFullYear();
+
+  return (
+    source.includes("kinoluma-curated-expected") ||
+    source.includes("ожидаем") ||
+    genres.includes("ожидаем") ||
+    factsText.includes("ожидаемый") ||
+    (year > currentYear && item.rating <= 0)
+  );
+}
+
 function hasRealPoster(item: Movie) {
   return Boolean(
     item.poster &&
@@ -118,8 +137,8 @@ export function getDailyFeaturedItems(
   const uniqueItems = Array.from(
     new Map(items.map((item) => [item.slug || String(item.id), item])).values(),
   );
-  const candidates = uniqueItems.filter((item) =>
-    isGoodFeaturedCandidate(item, currentYear),
+  const candidates = uniqueItems.filter(
+    (item) => !isExpectedRelease(item) && isGoodFeaturedCandidate(item, currentYear),
   );
   const source = candidates.length >= count ? candidates : uniqueItems;
   const sortedItems = source
