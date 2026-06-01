@@ -52,6 +52,7 @@ export type Movie = {
   tmdbId?: number;
   imdbId?: string;
   countries?: string[];
+  source?: string;
   longDescription?: string;
   facts?: MovieFact[];
   cast?: CastMember[];
