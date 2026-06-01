@@ -1,5 +1,6 @@
 import { generatedKinoLumaMovies } from "./generatedMovies";
 import { generatedKinoLumaCartoons } from "./generatedCartoons";
+import { generatedKinopoiskRequestedMovies } from "./generatedKinopoiskRequested";
 
 export type ContentType = "Фильм" | "Сериал" | "Аниме" | "Мультфильм" | "Документальный";
 
@@ -125,6 +126,24 @@ function getTmdbPoster(input: {
   params.set("v", "3");
 
   return `/api/tmdb/poster?${params.toString()}`;
+}
+
+function getKinopoiskPoster(input: {
+  kinopoiskId?: number | string | null;
+  fallback?: string;
+}) {
+  const id = String(input.kinopoiskId || "").match(/\d+/)?.[0] || "";
+  if (!id) return input.fallback || "/kinoluma-icon.png";
+
+  const params = new URLSearchParams();
+  params.set("kpId", id);
+  params.set("v", "kp-1");
+
+  if (input.fallback && !input.fallback.startsWith("data:")) {
+    params.set("fallback", input.fallback);
+  }
+
+  return `/api/kinopoisk/poster?${params.toString()}`;
 }
 
 function createKinopoiskPlayers(kinopoiskId: number): PlayerProvider[] {
@@ -323,6 +342,20 @@ function hydrateMovieContent(movie: Movie) {
 
   if (movie.kinopoiskId) {
     appendMovieFact(movie, "Kinopoisk ID", movie.kinopoiskId);
+
+    if (!movie.poster.includes("/api/kinopoisk/poster")) {
+      const fallbackPoster = movie.poster && !movie.poster.startsWith("data:") ? movie.poster : "";
+      movie.poster = getKinopoiskPoster({
+        kinopoiskId: movie.kinopoiskId,
+        fallback: fallbackPoster,
+      });
+
+      if (fallbackPoster) {
+        movie.posterFallbacks = Array.from(
+          new Set([...(movie.posterFallbacks ?? []), fallbackPoster]),
+        );
+      }
+    }
   }
 
   if (movie.imdbId) {
@@ -15702,6 +15735,7 @@ export const movies: Movie[] = [
   },
 
   ...generatedKinoLumaMovies,
+  ...generatedKinopoiskRequestedMovies,
   ...generatedKinoLumaCartoons,
 
 ];

@@ -12,12 +12,12 @@ export default function robots(): MetadataRoute.Robots {
       },
       {
         userAgent: "Googlebot",
-        allow: ["/", "/movie/", "/catalog/", "/collections/"],
+        allow: ["/", "/movie/", "/catalog/", "/collections/", "/expected"],
         disallow: ["/admin", "/admin/", "/api/", "/profile", "/profile/"],
       },
       {
         userAgent: "Yandex",
-        allow: ["/", "/movie/", "/catalog/", "/collections/"],
+        allow: ["/", "/movie/", "/catalog/", "/collections/", "/expected"],
         disallow: ["/admin", "/admin/", "/api/", "/profile", "/profile/"],
       },
     ],

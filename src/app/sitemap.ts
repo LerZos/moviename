@@ -37,6 +37,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly" as const,
       priority: 0.86,
     },
+    {
+      url: `${siteUrl}/expected`,
+      lastModified: now,
+      changeFrequency: "daily" as const,
+      priority: 0.88,
+    },
     ...seoCollections.map((collection) => ({
       url: `${siteUrl}/collections/${collection.slug}`,
       lastModified: now,

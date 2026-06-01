@@ -48,7 +48,7 @@ function createGeneratedKinopoiskPlayers(kinopoiskId: number): PlayerProvider[] 
   ];
 }
 
-export const generatedKinoLumaMovies: Movie[] = [
+const generatedKinoLumaMoviesRaw: Movie[] = [
   {
     id: 100000,
     kinopoiskId: 535341,
@@ -18420,3 +18420,20 @@ export const generatedKinoLumaMovies: Movie[] = [
     players: createGeneratedKinopoiskPlayers(1111102),
   }
 ];
+
+function getGeneratedMovieYear(movie: Movie) {
+  const match = String(movie.year || "").match(/\d{4}/);
+  if (!match) return 0;
+
+  const parsed = Number(match[0]);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function isModernGeneratedMovie(movie: Movie) {
+  const year = getGeneratedMovieYear(movie);
+  const countries = (movie.countries ?? []).join(" ").toLowerCase().replaceAll("ё", "е");
+
+  return year >= 2000 && !countries.includes("ссср");
+}
+
+export const generatedKinoLumaMovies: Movie[] = generatedKinoLumaMoviesRaw.filter(isModernGeneratedMovie);
