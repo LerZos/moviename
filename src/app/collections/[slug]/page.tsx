@@ -15,6 +15,8 @@ import {
   siteUrl,
   trimSeoText,
 } from "../../lib/seo";
+import CollectionMovieGridClient from "../CollectionMovieGridClient";
+import CollectionsRevealClient from "../CollectionsRevealClient";
 import { collectionStyles } from "../collectionStyles";
 
 type CollectionPageProps = {
@@ -163,6 +165,7 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
   return (
     <main className="kinoluma-collections">
       <style>{collectionStyles}</style>
+      <CollectionsRevealClient />
 
       <script
         type="application/ld+json"
@@ -250,62 +253,30 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
             </div>
           </div>
 
-          <div className="collection-movies-grid">
-            {items.map((item) => (
-              <Link key={item.slug} href={`/movie/${item.slug}`} className="collection-movie-card">
-                <article>
-                  <div className="collection-movie-poster">
-                    <img
-                      src={item.poster}
-                      alt={`${item.title} (${item.year})`}
-                      loading="lazy"
-                      decoding="async"
-                      referrerPolicy="no-referrer"
-                    />
-                    <div className="collection-movie-shade" />
-                    <span className="collection-movie-type">{item.type}</span>
-                    <span className="collection-movie-rating">★ {item.rating}</span>
-                  </div>
-
-                  <div className="collection-movie-body">
-                    <div className="collection-movie-meta">
-                      <span>{item.year}</span>
-                      <span>{item.genres[0]}</span>
-                    </div>
-
-                    <h3>{item.title}</h3>
-                    <p className="collection-movie-description">{item.description}</p>
-
-                    <div className="collection-movie-tags">
-                      {item.genres.slice(0, 2).map((genre) => (
-                        <span key={genre}>{genre}</span>
-                      ))}
-                    </div>
-                  </div>
-                </article>
-              </Link>
-            ))}
-          </div>
+          <CollectionMovieGridClient
+            items={items}
+            emptyText="В этой подборке пока нет карточек. Скорее всего, нужные фильмы ещё не добавлены в каталог."
+          />
         </section>
 
         <section className="collection-section">
           <div className="collection-section-topline">
             <div>
-              <p className="collection-section-kicker">Описание</p>
-              <h2>О подборке</h2>
+              <p className="collection-section-kicker">Коротко</p>
+              <h2>Что внутри</h2>
             </div>
           </div>
 
           <div className="collection-seo-box">
-            <p>{collection.seoText}</p>
+            <p>{collection.description}</p>
           </div>
         </section>
 
         <section className="collection-section">
           <div className="collection-section-topline">
             <div>
-              <p className="collection-section-kicker">FAQ</p>
-              <h2>Вопросы по подборке</h2>
+              <p className="collection-section-kicker">Подсказки</p>
+              <h2>Как выбрать</h2>
             </div>
           </div>
 

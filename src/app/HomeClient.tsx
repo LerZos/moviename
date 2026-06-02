@@ -1008,6 +1008,110 @@ function MovieShelf({
   );
 }
 
+
+type HomeSearchHubCard = {
+  eyebrow: string;
+  title: string;
+  description: string;
+  href: string;
+  stat: string;
+  note: string;
+};
+
+const homeSearchHubCards: HomeSearchHubCard[] = [
+  {
+    eyebrow: "Скоро",
+    title: "Новинки 2026: ещё не вышли",
+    description:
+      "Будущие премьеры в одном месте: открыл список, посмотрел карточки и отметил, чего ждать дальше.",
+    href: "/expected",
+    stat: "2026+",
+    note: "Ожидаемые релизы",
+  },
+  {
+    eyebrow: "Топ",
+    title: "Лучшие фильмы и сериалы",
+    description:
+      "Фильмы и сериалы с сильными оценками, чтобы не устраивать вечерний допрос пульту и самому себе.",
+    href: "/collections/movies-with-high-rating",
+    stat: "★ 8+",
+    note: "Высокий рейтинг",
+  },
+  {
+    eyebrow: "Популярное",
+    title: "Популярные фильмы и сериалы",
+    description:
+      "Блокбастеры, сериальные хиты и узнаваемые истории, которые проще открыть списком, чем ловить по всему каталогу.",
+    href: "/collections/popular-movies-and-series",
+    stat: "Hit",
+    note: "Быстрый вход",
+  },
+  {
+    eyebrow: "Жанр",
+    title: "Фантастика и будущее",
+    description:
+      "Космос, технологии, другие миры и крупная фантастика — для вечеров, когда реальность можно поставить на паузу.",
+    href: "/collections/sci-fi-movies",
+    stat: "Sci-Fi",
+    note: "Тематический список",
+  },
+];
+
+function HomeSearchHubSection() {
+  return (
+    <section className="home-search-hub mobile-section px-8 pb-24 pt-2">
+      <div className="home-search-hub-panel">
+        <div className="home-search-hub-head">
+          <div>
+            <p className="home-search-hub-kicker">Подборки</p>
+            <h3>Быстрые маршруты по каталогу</h3>
+            <p>
+              Несколько входов для тех случаев, когда хочется не листать всё подряд,
+              а сразу открыть живой список: будущие релизы, хиты, высокий рейтинг и фантастику.
+            </p>
+          </div>
+
+          <Link href="/collections" className="home-search-hub-all">
+            Все подборки
+          </Link>
+        </div>
+
+        <div className="home-search-hub-grid">
+          {homeSearchHubCards.map((card, index) => (
+            <Link
+              key={card.href}
+              href={card.href}
+              style={{ animationDelay: `${Math.min(index * 70, 280)}ms` }}
+              className="home-search-hub-card"
+              aria-label={`Открыть подборку: ${card.title}`}
+            >
+              <span className="home-search-hub-glow" aria-hidden="true" />
+              <span className="home-search-hub-number" aria-hidden="true">
+                {String(index + 1).padStart(2, "0")}
+              </span>
+
+              <span className="home-search-hub-card-topline">
+                <span>{card.eyebrow}</span>
+                <strong>{card.stat}</strong>
+              </span>
+
+              <span className="home-search-hub-card-copy">
+                <strong>{card.title}</strong>
+                <span>{card.description}</span>
+              </span>
+
+              <span className="home-search-hub-card-bottom">
+                <span>{card.note}</span>
+                <span>Открыть →</span>
+              </span>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function Home({
   initialContent,
   initialFeaturedIds,
@@ -2432,6 +2536,331 @@ export default function Home({
             min-width: 138px;
             height: 54px;
             padding: 0 24px;
+          }
+        }
+
+
+        @keyframes homeSearchHubCardIn {
+          from {
+            opacity: 0;
+            transform: translateY(24px) scale(0.985);
+            filter: blur(8px);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            filter: blur(0);
+          }
+        }
+
+        .home-search-hub {
+          position: relative;
+          isolation: isolate;
+        }
+
+        .home-search-hub-panel {
+          position: relative;
+          overflow: hidden;
+          border: 1px solid rgba(255, 255, 255, 0.085);
+          border-radius: 34px;
+          background:
+            radial-gradient(circle at 18% 0%, rgba(255, 255, 255, 0.12), transparent 30%),
+            radial-gradient(circle at 88% 18%, rgba(255, 255, 255, 0.06), transparent 26%),
+            linear-gradient(180deg, rgba(255, 255, 255, 0.058), rgba(255, 255, 255, 0.024)),
+            rgba(5, 5, 5, 0.82);
+          padding: clamp(22px, 4vw, 38px);
+          box-shadow:
+            0 28px 90px rgba(0, 0, 0, 0.58),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+          backdrop-filter: blur(18px);
+          -webkit-backdrop-filter: blur(18px);
+        }
+
+        .home-search-hub-panel::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          background-image:
+            linear-gradient(rgba(255, 255, 255, 0.026) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+          background-size: 58px 58px;
+          mask-image: radial-gradient(circle at 50% 0%, black 0%, transparent 66%);
+          opacity: 0.58;
+        }
+
+        .home-search-hub-head,
+        .home-search-hub-grid {
+          position: relative;
+          z-index: 2;
+        }
+
+        .home-search-hub-head {
+          display: flex;
+          align-items: flex-end;
+          justify-content: space-between;
+          gap: 22px;
+          margin-bottom: 24px;
+        }
+
+        .home-search-hub-kicker {
+          margin: 0;
+          color: #737373;
+          font-size: 12px;
+          font-weight: 1000;
+          letter-spacing: 0.28em;
+          text-transform: uppercase;
+        }
+
+        .home-search-hub-head h3 {
+          max-width: 760px;
+          margin: 10px 0 0;
+          color: #ffffff;
+          font-size: clamp(28px, 4.2vw, 54px);
+          font-weight: 1000;
+          letter-spacing: -0.065em;
+          line-height: 0.98;
+        }
+
+        .home-search-hub-head p:not(.home-search-hub-kicker) {
+          max-width: 760px;
+          margin: 14px 0 0;
+          color: #8f8f8f;
+          font-size: 14px;
+          font-weight: 650;
+          line-height: 1.7;
+        }
+
+        .home-search-hub-all,
+        .home-search-hub-card {
+          color: inherit;
+          text-decoration: none;
+        }
+
+        .home-search-hub-all {
+          display: inline-flex;
+          min-height: 46px;
+          flex-shrink: 0;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.06);
+          padding: 0 18px;
+          color: #f5f5f5;
+          font-size: 13px;
+          font-weight: 1000;
+          transition: transform 180ms ease, border-color 180ms ease, background 180ms ease, color 180ms ease;
+        }
+
+        .home-search-hub-all:hover {
+          transform: translateY(-2px);
+          border-color: rgba(255, 255, 255, 0.28);
+          background: #ffffff;
+          color: #000000;
+        }
+
+        .home-search-hub-grid {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 14px;
+        }
+
+        .home-search-hub-card {
+          position: relative;
+          min-height: 275px;
+          overflow: hidden;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 28px;
+          background:
+            linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.028)),
+            rgba(0, 0, 0, 0.45);
+          padding: 18px;
+          box-shadow:
+            0 18px 60px rgba(0, 0, 0, 0.42),
+            inset 0 1px 0 rgba(255, 255, 255, 0.08);
+          opacity: 0;
+          animation: homeSearchHubCardIn 580ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          transition: transform 200ms ease, border-color 200ms ease, background 200ms ease, box-shadow 200ms ease;
+        }
+
+        .home-search-hub-card:hover {
+          transform: translateY(-5px);
+          border-color: rgba(255, 255, 255, 0.28);
+          background:
+            linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.04)),
+            rgba(8, 8, 8, 0.78);
+          box-shadow:
+            0 26px 86px rgba(0, 0, 0, 0.62),
+            0 0 42px rgba(255, 255, 255, 0.06),
+            inset 0 1px 0 rgba(255, 255, 255, 0.13);
+        }
+
+        .home-search-hub-glow {
+          position: absolute;
+          width: 170px;
+          height: 170px;
+          right: -76px;
+          top: -68px;
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.12);
+          filter: blur(2px);
+          opacity: 0.72;
+          transition: transform 200ms ease, opacity 200ms ease;
+        }
+
+        .home-search-hub-card:hover .home-search-hub-glow {
+          transform: scale(1.1);
+          opacity: 0.95;
+        }
+
+        .home-search-hub-number {
+          position: absolute;
+          right: 16px;
+          bottom: 10px;
+          color: rgba(255, 255, 255, 0.045);
+          font-size: 86px;
+          font-weight: 1000;
+          letter-spacing: -0.12em;
+          line-height: 1;
+        }
+
+        .home-search-hub-card-topline,
+        .home-search-hub-card-copy,
+        .home-search-hub-card-bottom {
+          position: relative;
+          z-index: 2;
+        }
+
+        .home-search-hub-card-topline {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+        }
+
+        .home-search-hub-card-topline span,
+        .home-search-hub-card-topline strong {
+          display: inline-flex;
+          min-height: 34px;
+          align-items: center;
+          border-radius: 999px;
+          font-size: 11px;
+          font-weight: 1000;
+        }
+
+        .home-search-hub-card-topline span {
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          background: rgba(0, 0, 0, 0.34);
+          padding: 0 11px;
+          color: #d4d4d4;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+        }
+
+        .home-search-hub-card-topline strong {
+          justify-content: center;
+          min-width: 58px;
+          background: #ffffff;
+          padding: 0 12px;
+          color: #000000;
+          box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .home-search-hub-card-copy {
+          display: block;
+          margin-top: 54px;
+        }
+
+        .home-search-hub-card-copy strong {
+          display: block;
+          color: #ffffff;
+          font-size: 24px;
+          font-weight: 1000;
+          letter-spacing: -0.05em;
+          line-height: 1.04;
+        }
+
+        .home-search-hub-card-copy span {
+          display: block;
+          margin-top: 12px;
+          color: #8b8b8b;
+          font-size: 13px;
+          font-weight: 650;
+          line-height: 1.55;
+        }
+
+        .home-search-hub-card-bottom {
+          position: absolute;
+          left: 18px;
+          right: 18px;
+          bottom: 18px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          color: #d4d4d4;
+          font-size: 12px;
+          font-weight: 1000;
+        }
+
+        .home-search-hub-card-bottom span:first-child {
+          min-width: 0;
+          color: #737373;
+        }
+
+        .home-search-hub-card-bottom span:last-child {
+          white-space: nowrap;
+          color: #ffffff;
+        }
+
+        @media (max-width: 1180px) {
+          .home-search-hub-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+        }
+
+        @media (max-width: 720px) {
+          .home-search-hub {
+            padding-left: 16px !important;
+            padding-right: 16px !important;
+            padding-bottom: 104px !important;
+          }
+
+          .home-search-hub-panel {
+            border-radius: 28px;
+            padding: 20px;
+          }
+
+          .home-search-hub-head {
+            align-items: stretch;
+            flex-direction: column;
+          }
+
+          .home-search-hub-all {
+            width: 100%;
+          }
+
+          .home-search-hub-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .home-search-hub-card {
+            min-height: 245px;
+          }
+
+          .home-search-hub-card-copy {
+            margin-top: 40px;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .home-search-hub-card {
+            animation: none !important;
+            opacity: 1 !important;
+            transform: none !important;
+            filter: none !important;
           }
         }
 
@@ -5222,11 +5651,11 @@ export default function Home({
               Мультфильмы
             </Link>
             <Link
-              href="/expected"
+              href="/collections"
               className="text-left transition duration-200 hover:text-white"
               draggable={false}
             >
-              Ожидаемые
+              Подборки
             </Link>
             <button
               type="button"
@@ -5979,6 +6408,8 @@ export default function Home({
           </div>
         </section>
       )}
+
+      <HomeSearchHubSection />
 
       {selectedItem && (
         <div

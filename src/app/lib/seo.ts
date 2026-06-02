@@ -505,18 +505,6 @@ export function getMovieJsonLd(movie: Movie) {
           uploadDate: `${movie.year}-01-01`,
         }
       : undefined,
-    identifier: movie.kinopoiskId
-      ? {
-          "@type": "PropertyValue",
-          propertyID: "Kinopoisk ID",
-          value: movie.kinopoiskId,
-        }
-      : undefined,
-    sameAs: movie.kinopoiskId
-      ? [
-          `https://www.kinopoisk.ru/${schemaType === "TVSeries" ? "series" : "film"}/${movie.kinopoiskId}/`,
-        ]
-      : undefined,
   };
 
   return removeUndefinedValues(jsonLd);

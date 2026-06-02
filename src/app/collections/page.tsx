@@ -7,13 +7,14 @@ import {
   seoCollections,
 } from "../data/collections";
 import { siteUrl, trimSeoText } from "../lib/seo";
+import CollectionsRevealClient from "./CollectionsRevealClient";
 import { collectionStyles } from "./collectionStyles";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: "Подборки фильмов, сериалов, аниме и мультфильмов — KinoLuma",
   description: trimSeoText(
-    "Поисковые подборки KinoLuma: фильмы похожие на популярные проекты, что посмотреть после сериалов, лучшие фильмы про космос, аниме с сильным героем, семейные мультфильмы и документалки.",
+    "Подборки KinoLuma: фильмы похожие на любимые проекты, списки на вечер, фантастика, аниме, мультфильмы и другие удобные маршруты по каталогу.",
     190,
   ),
   alternates: {
@@ -22,7 +23,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Подборки KinoLuma",
     description:
-      "SEO-подборки KinoLuma помогают быстро выбрать, что посмотреть после любимого фильма, сериала, аниме или мультфильма.",
+      "Подборки KinoLuma помогают быстро выбрать, что посмотреть после любимого фильма, сериала, аниме или мультфильма.",
     url: "/collections",
     siteName: "KinoLuma",
     locale: "ru_RU",
@@ -62,6 +63,7 @@ export default function CollectionsIndexPage() {
   return (
     <main className="kinoluma-collections">
       <style>{collectionStyles}</style>
+      <CollectionsRevealClient />
 
       <div className="collections-bg" aria-hidden="true">
         <span />
@@ -87,12 +89,12 @@ export default function CollectionsIndexPage() {
       <div className="collections-shell">
         <section className="collections-hero">
           <div>
-            <p className="collection-kicker">SEO-подборки</p>
+            <p className="collection-kicker">Подборки</p>
             <h1>Что посмотреть на KinoLuma</h1>
-            <h2>Фильмы похожие на, что посмотреть после и подборки по настроению</h2>
+            <h2>Фильмы похожие на любимые истории и списки по настроению</h2>
             <p>
-              Эти страницы сделаны под поисковые запросы: похожие фильмы, подборки после сериалов,
-              космос, фэнтези, аниме с сильным героем, семейные мультфильмы и документалки.
+              Здесь собраны быстрые маршруты по каталогу: похожие фильмы, списки на вечер,
+              фантастика, фэнтези, аниме, семейные мультфильмы и другие темы без лишней суеты.
             </p>
           </div>
 

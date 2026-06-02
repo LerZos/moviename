@@ -3,11 +3,12 @@ import Link from "next/link";
 
 import { getPublicMovies } from "../lib/movies/movieOverrides";
 import {
-  absoluteUrl,
   getBreadcrumbJsonLd,
   siteUrl,
   trimSeoText,
 } from "../lib/seo";
+import CollectionMovieGridClient from "../collections/CollectionMovieGridClient";
+import CollectionsRevealClient from "../collections/CollectionsRevealClient";
 import { collectionStyles } from "../collections/collectionStyles";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +17,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: "Ожидаемые релизы — фильмы и мультфильмы KinoLuma",
   description: trimSeoText(
-    "Ожидаемые релизы на KinoLuma: ручная подборка будущих фильмов и мультфильмов без документалок, ток-шоу, концертов и случайного мусора.",
+    "Будущие премьеры KinoLuma: крупные фильмы, мультфильмы и франшизы, за которыми хочется следить заранее.",
     190,
   ),
   alternates: {
@@ -25,7 +26,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Ожидаемые релизы — KinoLuma",
     description:
-      "Ручная подборка будущих фильмов и мультфильмов с карточками KinoLuma.",
+      "Будущие фильмы и мультфильмы, которые удобно держать в одном списке.",
     url: "/expected",
     siteName: "KinoLuma",
     locale: "ru_RU",
@@ -42,7 +43,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Ожидаемые релизы — KinoLuma",
-    description: "Ручная подборка будущих фильмов и мультфильмов.",
+    description: "Будущие фильмы и мультфильмы в одном списке.",
     images: ["/kinoluma-icon.png"],
   },
   robots: {
@@ -68,10 +69,6 @@ function isCuratedExpectedRelease(movie: PublicMovie) {
   return normalizeExpectedText(movie.source || "") === "kinoluma-curated-expected";
 }
 
-function getMoviePremiere(movie: PublicMovie) {
-  return movie.facts?.find((fact) => normalizeExpectedText(fact.label) === "премьера")?.value;
-}
-
 function getExpectedMovies(movies: Awaited<ReturnType<typeof getPublicMovies>>) {
   return movies
     .filter(isCuratedExpectedRelease)
@@ -89,7 +86,7 @@ function getExpectedJsonLd(items: Awaited<ReturnType<typeof getPublicMovies>>) {
     url: pageUrl,
     name: "Ожидаемые релизы KinoLuma",
     description:
-      "Ручная подборка будущих фильмов и мультфильмов с карточками KinoLuma.",
+      "Будущие фильмы и мультфильмы, которые удобно держать в одном списке.",
     inLanguage: "ru-RU",
     isPartOf: {
       "@id": `${siteUrl}#website`,
@@ -110,11 +107,10 @@ function getExpectedJsonLd(items: Awaited<ReturnType<typeof getPublicMovies>>) {
 export default async function ExpectedMoviesPage() {
   const publicMovies = await getPublicMovies();
   const expectedMovies = getExpectedMovies(publicMovies);
-  const heroPoster = absoluteUrl(expectedMovies[0]?.poster || "/kinoluma-icon.png");
-
   return (
     <main className="kinoluma-collections expected-page">
       <style>{collectionStyles}</style>
+      <CollectionsRevealClient />
       <style>{`
         .expected-grid {
           display: grid;
@@ -218,9 +214,9 @@ export default async function ExpectedMoviesPage() {
           <div>
             <p className="collection-kicker">Премьеры и ожидания</p>
             <h1>Ожидаемые релизы</h1>
-            <h2>Фильмы и мультфильмы, которые реально ждут</h2>
+            <h2>Премьеры, за которыми интересно следить заранее</h2>
             <p>
-              Ручная подборка крупных будущих премьер: Marvel, DC, «Дюна», «Шрек», Pixar, Middle-earth и другие узнаваемые франшизы. Без документалок, ток-шоу, концертов и случайной каши из рейтингов ожидания.
+              Крупные будущие релизы, заметные франшизы и мультфильмы, которые лучше держать под рукой. Когда появится больше данных — карточки можно будет спокойно обновить.
             </p>
           </div>
 
@@ -233,31 +229,15 @@ export default async function ExpectedMoviesPage() {
         <section className="collection-section">
           <div className="collection-section-topline">
             <div>
-              <p className="collection-section-kicker">Ручная подборка</p>
-              <h2>Будущие релизы без мусора</h2>
+              <p className="collection-section-kicker">Список</p>
+              <h2>Будущие релизы</h2>
             </div>
-            <img src={heroPoster} alt="Постер ожидаемого релиза" width={72} height={108} />
           </div>
 
-          {expectedMovies.length > 0 ? (
-            <div className="expected-grid">
-              {expectedMovies.map((movie) => (
-                <Link key={movie.slug} href={`/movie/${movie.slug}`} className="expected-card">
-                  <img src={movie.poster} alt={`Постер фильма ${movie.title}`} loading="lazy" />
-                  <div className="expected-card-body">
-                    <h3>{movie.title}</h3>
-                    <p>
-                      {getMoviePremiere(movie) || movie.year || "дата уточняется"} · {movie.type} · {movie.genres.slice(0, 2).join(", ") || "жанры уточняются"}
-                    </p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <div className="expected-empty">
-              Ожидаемые релизы не найдены. Значит архив распаковался не туда или файл с ручной подборкой не попал в src/app/data.
-            </div>
-          )}
+          <CollectionMovieGridClient
+            items={expectedMovies}
+            emptyText="Ожидаемые релизы не найдены. Проверь, что архив распакован в корень проекта и файл с подборкой попал в src/app/data."
+          />
         </section>
       </div>
     </main>

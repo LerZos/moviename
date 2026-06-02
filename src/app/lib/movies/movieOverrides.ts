@@ -1,5 +1,6 @@
 import {
   movies,
+  sanitizeMovieForPublicDisplay,
   type CastMember,
   type ContentType,
   type Movie,
@@ -577,7 +578,8 @@ export async function getPublicMovies(): Promise<Movie[]> {
 
   return Array.from(bySlug.values())
     .map((movie) => applyOverride(movie, overrides.get(movie.slug)))
-    .filter((movie) => !(movie as Movie & { hidden?: boolean }).hidden);
+    .filter((movie) => !(movie as Movie & { hidden?: boolean }).hidden)
+    .map((movie) => sanitizeMovieForPublicDisplay(movie));
 }
 
 export async function getPublicBaseMovieBySlug(
@@ -598,7 +600,8 @@ export async function getPublicBaseMovieBySlug(
         "Не удалось загрузить опубликованный movie_draft",
         error,
       );
-      return getBaseMovieBySlug(slug);
+      const fallbackMovie = getBaseMovieBySlug(slug);
+      return fallbackMovie ? sanitizeMovieForPublicDisplay(fallbackMovie) : null;
     }
 
     const draftMovie = data ? draftToMovie(data as MovieDraftRow) : null;
@@ -613,7 +616,8 @@ export async function getPublicBaseMovieBySlug(
     );
   }
 
-  return getBaseMovieBySlug(slug);
+  const fallbackMovie = getBaseMovieBySlug(slug);
+  return fallbackMovie ? sanitizeMovieForPublicDisplay(fallbackMovie) : null;
 }
 
 export async function getMovieOverrideData(
@@ -657,7 +661,7 @@ export async function getMovieWithOverrides(
     return null;
   }
 
-  return applyOverride(baseMovie, override);
+  return sanitizeMovieForPublicDisplay(applyOverride(baseMovie, override));
 }
 
 export async function saveMovieOverride(
