@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import Script from "next/script";
 import MobileBottomNav from "../../components/MobileBottomNav";
@@ -40,6 +41,67 @@ const DEFAULT_PLAYERS: PlayerProvider[] = [
 ];
 
 const RENDEX_SCRIPT_SRC = "https://graphicslab.io/sdk/v2/rendex-sdk.min.js";
+
+const GENRE_SLUG_MAP: Record<string, string> = {
+  а: "a",
+  б: "b",
+  в: "v",
+  г: "g",
+  д: "d",
+  е: "e",
+  ё: "e",
+  ж: "zh",
+  з: "z",
+  и: "i",
+  й: "y",
+  к: "k",
+  л: "l",
+  м: "m",
+  н: "n",
+  о: "o",
+  п: "p",
+  р: "r",
+  с: "s",
+  т: "t",
+  у: "u",
+  ф: "f",
+  х: "h",
+  ц: "ts",
+  ч: "ch",
+  ш: "sh",
+  щ: "shch",
+  ъ: "",
+  ы: "y",
+  ь: "",
+  э: "e",
+  ю: "yu",
+  я: "ya",
+};
+
+function getCatalogSlugByMovie(movie: Movie) {
+  if (movie.type === "Сериал") return "series";
+  if (movie.type === "Аниме") return "anime";
+  if (movie.type === "Мультфильм" || movie.genres.includes("Анимация")) return "cartoons";
+  return "films";
+}
+
+function slugifyPublicGenre(genre: string) {
+  return genre
+    .toLowerCase()
+    .split("")
+    .map((char) => GENRE_SLUG_MAP[char] ?? char)
+    .join("")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function splitLongTextIntoParagraphs(text: string) {
+  return text
+    .split(/\n{2,}/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
 
 function getPlayerRecord(
   player: PlayerProvider,
@@ -468,10 +530,21 @@ export default function MoviePageClient({
             ? "Похожие документальные проекты"
             : "Похожие фильмы";
 
+  const detailParagraphs = useMemo(
+    () => splitLongTextIntoParagraphs(movie.longDescription || movie.description),
+    [movie.description, movie.longDescription],
+  );
+
+  const catalogSlug = getCatalogSlugByMovie(movie);
+
   const faqItems = useMemo(() => {
     const kind = getContentKind(movie);
     const titleWithYear = `${movie.title} (${movie.year})`;
     const genres = movie.genres.join(", ");
+    const rating = movie.rating > 0 ? `${movie.rating.toFixed(1)} из 10` : "появится после обновления карточки";
+    const country = getFactValue(facts, "Страна", "указана в карточке при наличии данных");
+    const duration = getFactValue(facts, "Длительность", "указана в карточке при наличии данных");
+    const studio = getFactValue(facts, "Студия", "указана в карточке при наличии данных");
 
     return [
       {
@@ -479,24 +552,34 @@ export default function MoviePageClient({
         answer:
           movie.longDescription ||
           movie.description ||
-          `${titleWithYear} — ${kind} с описанием, рейтингом, жанрами и трейлером на KinoLuma.`,
+          `${titleWithYear} — ${kind} с рейтингом, жанрами и трейлером на KinoLuma.`,
       },
       {
         question: `К какому жанру относится ${movie.title}?`,
         answer: `${titleWithYear} — ${kind}. Основные жанры: ${genres}.`,
       },
       {
+        question: `Какой рейтинг у ${movie.title}?`,
+        answer: `Рейтинг ${movie.title}: ${rating}. Значение показывается в карточке и может уточняться при обновлении каталога.`,
+      },
+      {
+        question: `Какая страна, длительность и студия у ${movie.title}?`,
+        answer: `Страна: ${country}. Длительность: ${duration}. Студия: ${studio}.`,
+      },
+      {
         question: `Есть ли трейлер ${movie.title}?`,
         answer: movie.trailerUrl
-          ? `Да, на странице ${movie.title} есть встроенный трейлер, описание, рейтинг и дополнительная информация.`
-          : `На странице ${movie.title} есть описание, рейтинг, жанры и подробная информация. Трейлер можно добавить после подключения embed-ссылки.`,
+          ? `Да, на странице ${movie.title} есть встроенный трейлер, рейтинг, жанры и дополнительная информация.`
+          : `На странице ${movie.title} есть рейтинг, жанры и подробная информация. Трейлер можно добавить после подключения корректной ссылки.`,
       },
     ];
-  }, [movie]);
+  }, [facts, movie]);
 
   const [activePlayerId, setActivePlayerId] = useState(players[0].id);
   const [posterSrc, setPosterSrc] = useState(movie.poster);
   const smoothScrollFrameRef = useRef<number | null>(null);
+  const playerSectionRef = useRef<HTMLElement | null>(null);
+  const [isPlayerVisible, setIsPlayerVisible] = useState(false);
 
   const [watchLaterIds, setWatchLaterIds] = useState<number[]>([]);
   const [likedItemIds, setLikedItemIds] = useState<number[]>([]);
@@ -507,6 +590,33 @@ export default function MoviePageClient({
 
   const activePlayer =
     players.find((player) => player.id === activePlayerId) || players[0];
+
+  useEffect(() => {
+    if (isPlayerVisible) return;
+
+    const section = playerSectionRef.current;
+    if (!section) return;
+
+    if (typeof IntersectionObserver === "undefined") {
+      setIsPlayerVisible(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+
+        setIsPlayerVisible(true);
+        observer.disconnect();
+      },
+      { rootMargin: "360px 0px", threshold: 0.01 },
+    );
+
+    observer.observe(section);
+
+    return () => observer.disconnect();
+  }, [isPlayerVisible]);
+
   const visibleFacts = useMemo(() => facts.filter(isVisibleFact), [facts]);
   const ratingText = formatMovieRating(movie.rating);
 
@@ -847,9 +957,14 @@ export default function MoviePageClient({
       <div className="page-shell">
         <section className="movie-hero">
           <aside className="poster-card animate-in">
-            <img
-              src={posterSrc}
+            <Image
+              src={posterSrc || "/kinoluma-icon.png"}
               alt={`Постер: ${movie.title}`}
+              width={500}
+              height={750}
+              priority
+              unoptimized
+              sizes="(max-width: 768px) 78vw, 330px"
               className="poster-image"
               onError={() => {
                 const fallbackPoster = movie.posterFallbacks?.find(
@@ -1031,7 +1146,11 @@ export default function MoviePageClient({
           </section>
         </section>
 
-        <section id="player" className="section-card player-card animate-in">
+        <section
+          id="player"
+          ref={playerSectionRef}
+          className="section-card player-card animate-in"
+        >
           <div className="player-top">
             <div>
               <p className="eyebrow">Плеер</p>
@@ -1057,7 +1176,18 @@ export default function MoviePageClient({
           </div>
 
           <div className="player-box">
-            {isRendexPlayer(activePlayer) &&
+            {!isPlayerVisible ? (
+              <div className="player-placeholder">
+                <div className="play-icon">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M9 7.5V16.5L16.2 12L9 7.5Z" />
+                  </svg>
+                </div>
+
+                <h3>Плеер загрузится при просмотре</h3>
+                <p>Так страница быстрее открывается, а лишние скрипты не грузятся заранее.</p>
+              </div>
+            ) : isRendexPlayer(activePlayer) &&
             getRendexContentId(activePlayer) ? (
               <>
                 <Script
@@ -1161,9 +1291,11 @@ export default function MoviePageClient({
               </div>
             </div>
 
-            <p className="long-text">
-              {movie.longDescription || movie.description}
-            </p>
+            <div className="long-text">
+              {detailParagraphs.map((paragraph, index) => (
+                <p key={`${movie.slug}-details-${index}`}>{paragraph}</p>
+              ))}
+            </div>
 
             <div className="facts-grid">
               {visibleFacts.map((fact) => (
@@ -1173,6 +1305,25 @@ export default function MoviePageClient({
                 </article>
               ))}
             </div>
+
+            <nav className="movie-internal-links" aria-label="Связанные разделы">
+              <Link href={`/catalog/${catalogSlug}`}>
+                Смотреть также: {movie.type.toLowerCase()}
+              </Link>
+              {movie.genres.slice(0, 4).map((genre) => (
+                <Link
+                  key={genre}
+                  href={`/catalog/${catalogSlug}/${slugifyPublicGenre(genre)}`}
+                >
+                  {genre}
+                </Link>
+              ))}
+              {similarMovies[0] ? (
+                <Link href={`/movie/${similarMovies[0].slug}`}>
+                  Похожее: {similarMovies[0].title}
+                </Link>
+              ) : null}
+            </nav>
           </section>
 
           <section className="section-card animate-in delay-1">
@@ -1672,6 +1823,45 @@ const moviePageStyles = `
     max-width: 760px;
     margin: 24px 0 0;
   }
+  .long-text {
+    display: grid;
+    gap: 14px;
+    margin: 0;
+  }
+
+  .long-text p {
+    margin: 0;
+  }
+
+  .movie-internal-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 20px;
+  }
+
+  .movie-internal-links a {
+    display: inline-flex;
+    min-height: 34px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 999px;
+    background: rgba(255,255,255,0.045);
+    padding: 0 12px;
+    color: #e5e5e5;
+    font-size: 12px;
+    font-weight: 900;
+    text-decoration: none;
+    transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+  }
+
+  .movie-internal-links a:hover {
+    transform: translateY(-1px);
+    border-color: rgba(255,255,255,0.28);
+    background: rgba(255,255,255,0.09);
+  }
+
 
   .compact-actions {
     margin-top: 24px;

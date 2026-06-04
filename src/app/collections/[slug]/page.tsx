@@ -12,7 +12,9 @@ import {
 import {
   absoluteUrl,
   getBreadcrumbJsonLd,
+  getCatalogRouteByType,
   siteUrl,
+  slugifyGenre,
   trimSeoText,
 } from "../../lib/seo";
 import CollectionMovieGridClient from "../CollectionMovieGridClient";
@@ -55,17 +57,6 @@ export async function generateMetadata({ params }: CollectionPageProps): Promise
     metadataBase: new URL(siteUrl),
     title: collection.title,
     description,
-    keywords: Array.from(
-      new Set([
-        ...collection.keywords,
-        collection.h1,
-        "KinoLuma",
-        "что посмотреть",
-        "фильмы онлайн",
-        "подборки фильмов",
-        ...items.flatMap((item) => [item.title, item.originalTitle, ...item.genres]),
-      ].filter(Boolean)),
-    ),
     alternates: {
       canonical: pageUrl,
     },
@@ -150,6 +141,28 @@ function getCollectionFaqJsonLd(collection: NonNullable<ReturnType<typeof getSeo
   };
 }
 
+
+function getCollectionTopicGenres(items: ReturnType<typeof getSeoCollectionItems>) {
+  return Array.from(new Set(items.flatMap((item) => item.genres))).slice(0, 12);
+}
+
+function getCatalogGenreHref(genre: string, items: ReturnType<typeof getSeoCollectionItems>) {
+  const matchingItem = items.find((item) => item.genres.includes(genre));
+  const route = matchingItem ? getCatalogRouteByType(matchingItem.type) : undefined;
+
+  if (!route) {
+    return "/catalog/films";
+  }
+
+  return `/catalog/${route.slug}/${slugifyGenre(genre)}`;
+}
+
+function getPopularCollectionItems(items: ReturnType<typeof getSeoCollectionItems>) {
+  return [...items]
+    .sort((first, second) => second.rating - first.rating)
+    .slice(0, 6);
+}
+
 export default async function CollectionPage({ params }: CollectionPageProps) {
   const { slug } = await params;
   const collection = getSeoCollection(slug);
@@ -161,6 +174,8 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
   const items = getSeoCollectionItems(collection);
   const faqItems = getSeoCollectionFaq(collection, items);
   const relatedCollections = getRelatedSeoCollections(collection, 6);
+  const topicGenres = getCollectionTopicGenres(items);
+  const popularItems = getPopularCollectionItems(items);
 
   return (
     <main className="kinoluma-collections">
@@ -272,6 +287,54 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
           </div>
         </section>
 
+
+        {popularItems.length > 0 && (
+          <section className="collection-section">
+            <div className="collection-section-topline">
+              <div>
+                <p className="collection-section-kicker">Внутренние ссылки</p>
+                <h2>Популярные из этой темы</h2>
+              </div>
+            </div>
+
+            <div className="collection-topic-grid">
+              {popularItems.map((item) => (
+                <Link
+                  key={item.slug}
+                  href={`/movie/${item.slug}`}
+                  className="collection-topic-card"
+                >
+                  <span>{item.year} · {item.type}</span>
+                  <strong>{item.title}</strong>
+                  <em>{item.genres.slice(0, 2).join(" · ")}</em>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {topicGenres.length > 0 && (
+          <section className="collection-section">
+            <div className="collection-section-topline">
+              <div>
+                <p className="collection-section-kicker">Жанры</p>
+                <h2>Ещё направления</h2>
+              </div>
+            </div>
+
+            <div className="collection-topic-chip-list">
+              {topicGenres.map((genre) => (
+                <Link
+                  key={genre}
+                  href={getCatalogGenreHref(genre, items)}
+                  className="collection-topic-chip"
+                >
+                  {genre}
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
         <section className="collection-section">
           <div className="collection-section-topline">
             <div>

@@ -93,6 +93,8 @@ export const collectionStyles = `
   .collection-card,
   .collection-movie-card,
   .collection-related-card,
+  .collection-topic-card,
+  .collection-topic-chip,
   .collection-chip,
   .collection-cta,
   .collection-home-link {
@@ -609,6 +611,7 @@ export const collectionStyles = `
 
   .collection-card,
   .collection-related-card,
+  .collection-topic-card,
   .collection-faq-card {
     opacity: 0;
     animation: collectionCardEnter 760ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -994,6 +997,78 @@ export const collectionStyles = `
     line-height: 1.8;
   }
 
+  .collection-topic-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .collection-topic-card {
+    display: grid;
+    min-height: 132px;
+    align-content: space-between;
+    border: 1px solid rgba(255, 255, 255, 0.085);
+    border-radius: 24px;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.058), rgba(255, 255, 255, 0.022)),
+      rgba(5, 5, 5, 0.68);
+    padding: 18px;
+    color: inherit;
+    text-decoration: none;
+    transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+  }
+
+  .collection-topic-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(255, 255, 255, 0.22);
+    background: rgba(255, 255, 255, 0.065);
+  }
+
+  .collection-topic-card span,
+  .collection-topic-card em {
+    color: #858585;
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 900;
+  }
+
+  .collection-topic-card strong {
+    display: block;
+    margin: 8px 0;
+    color: #ffffff;
+    font-size: 17px;
+    line-height: 1.15;
+    font-weight: 1000;
+  }
+
+  .collection-topic-chip-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .collection-topic-chip {
+    display: inline-flex;
+    min-height: 38px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.045);
+    padding: 0 14px;
+    color: #e5e5e5;
+    font-size: 13px;
+    font-weight: 950;
+    text-decoration: none;
+    transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+  }
+
+  .collection-topic-chip:hover {
+    transform: translateY(-1px);
+    border-color: rgba(255, 255, 255, 0.28);
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .collection-topic-grid,
   .collection-faq-grid,
   .collection-related-grid {
     display: grid;
@@ -1137,6 +1212,7 @@ export const collectionStyles = `
     }
 
     .collection-grid,
+    .collection-topic-grid,
     .collection-faq-grid,
     .collection-related-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1171,6 +1247,7 @@ export const collectionStyles = `
     }
 
     .collection-grid,
+    .collection-topic-grid,
     .collection-faq-grid,
     .collection-related-grid,
     .collection-movies-grid,

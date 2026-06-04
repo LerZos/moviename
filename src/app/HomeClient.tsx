@@ -6439,6 +6439,8 @@ export default function Home({
               <img
                 src={selectedItem.poster}
                 alt={selectedItem.title}
+                loading="lazy"
+                decoding="async"
                 className="h-full w-full object-cover"
                 onError={(event) => {
                   event.currentTarget.onerror = null;
@@ -6609,6 +6611,7 @@ export default function Home({
               <iframe
                 src={trailerItem.trailerUrl}
                 title={`${trailerItem.originalTitle} trailer`}
+                loading="lazy"
                 className="h-full w-full"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen

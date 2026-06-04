@@ -2,6 +2,8 @@ import { generatedKinoLumaMovies } from "./generatedMovies";
 import { generatedKinoLumaCartoons } from "./generatedCartoons";
 import { generatedKinopoiskRequestedMovies } from "./generatedKinopoiskRequested";
 import { curatedExpectedReleases } from "./curatedExpectedReleases";
+import { manualPremiumAdditions } from "./manualPremiumAdditions";
+import { manualPopularAnime } from "./manualPopularAnime";
 
 export type ContentType = "Фильм" | "Сериал" | "Аниме" | "Мультфильм" | "Документальный";
 
@@ -313,29 +315,48 @@ function createExpandedMovieDescription(movie: Movie) {
   const country = movie.countries?.join(", ") || getFactValueFromMovie(movie, ["Страна", "Страны"]);
   const duration = getFactValueFromMovie(movie, ["Длительность", "Хронометраж"]);
   const director = getFactValueFromMovie(movie, ["Режиссёр", "Режиссёры", "Создатель", "Создатели"]);
-  const budget = getFactValueFromMovie(movie, ["Бюджет"]);
-  const rating = movie.rating > 0 ? `Рейтинг — ${movie.rating.toFixed(1)} из 10.` : "Для будущих или ещё не оценённых релизов рейтинг появится после обновления карточки.";
+  const studio = getFactValueFromMovie(movie, ["Студия"]);
+  const rating = movie.rating > 0 ? `Рейтинг — ${movie.rating.toFixed(1)} из 10.` : "Рейтинг появится после обновления карточки.";
   const heroes = movie.cast && movie.cast.length > 0
     ? movie.cast.slice(0, 5).map((person) => `${person.name} — ${person.role}`).join(", ")
     : getFactValueFromMovie(movie, ["Главные герои", "Главные персонажи"]);
-  const infoParts = [
+  const factualParts = [
     country ? `страна: ${country}` : "",
     duration ? `длительность: ${duration}` : "",
     director ? `режиссура/создатели: ${director}` : "",
-    budget ? `бюджет: ${budget}` : "",
+    studio ? `студия: ${studio}` : "",
   ].filter(Boolean).join("; ");
 
-  return compactMovieText(
-    `«${movie.title}» (${movie.year}) — ${kind} в жанрах ${genres}. ${movie.description} ${infoParts ? `В карточке указаны основные сведения: ${infoParts}.` : "Карточка собрана без выдуманных фактов: используются только поля, которые уже есть в каталоге."} ${heroes ? `В центре внимания: ${heroes}.` : "Главные герои и актёры отображаются, если они добавлены в карточку."} ${rating} На странице KinoLuma есть краткое описание, расширенный блок «О фильме», трейлер, жанры, факты и варианты просмотра, когда они доступны. Такой формат помогает быстро понять настроение, темп и состав истории перед просмотром онлайн без лишней воды.`,
-  );
+  const firstParagraph = `«${movie.title}» (${movie.year}) — ${kind} в жанрах ${genres}. ${movie.description}`;
+  const secondParagraph = factualParts
+    ? `В карточке указаны проверяемые сведения: ${factualParts}. ${heroes ? `В центре внимания: ${heroes}.` : "Информация о героях и актёрах отображается, если она добавлена в карточку."}`
+    : `${heroes ? `В центре внимания: ${heroes}.` : "Карточка не выдумывает детали: дополнительные сведения появляются только тогда, когда они уже есть в каталоге."}`;
+  const thirdParagraph = `${rating} Этот материал удобно открыть, когда хочется заранее понять настроение, жанры, темп и состав истории перед просмотром. На странице есть краткая карточка, расширенный блок «О фильме», трейлер при наличии и варианты просмотра, если они доступны.`;
+
+  return [firstParagraph, secondParagraph, thirdParagraph]
+    .map((part) => compactMovieText(part))
+    .join("\n\n");
 }
 
-function trimMovieDescription(text: string, maxLength = 720) {
-  const cleanText = compactMovieText(text);
+function trimMovieDescription(text: string, maxLength = 940) {
+  const paragraphs = text
+    .split(/\n{2,}/)
+    .map((paragraph) => compactMovieText(paragraph))
+    .filter(Boolean);
+  const cleanText = paragraphs.join("\n\n");
 
   if (cleanText.length <= maxLength) return cleanText;
 
   return `${cleanText.slice(0, maxLength).replace(/\s+\S*$/, "")}.`;
+}
+
+function needsPublicLongDescriptionRefresh(value: string | undefined) {
+  if (!value) return true;
+
+  return (
+    value.length < 560 ||
+    /SEO|FAQ-размет|JSON-LD|Kinopoisk|Кинопоиск|TMDB|IMDb|IMDB|источник их отдаёт|страница подготовлена/i.test(value)
+  );
 }
 
 function containsPublicProviderName(value: string) {
@@ -365,22 +386,27 @@ function sanitizePublicMovieText(value: string | undefined) {
       .replace(/themoviedb/gi, "KinoLuma")
       .replace(/IMDb/gi, "KinoLuma")
       .replace(/IMDB/gi, "KinoLuma")
-      .replace(/SEO-метаданные,?\s*/gi, "")
-      .replace(/SEO-данные,?\s*/gi, "")
-      .replace(/SEO-описание,?\s*/gi, "")
+      .replace(/Рейтинг\s+KinoLuma/gi, "Рейтинг")
+      .replace(/для\s+SEO/gi, "для удобной навигации")
+      .replace(/для\s+продвижения/gi, "для удобной навигации")
+      .replace(/поисков(?:ая|ую|ой)\s+точк(?:а|у|ой)\s+входа/gi, "подборку")
+      .replace(/поисковые\s+страницы/gi, "страницы подборок")
+      .replace(/описание,?\s*/gi, "")
+      .replace(/описание,?\s*/gi, "")
+      .replace(/описание,?\s*/gi, "")
       .replace(/шаблонный\s+SEO(?:-слой)?/gi, "описание")
       .replace(/SEO\/FAQ/gi, "описание")
       .replace(/SEO\s+и\s+FAQ/gi, "описание")
       .replace(/FAQPage\s+JSON-LD/gi, "дополнительные сведения")
       .replace(/JSON-LD/gi, "")
-      .replace(/FAQ-разметка\s+и\s+/gi, "")
+      .replace(/дополнительные сведения\s+и\s+/gi, "")
       .replace(/FAQ\s+через\s+общий\s+шаблон\s+страницы\s+и\s+/gi, "")
-      .replace(/,?\s*FAQ-разметка/gi, "")
-      .replace(/,?\s*SEO-метаданные/gi, "")
-      .replace(/,?\s*SEO-данные/gi, "")
-      .replace(/,?\s*SEO-описание/gi, "")
+      .replace(/,?\s*дополнительные сведения/gi, "")
+      .replace(/,?\s*описание/gi, "")
+      .replace(/,?\s*описание/gi, "")
+      .replace(/,?\s*описание/gi, "")
       .replace(/sitemap,?\s*/gi, "")
-      .replace(/metadata,?\s*/gi, "")
+      .replace(/служебные данные,?\s*/gi, "")
       .replace(/movies\.ts/gi, "каталог")
       .replace(/серверн(?:ый|ого|ым|ая|ую)?\s+[A-Za-zА-Яа-яёЁ-]+-роут(?:а|ом)?/gi, "внутренний каталог")
       .replace(/если источник их отдаёт/gi, "если информация есть в карточке")
@@ -471,11 +497,12 @@ function hydrateMovieContent(movie: Movie) {
     );
   }
 
-  if (movie.kinopoiskId && movie.type !== "Аниме" && (!movie.players || movie.players.length === 0)) {
-    movie.players = createKinopoiskPlayers(movie.kinopoiskId);
+  if (movie.kinopoiskId && (!movie.players || movie.players.length === 0)) {
+    const kinopoiskPlayers = createKinopoiskPlayers(movie.kinopoiskId);
+    movie.players = movie.type === "Аниме" ? kinopoiskPlayers.slice(0, 1) : kinopoiskPlayers;
   }
 
-  if (!movie.longDescription || movie.longDescription.length < 560) {
+  if (needsPublicLongDescriptionRefresh(movie.longDescription)) {
     movie.longDescription = trimMovieDescription(createExpandedMovieDescription(movie));
   }
 }
@@ -5722,95 +5749,7 @@ const moviesRaw: Movie[] = [
     ],
     "id": 88
   },
-  {
-    "slug": "free-solo",
-    kinopoiskId: 1182400,
-    "title": "Фри-соло",
-    "originalTitle": "Free Solo",
-    "searchTitles": [
-      "фри соло",
-      "free solo",
-      "alex honnold",
-      "эль капитан"
-    ],
-    "type": "Документальный",
-    "year": "2018",
-    "rating": 8.1,
-    "genres": [
-      "Документальный",
-      "Спорт",
-      "Биография"
-    ],
-    "poster": "https://image.tmdb.org/t/p/w500/v4QfYZMACODlWul9doN9RxE99ag.jpg",
-    "description": "Документальный фильм об Алексe Хоннольде и восхождении, где нет права на ошибку.",
-    "trailerUrl": "https://www.youtube.com/embed/urRVZ4SW7WU",
-    "longDescription": "Алекс Хоннольд готовится к свободному прохождению стены Эль-Капитан без страховки. Фильм показывает не только физическую подготовку, но и психологию человека, который умеет управлять страхом иначе, чем большинство людей.",
-    "facts": [
-      {
-        "label": "Год",
-        "value": "2018"
-      },
-      {
-        "label": "Тип",
-        "value": "Документальный"
-      },
-      {
-        "label": "Страна",
-        "value": "США"
-      },
-      {
-        "label": "Длительность",
-        "value": "100 мин"
-      },
-      {
-        "label": "Студия",
-        "value": "National Geographic Documentary Films"
-      },
-      {
-        "label": "Режиссёры",
-        "value": "Elizabeth Chai Vasarhelyi, Jimmy Chin"
-      },
-      {
-        "label": "Настроение",
-        "value": "Напряжённо, вдохновляюще, честно"
-      },
-      {
-        "label": "Темы",
-        "value": "Риск, концентрация, мечта"
-      }
-    ],
-    "cast": [
-      {
-        "name": "Alex Honnold",
-        "role": "Скалолаз"
-      },
-      {
-        "name": "Jimmy Chin",
-        "role": "Режиссёр и оператор"
-      },
-      {
-        "name": "Elizabeth Chai Vasarhelyi",
-        "role": "Режиссёр"
-      },
-      {
-        "name": "Tommy Caldwell",
-        "role": "Скалолаз и друг"
-      },
-      {
-        "name": "Эль-Капитан",
-        "role": "Главная стена фильма"
-      }
-    ],
-    players: [
-      {
-        id: "factorios-1182400",
-        name: "Основной",
-        embedUrl: "https://tarantino.factorios.live/show/kinopoisk/1182400",
-      },
-    ],
-    "id": 89
-  },
-  {
+    {
     "slug": "the-last-dance",
     kinopoiskId: 1162628,
     "title": "Последний танец",
@@ -5898,94 +5837,7 @@ const moviesRaw: Movie[] = [
     ],
     "id": 90
   },
-  {
-    "slug": "my-octopus-teacher",
-    kinopoiskId: 1405676,
-    "title": "Мой учитель — осьминог",
-    "originalTitle": "My Octopus Teacher",
-    "searchTitles": [
-      "мой учитель осьминог",
-      "my octopus teacher",
-      "осьминог",
-      "документальный океан"
-    ],
-    "type": "Документальный",
-    "year": "2020",
-    "rating": 8.1,
-    "genres": [
-      "Документальный",
-      "Природа"
-    ],
-    "poster": "https://avatars.mds.yandex.net/get-kinopoisk-image/1704946/d331d388-d5f6-43af-8911-c4b60d863484/600x900",
-    "description": "Тихий документальный фильм о необычной связи человека и осьминога в подводном лесу.",
-    "trailerUrl": "https://www.youtube.com/embed/3s0LTDhqe5A",
-    "longDescription": "Крейг Фостер каждый день возвращается в холодные воды у побережья Южной Африки и наблюдает за жизнью осьминога. Постепенно это становится историей о внимании, восстановлении и уважении к природе.",
-    "facts": [
-      {
-        "label": "Год",
-        "value": "2020"
-      },
-      {
-        "label": "Тип",
-        "value": "Документальный"
-      },
-      {
-        "label": "Страна",
-        "value": "Южная Африка"
-      },
-      {
-        "label": "Длительность",
-        "value": "85 мин"
-      },
-      {
-        "label": "Студия",
-        "value": "Netflix, Off the Fence"
-      },
-      {
-        "label": "Режиссёры",
-        "value": "Pippa Ehrlich, James Reed"
-      },
-      {
-        "label": "Настроение",
-        "value": "Спокойно, красиво, созерцательно"
-      },
-      {
-        "label": "Темы",
-        "value": "Природа, связь, внимание"
-      }
-    ],
-    "cast": [
-      {
-        "name": "Craig Foster",
-        "role": "Наблюдатель и рассказчик"
-      },
-      {
-        "name": "Осьминог",
-        "role": "Главная героиня наблюдений"
-      },
-      {
-        "name": "Подводный лес",
-        "role": "Ключевая локация"
-      },
-      {
-        "name": "Pippa Ehrlich",
-        "role": "Режиссёр"
-      },
-      {
-        "name": "James Reed",
-        "role": "Режиссёр"
-      }
-    ],
-    players: [
-      {
-        id: "factorios-1405676",
-        name: "Основной",
-        embedUrl: "https://tarantino.factorios.live/show/kinopoisk/1405676",
-      },
-    ],
-    "id": 91
-  },
-  {
+    {
       id: 92,
       kinopoiskId: 826050,
       slug: "scorpion",
@@ -10036,7 +9888,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Marvel Cinematic Universe" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt0800080" },
-      { label: "TMDB ID", value: "1724" },
     ],
   },
   {
@@ -10062,7 +9913,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Marvel Cinematic Universe" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt1228705" },
-      { label: "TMDB ID", value: "10138" },
     ],
   },
   {
@@ -10088,7 +9938,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Marvel Cinematic Universe" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt0800369" },
-      { label: "TMDB ID", value: "10195" },
     ],
   },
   {
@@ -10114,7 +9963,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Marvel Cinematic Universe" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt0458339" },
-      { label: "TMDB ID", value: "1771" },
     ],
   },
   {
@@ -10140,7 +9988,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Marvel Cinematic Universe" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt1300854" },
-      { label: "TMDB ID", value: "68721" },
     ],
   },
   {
@@ -10166,7 +10013,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Marvel Cinematic Universe" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt1981115" },
-      { label: "TMDB ID", value: "76338" },
     ],
   },
   {
@@ -10192,7 +10038,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Marvel Cinematic Universe" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt1843866" },
-      { label: "TMDB ID", value: "100402" },
     ],
   },
   {
@@ -10218,7 +10063,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Marvel Cinematic Universe" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt2395427" },
-      { label: "TMDB ID", value: "99861" },
     ],
   },
   {
@@ -10244,7 +10088,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Marvel Cinematic Universe" },
       { label: "Жанры", value: "Боевик, Комедия, Фантастика" },
       { label: "Внутренний номер", value: "tt0478970" },
-      { label: "TMDB ID", value: "102899" },
     ],
   },
   {
@@ -10270,7 +10113,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Marvel Cinematic Universe" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt3498820" },
-      { label: "TMDB ID", value: "271110" },
     ],
   },
   {
@@ -10296,7 +10138,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Marvel Cinematic Universe" },
       { label: "Жанры", value: "Фантастика, Комедия, Приключения" },
       { label: "Внутренний номер", value: "tt3896198" },
-      { label: "TMDB ID", value: "283995" },
     ],
   },
   {
@@ -10322,7 +10163,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Marvel Cinematic Universe" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt2250912" },
-      { label: "TMDB ID", value: "315635" },
     ],
   },
   {
@@ -10348,7 +10188,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Marvel Cinematic Universe" },
       { label: "Жанры", value: "Боевик, Комедия, Фэнтези" },
       { label: "Внутренний номер", value: "tt3501632" },
-      { label: "TMDB ID", value: "284053" },
     ],
   },
   {
@@ -10374,7 +10213,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Marvel Cinematic Universe" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt1825683" },
-      { label: "TMDB ID", value: "284054" },
     ],
   },
   {
@@ -10400,7 +10238,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Marvel Cinematic Universe" },
       { label: "Жанры", value: "Боевик, Комедия, Фантастика" },
       { label: "Внутренний номер", value: "tt5095030" },
-      { label: "TMDB ID", value: "363088" },
     ],
   },
   {
@@ -10426,7 +10263,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Marvel Cinematic Universe" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt4154664" },
-      { label: "TMDB ID", value: "299537" },
     ],
   },
   {
@@ -10452,7 +10288,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Marvel Cinematic Universe" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt6320628" },
-      { label: "TMDB ID", value: "429617" },
     ],
   },
   {
@@ -10478,7 +10313,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Marvel Cinematic Universe" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt3480822" },
-      { label: "TMDB ID", value: "497698" },
     ],
   },
   {
@@ -10504,7 +10338,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Marvel Cinematic Universe" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt9376612" },
-      { label: "TMDB ID", value: "566525" },
     ],
   },
   {
@@ -10530,7 +10363,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Marvel Cinematic Universe" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt9032400" },
-      { label: "TMDB ID", value: "524434" },
     ],
   },
   {
@@ -10556,7 +10388,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Marvel Cinematic Universe" },
       { label: "Жанры", value: "Фэнтези, Фантастика, Боевик" },
       { label: "Внутренний номер", value: "tt9419884" },
-      { label: "TMDB ID", value: "453395" },
     ],
   },
   {
@@ -10582,7 +10413,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Marvel Cinematic Universe" },
       { label: "Жанры", value: "Боевик, Комедия, Фэнтези" },
       { label: "Внутренний номер", value: "tt10648342" },
-      { label: "TMDB ID", value: "616037" },
     ],
   },
   {
@@ -10608,7 +10438,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Marvel Cinematic Universe" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt9114286" },
-      { label: "TMDB ID", value: "505642" },
     ],
   },
   {
@@ -10634,7 +10463,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Marvel Cinematic Universe" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt10954600" },
-      { label: "TMDB ID", value: "640146" },
     ],
   },
   {
@@ -10660,7 +10488,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Marvel Cinematic Universe" },
       { label: "Жанры", value: "Фантастика, Комедия, Приключения" },
       { label: "Внутренний номер", value: "tt6791350" },
-      { label: "TMDB ID", value: "447365" },
     ],
   },
   {
@@ -10686,7 +10513,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Marvel Cinematic Universe" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt10676048" },
-      { label: "TMDB ID", value: "609681" },
     ],
   },
   {
@@ -10712,7 +10538,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Marvel Cinematic Universe" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt14513804" },
-      { label: "TMDB ID", value: "822119" },
     ],
   },
   {
@@ -10760,7 +10585,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Spider-Man" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt0145487" },
-      { label: "TMDB ID", value: "557" },
     ],
   },
   {
@@ -10786,7 +10610,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Spider-Man" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt0316654" },
-      { label: "TMDB ID", value: "558" },
     ],
   },
   {
@@ -10812,7 +10635,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Spider-Man" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt0413300" },
-      { label: "TMDB ID", value: "559" },
     ],
   },
   {
@@ -10838,7 +10660,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Spider-Man" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt0948470" },
-      { label: "TMDB ID", value: "1930" },
     ],
   },
   {
@@ -10864,7 +10685,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Spider-Man" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt1872181" },
-      { label: "TMDB ID", value: "102382" },
     ],
   },
   {
@@ -10890,7 +10710,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Spider-Man" },
       { label: "Жанры", value: "Анимация, Боевик, Приключения" },
       { label: "Внутренний номер", value: "tt4633694" },
-      { label: "TMDB ID", value: "324857" },
     ],
   },
   {
@@ -10916,7 +10735,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Spider-Man" },
       { label: "Жанры", value: "Анимация, Боевик, Приключения" },
       { label: "Внутренний номер", value: "tt16360004" },
-      { label: "TMDB ID", value: "911916" },
     ],
   },
   {
@@ -10942,7 +10760,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Sony Spider-Man Universe" },
       { label: "Жанры", value: "Фантастика, Боевик, Триллер" },
       { label: "Внутренний номер", value: "tt1270797" },
-      { label: "TMDB ID", value: "335983" },
     ],
   },
   {
@@ -10968,7 +10785,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Sony Spider-Man Universe" },
       { label: "Жанры", value: "Фантастика, Боевик, Комедия" },
       { label: "Внутренний номер", value: "tt7097896" },
-      { label: "TMDB ID", value: "580489" },
     ],
   },
   {
@@ -10994,7 +10810,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Sony Spider-Man Universe" },
       { label: "Жанры", value: "Фантастика, Боевик, Триллер" },
       { label: "Внутренний номер", value: "tt5108870" },
-      { label: "TMDB ID", value: "526896" },
     ],
   },
   {
@@ -11020,7 +10835,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Sony Spider-Man Universe" },
       { label: "Жанры", value: "Фантастика, Боевик, Приключения" },
       { label: "Внутренний номер", value: "tt11057302" },
-      { label: "TMDB ID", value: "634492" },
     ],
   },
   {
@@ -11046,7 +10860,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Sony Spider-Man Universe" },
       { label: "Жанры", value: "Боевик, Приключения, Триллер" },
       { label: "Внутренний номер", value: "tt8790086" },
-      { label: "TMDB ID", value: "539972" },
     ],
   },
   {
@@ -11072,7 +10885,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "X-Men" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt0120903" },
-      { label: "TMDB ID", value: "36657" },
     ],
   },
   {
@@ -11098,7 +10910,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "X-Men" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt0290334" },
-      { label: "TMDB ID", value: "36658" },
     ],
   },
   {
@@ -11124,7 +10935,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "X-Men" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt0376994" },
-      { label: "TMDB ID", value: "36668" },
     ],
   },
   {
@@ -11150,7 +10960,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "X-Men" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt0458525" },
-      { label: "TMDB ID", value: "2080" },
     ],
   },
   {
@@ -11176,7 +10985,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "X-Men" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt1270798" },
-      { label: "TMDB ID", value: "49538" },
     ],
   },
   {
@@ -11202,7 +11010,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "X-Men" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt1430132" },
-      { label: "TMDB ID", value: "76170" },
     ],
   },
   {
@@ -11228,7 +11035,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "X-Men" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt1877832" },
-      { label: "TMDB ID", value: "127585" },
     ],
   },
   {
@@ -11254,7 +11060,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "X-Men" },
       { label: "Жанры", value: "Боевик, Комедия, Фантастика" },
       { label: "Внутренний номер", value: "tt1431045" },
-      { label: "TMDB ID", value: "293660" },
     ],
   },
   {
@@ -11280,7 +11085,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "X-Men" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt3385516" },
-      { label: "TMDB ID", value: "246655" },
     ],
   },
   {
@@ -11306,7 +11110,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "X-Men" },
       { label: "Жанры", value: "Боевик, Драма, Фантастика" },
       { label: "Внутренний номер", value: "tt3315342" },
-      { label: "TMDB ID", value: "263115" },
     ],
   },
   {
@@ -11332,7 +11135,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "X-Men" },
       { label: "Жанры", value: "Боевик, Комедия, Фантастика" },
       { label: "Внутренний номер", value: "tt5463162" },
-      { label: "TMDB ID", value: "383498" },
     ],
   },
   {
@@ -11358,7 +11160,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "X-Men" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt6565702" },
-      { label: "TMDB ID", value: "320288" },
     ],
   },
   {
@@ -11384,7 +11185,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "X-Men" },
       { label: "Жанры", value: "Фантастика, Триллер, Боевик" },
       { label: "Внутренний номер", value: "tt4682266" },
-      { label: "TMDB ID", value: "340102" },
     ],
   },
   {
@@ -11410,7 +11210,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Fantastic Four" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt0120667" },
-      { label: "TMDB ID", value: "9738" },
     ],
   },
   {
@@ -11436,7 +11235,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Fantastic Four" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt0486576" },
-      { label: "TMDB ID", value: "1979" },
     ],
   },
   {
@@ -11462,7 +11260,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Fantastic Four" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt1502712" },
-      { label: "TMDB ID", value: "166424" },
     ],
   },
   {
@@ -11488,7 +11285,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Marvel Legacy" },
       { label: "Жанры", value: "Боевик, Фэнтези, Триллер" },
       { label: "Внутренний номер", value: "tt0120611" },
-      { label: "TMDB ID", value: "36647" },
     ],
   },
   {
@@ -11514,7 +11310,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Marvel Legacy" },
       { label: "Жанры", value: "Боевик, Фэнтези, Триллер" },
       { label: "Внутренний номер", value: "tt0187738" },
-      { label: "TMDB ID", value: "36586" },
     ],
   },
   {
@@ -11540,7 +11335,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Marvel Legacy" },
       { label: "Жанры", value: "Боевик, Фэнтези, Триллер" },
       { label: "Внутренний номер", value: "tt0359017" },
-      { label: "TMDB ID", value: "36648" },
     ],
   },
   {
@@ -11566,7 +11360,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Marvel Legacy" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt0286716" },
-      { label: "TMDB ID", value: "1927" },
     ],
   },
   {
@@ -11592,7 +11385,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Marvel Legacy" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt0287978" },
-      { label: "TMDB ID", value: "9480" },
     ],
   },
   {
@@ -11618,7 +11410,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Marvel Legacy" },
       { label: "Жанры", value: "Боевик, Фэнтези, Криминал" },
       { label: "Внутренний номер", value: "tt0357277" },
-      { label: "TMDB ID", value: "9947" },
     ],
   },
   {
@@ -11644,7 +11435,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Marvel Legacy" },
       { label: "Жанры", value: "Боевик, Фэнтези, Триллер" },
       { label: "Внутренний номер", value: "tt0259324" },
-      { label: "TMDB ID", value: "1250" },
     ],
   },
   {
@@ -11670,7 +11460,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Marvel Legacy" },
       { label: "Жанры", value: "Боевик, Фэнтези, Триллер" },
       { label: "Внутренний номер", value: "tt1071875" },
-      { label: "TMDB ID", value: "71676" },
     ],
   },
   {
@@ -11696,7 +11485,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Marvel Legacy" },
       { label: "Жанры", value: "Боевик, Криминал, Драма" },
       { label: "Внутренний номер", value: "tt0330793" },
-      { label: "TMDB ID", value: "7220" },
     ],
   },
   {
@@ -11722,7 +11510,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Marvel Legacy" },
       { label: "Жанры", value: "Боевик, Криминал, Триллер" },
       { label: "Внутренний номер", value: "tt0450314" },
-      { label: "TMDB ID", value: "13056" },
     ],
   },
   {
@@ -11748,7 +11535,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Batman / DC" },
       { label: "Жанры", value: "Комедия, Приключения, Боевик" },
       { label: "Внутренний номер", value: "tt0060153" },
-      { label: "TMDB ID", value: "2661" },
     ],
   },
   {
@@ -11774,7 +11560,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Batman / DC" },
       { label: "Жанры", value: "Боевик, Криминал, Фантастика" },
       { label: "Внутренний номер", value: "tt0096895" },
-      { label: "TMDB ID", value: "268" },
     ],
   },
   {
@@ -11800,7 +11585,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Batman / DC" },
       { label: "Жанры", value: "Боевик, Криминал, Фэнтези" },
       { label: "Внутренний номер", value: "tt0103776" },
-      { label: "TMDB ID", value: "364" },
     ],
   },
   {
@@ -11826,7 +11610,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Batman / DC" },
       { label: "Жанры", value: "Боевик, Криминал, Фантастика" },
       { label: "Внутренний номер", value: "tt0112462" },
-      { label: "TMDB ID", value: "414" },
     ],
   },
   {
@@ -11852,7 +11635,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Batman / DC" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt0118688" },
-      { label: "TMDB ID", value: "415" },
     ],
   },
   {
@@ -11878,7 +11660,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Batman / DC" },
       { label: "Жанры", value: "Анимация, Криминал, Драма" },
       { label: "Внутренний номер", value: "tt0106364" },
-      { label: "TMDB ID", value: "14919" },
     ],
   },
   {
@@ -11904,7 +11685,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Batman / DC" },
       { label: "Жанры", value: "Боевик, Криминал, Драма" },
       { label: "Внутренний номер", value: "tt0372784" },
-      { label: "TMDB ID", value: "272" },
     ],
   },
   {
@@ -11930,7 +11710,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Batman / DC" },
       { label: "Жанры", value: "Боевик, Криминал, Драма" },
       { label: "Внутренний номер", value: "tt1345836" },
-      { label: "TMDB ID", value: "49026" },
     ],
   },
   {
@@ -11956,7 +11735,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Batman / DC" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt2975590" },
-      { label: "TMDB ID", value: "209112" },
     ],
   },
   {
@@ -11982,7 +11760,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Batman / DC" },
       { label: "Жанры", value: "Боевик, Фантастика, Криминал" },
       { label: "Внутренний номер", value: "tt1386697" },
-      { label: "TMDB ID", value: "297761" },
     ],
   },
   {
@@ -12008,7 +11785,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Batman / DC" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt0974015" },
-      { label: "TMDB ID", value: "141052" },
     ],
   },
   {
@@ -12034,7 +11810,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Batman / DC" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt12361974" },
-      { label: "TMDB ID", value: "791373" },
     ],
   },
   {
@@ -12060,7 +11835,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Batman / DC" },
       { label: "Жанры", value: "Криминал, Детектив, Боевик" },
       { label: "Внутренний номер", value: "tt1877830" },
-      { label: "TMDB ID", value: "414906" },
     ],
   },
   {
@@ -12086,7 +11860,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Batman / DC" },
       { label: "Жанры", value: "Анимация, Комедия, Приключения" },
       { label: "Внутренний номер", value: "tt4116284" },
-      { label: "TMDB ID", value: "324849" },
     ],
   },
   {
@@ -12112,7 +11885,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Batman / DC" },
       { label: "Жанры", value: "Драма, Криминал, Триллер" },
       { label: "Внутренний номер", value: "tt7286456" },
-      { label: "TMDB ID", value: "475557" },
     ],
   },
   {
@@ -12138,7 +11910,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Batman / DC" },
       { label: "Жанры", value: "Драма, Криминал, Музыкальный" },
       { label: "Внутренний номер", value: "tt11315808" },
-      { label: "TMDB ID", value: "889737" },
     ],
   },
   {
@@ -12164,7 +11935,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Batman / DC" },
       { label: "Жанры", value: "Боевик, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt0439572" },
-      { label: "TMDB ID", value: "298618" },
     ],
   },
   {
@@ -12190,7 +11960,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Star Wars" },
       { label: "Жанры", value: "Фантастика, Приключения, Боевик" },
       { label: "Внутренний номер", value: "tt0120915" },
-      { label: "TMDB ID", value: "1893" },
     ],
   },
   {
@@ -12216,7 +11985,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Star Wars" },
       { label: "Жанры", value: "Фантастика, Приключения, Боевик" },
       { label: "Внутренний номер", value: "tt0121765" },
-      { label: "TMDB ID", value: "1894" },
     ],
   },
   {
@@ -12242,7 +12010,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Star Wars" },
       { label: "Жанры", value: "Фантастика, Приключения, Боевик" },
       { label: "Внутренний номер", value: "tt0121766" },
-      { label: "TMDB ID", value: "1895" },
     ],
   },
   {
@@ -12268,7 +12035,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Star Wars" },
       { label: "Жанры", value: "Фантастика, Приключения, Боевик" },
       { label: "Внутренний номер", value: "tt0076759" },
-      { label: "TMDB ID", value: "11" },
     ],
   },
   {
@@ -12294,7 +12060,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Star Wars" },
       { label: "Жанры", value: "Фантастика, Приключения, Боевик" },
       { label: "Внутренний номер", value: "tt0080684" },
-      { label: "TMDB ID", value: "1891" },
     ],
   },
   {
@@ -12320,7 +12085,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Star Wars" },
       { label: "Жанры", value: "Фантастика, Приключения, Боевик" },
       { label: "Внутренний номер", value: "tt0086190" },
-      { label: "TMDB ID", value: "1892" },
     ],
   },
   {
@@ -12346,7 +12110,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Star Wars" },
       { label: "Жанры", value: "Фантастика, Приключения, Боевик" },
       { label: "Внутренний номер", value: "tt2488496" },
-      { label: "TMDB ID", value: "140607" },
     ],
   },
   {
@@ -12372,7 +12135,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Star Wars" },
       { label: "Жанры", value: "Фантастика, Приключения, Боевик" },
       { label: "Внутренний номер", value: "tt2527336" },
-      { label: "TMDB ID", value: "181808" },
     ],
   },
   {
@@ -12398,7 +12160,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Star Wars" },
       { label: "Жанры", value: "Фантастика, Приключения, Боевик" },
       { label: "Внутренний номер", value: "tt2527338" },
-      { label: "TMDB ID", value: "181812" },
     ],
   },
   {
@@ -12424,7 +12185,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Star Wars" },
       { label: "Жанры", value: "Фантастика, Приключения, Боевик" },
       { label: "Внутренний номер", value: "tt3748528" },
-      { label: "TMDB ID", value: "330459" },
     ],
   },
   {
@@ -12450,7 +12210,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Star Wars" },
       { label: "Жанры", value: "Фантастика, Приключения, Боевик" },
       { label: "Внутренний номер", value: "tt3778644" },
-      { label: "TMDB ID", value: "348350" },
     ],
   },
   {
@@ -12476,7 +12235,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Star Wars" },
       { label: "Жанры", value: "Анимация, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt1185834" },
-      { label: "TMDB ID", value: "12180" },
     ],
   },
   {
@@ -12694,7 +12452,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Jurassic" },
       { label: "Жанры", value: "Фантастика, Приключения, Триллер" },
       { label: "Внутренний номер", value: "tt0107290" },
-      { label: "TMDB ID", value: "329" },
     ],
   },
   {
@@ -12720,7 +12477,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Jurassic" },
       { label: "Жанры", value: "Фантастика, Приключения, Триллер" },
       { label: "Внутренний номер", value: "tt0119567" },
-      { label: "TMDB ID", value: "330" },
     ],
   },
   {
@@ -12746,7 +12502,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Jurassic" },
       { label: "Жанры", value: "Фантастика, Приключения, Триллер" },
       { label: "Внутренний номер", value: "tt0163025" },
-      { label: "TMDB ID", value: "331" },
     ],
   },
   {
@@ -12772,7 +12527,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Jurassic" },
       { label: "Жанры", value: "Фантастика, Приключения, Боевик" },
       { label: "Внутренний номер", value: "tt0369610" },
-      { label: "TMDB ID", value: "135397" },
     ],
   },
   {
@@ -12798,7 +12552,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Jurassic" },
       { label: "Жанры", value: "Фантастика, Приключения, Боевик" },
       { label: "Внутренний номер", value: "tt4881806" },
-      { label: "TMDB ID", value: "351286" },
     ],
   },
   {
@@ -12824,7 +12577,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Jurassic" },
       { label: "Жанры", value: "Фантастика, Приключения, Боевик" },
       { label: "Внутренний номер", value: "tt8041270" },
-      { label: "TMDB ID", value: "507086" },
     ],
   },
   {
@@ -12874,7 +12626,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Fast & Furious" },
       { label: "Жанры", value: "Боевик, Криминал, Триллер" },
       { label: "Внутренний номер", value: "tt0232500" },
-      { label: "TMDB ID", value: "9799" },
     ],
   },
   {
@@ -12900,7 +12651,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Fast & Furious" },
       { label: "Жанры", value: "Боевик, Криминал, Триллер" },
       { label: "Внутренний номер", value: "tt0322259" },
-      { label: "TMDB ID", value: "584" },
     ],
   },
   {
@@ -12926,7 +12676,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Fast & Furious" },
       { label: "Жанры", value: "Боевик, Криминал, Триллер" },
       { label: "Внутренний номер", value: "tt0463985" },
-      { label: "TMDB ID", value: "9615" },
     ],
   },
   {
@@ -12952,7 +12701,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Fast & Furious" },
       { label: "Жанры", value: "Боевик, Криминал, Триллер" },
       { label: "Внутренний номер", value: "tt1013752" },
-      { label: "TMDB ID", value: "13804" },
     ],
   },
   {
@@ -12978,7 +12726,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Fast & Furious" },
       { label: "Жанры", value: "Боевик, Криминал, Триллер" },
       { label: "Внутренний номер", value: "tt1596343" },
-      { label: "TMDB ID", value: "51497" },
     ],
   },
   {
@@ -13004,7 +12751,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Fast & Furious" },
       { label: "Жанры", value: "Боевик, Криминал, Триллер" },
       { label: "Внутренний номер", value: "tt1905041" },
-      { label: "TMDB ID", value: "82992" },
     ],
   },
   {
@@ -13030,7 +12776,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Fast & Furious" },
       { label: "Жанры", value: "Боевик, Криминал, Триллер" },
       { label: "Внутренний номер", value: "tt2820852" },
-      { label: "TMDB ID", value: "168259" },
     ],
   },
   {
@@ -13056,7 +12801,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Fast & Furious" },
       { label: "Жанры", value: "Боевик, Криминал, Триллер" },
       { label: "Внутренний номер", value: "tt4630562" },
-      { label: "TMDB ID", value: "337339" },
     ],
   },
   {
@@ -13082,7 +12826,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Fast & Furious" },
       { label: "Жанры", value: "Боевик, Криминал, Триллер" },
       { label: "Внутренний номер", value: "tt6806448" },
-      { label: "TMDB ID", value: "384018" },
     ],
   },
   {
@@ -13108,7 +12851,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Fast & Furious" },
       { label: "Жанры", value: "Боевик, Криминал, Триллер" },
       { label: "Внутренний номер", value: "tt5433138" },
-      { label: "TMDB ID", value: "385128" },
     ],
   },
   {
@@ -13134,7 +12876,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Fast & Furious" },
       { label: "Жанры", value: "Боевик, Криминал, Триллер" },
       { label: "Внутренний номер", value: "tt5433140" },
-      { label: "TMDB ID", value: "385687" },
     ],
   },
   {
@@ -13160,7 +12901,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Transformers" },
       { label: "Жанры", value: "Фантастика, Боевик, Приключения" },
       { label: "Внутренний номер", value: "tt0418279" },
-      { label: "TMDB ID", value: "1858" },
     ],
   },
   {
@@ -13186,7 +12926,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Transformers" },
       { label: "Жанры", value: "Фантастика, Боевик, Приключения" },
       { label: "Внутренний номер", value: "tt1055369" },
-      { label: "TMDB ID", value: "8373" },
     ],
   },
   {
@@ -13212,7 +12951,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Transformers" },
       { label: "Жанры", value: "Фантастика, Боевик, Приключения" },
       { label: "Внутренний номер", value: "tt1399103" },
-      { label: "TMDB ID", value: "38356" },
     ],
   },
   {
@@ -13238,7 +12976,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Transformers" },
       { label: "Жанры", value: "Фантастика, Боевик, Приключения" },
       { label: "Внутренний номер", value: "tt2109248" },
-      { label: "TMDB ID", value: "91314" },
     ],
   },
   {
@@ -13264,7 +13001,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Transformers" },
       { label: "Жанры", value: "Фантастика, Боевик, Приключения" },
       { label: "Внутренний номер", value: "tt3371366" },
-      { label: "TMDB ID", value: "335988" },
     ],
   },
   {
@@ -13290,7 +13026,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Transformers" },
       { label: "Жанры", value: "Фантастика, Боевик, Приключения" },
       { label: "Внутренний номер", value: "tt4701182" },
-      { label: "TMDB ID", value: "424783" },
     ],
   },
   {
@@ -13316,7 +13051,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Transformers" },
       { label: "Жанры", value: "Фантастика, Боевик, Приключения" },
       { label: "Внутренний номер", value: "tt5090568" },
-      { label: "TMDB ID", value: "667538" },
     ],
   },
   {
@@ -13342,7 +13076,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Transformers" },
       { label: "Жанры", value: "Анимация, Фантастика, Приключения" },
       { label: "Внутренний номер", value: "tt8864596" },
-      { label: "TMDB ID", value: "698687" },
     ],
   },
   {
@@ -13368,7 +13101,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "The Matrix" },
       { label: "Жанры", value: "Фантастика, Боевик, Приключения" },
       { label: "Внутренний номер", value: "tt0234215" },
-      { label: "TMDB ID", value: "604" },
     ],
   },
   {
@@ -13394,7 +13126,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "The Matrix" },
       { label: "Жанры", value: "Фантастика, Боевик, Приключения" },
       { label: "Внутренний номер", value: "tt0242653" },
-      { label: "TMDB ID", value: "605" },
     ],
   },
   {
@@ -13420,7 +13151,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "The Matrix" },
       { label: "Жанры", value: "Фантастика, Боевик, Приключения" },
       { label: "Внутренний номер", value: "tt10838180" },
-      { label: "TMDB ID", value: "624860" },
     ],
   },
   {
@@ -13446,7 +13176,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "John Wick" },
       { label: "Жанры", value: "Боевик, Криминал, Приключения" },
       { label: "Внутренний номер", value: "tt2911666" },
-      { label: "TMDB ID", value: "245891" },
     ],
   },
   {
@@ -13472,7 +13201,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "John Wick" },
       { label: "Жанры", value: "Боевик, Криминал, Приключения" },
       { label: "Внутренний номер", value: "tt4425200" },
-      { label: "TMDB ID", value: "324552" },
     ],
   },
   {
@@ -13498,7 +13226,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "John Wick" },
       { label: "Жанры", value: "Боевик, Криминал, Приключения" },
       { label: "Внутренний номер", value: "tt6146586" },
-      { label: "TMDB ID", value: "458156" },
     ],
   },
   {
@@ -13524,7 +13251,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "John Wick" },
       { label: "Жанры", value: "Боевик, Криминал, Приключения" },
       { label: "Внутренний номер", value: "tt7181546" },
-      { label: "TMDB ID", value: "541671" },
     ],
   },
   {
@@ -13550,7 +13276,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "The Hunger Games" },
       { label: "Жанры", value: "Фантастика, Драма, Приключения" },
       { label: "Внутренний номер", value: "tt1392170" },
-      { label: "TMDB ID", value: "70160" },
     ],
   },
   {
@@ -13576,7 +13301,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "The Hunger Games" },
       { label: "Жанры", value: "Фантастика, Драма, Приключения" },
       { label: "Внутренний номер", value: "tt1951264" },
-      { label: "TMDB ID", value: "101299" },
     ],
   },
   {
@@ -13602,7 +13326,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "The Hunger Games" },
       { label: "Жанры", value: "Фантастика, Драма, Приключения" },
       { label: "Внутренний номер", value: "tt1951265" },
-      { label: "TMDB ID", value: "131631" },
     ],
   },
   {
@@ -13628,7 +13351,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "The Hunger Games" },
       { label: "Жанры", value: "Фантастика, Драма, Приключения" },
       { label: "Внутренний номер", value: "tt1951266" },
-      { label: "TMDB ID", value: "131634" },
     ],
   },
   {
@@ -13654,7 +13376,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "The Hunger Games" },
       { label: "Жанры", value: "Фантастика, Драма, Приключения" },
       { label: "Внутренний номер", value: "tt10545296" },
-      { label: "TMDB ID", value: "695721" },
     ],
   },
   {
@@ -13680,7 +13401,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Twilight" },
       { label: "Жанры", value: "Фэнтези, Мелодрама, Драма" },
       { label: "Внутренний номер", value: "tt1099212" },
-      { label: "TMDB ID", value: "8966" },
     ],
   },
   {
@@ -13706,7 +13426,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Twilight" },
       { label: "Жанры", value: "Фэнтези, Мелодрама, Драма" },
       { label: "Внутренний номер", value: "tt1259571" },
-      { label: "TMDB ID", value: "18239" },
     ],
   },
   {
@@ -13732,7 +13451,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Twilight" },
       { label: "Жанры", value: "Фэнтези, Мелодрама, Драма" },
       { label: "Внутренний номер", value: "tt1325004" },
-      { label: "TMDB ID", value: "24021" },
     ],
   },
   {
@@ -13758,7 +13476,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Twilight" },
       { label: "Жанры", value: "Фэнтези, Мелодрама, Драма" },
       { label: "Внутренний номер", value: "tt1324999" },
-      { label: "TMDB ID", value: "50619" },
     ],
   },
   {
@@ -13784,7 +13501,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Twilight" },
       { label: "Жанры", value: "Фэнтези, Мелодрама, Драма" },
       { label: "Внутренний номер", value: "tt1673434" },
-      { label: "TMDB ID", value: "50620" },
     ],
   },
   {
@@ -13810,7 +13526,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "The Chronicles of Narnia" },
       { label: "Жанры", value: "Фэнтези, Приключения, Боевик" },
       { label: "Внутренний номер", value: "tt0363771" },
-      { label: "TMDB ID", value: "411" },
     ],
   },
   {
@@ -13836,7 +13551,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "The Chronicles of Narnia" },
       { label: "Жанры", value: "Фэнтези, Приключения, Боевик" },
       { label: "Внутренний номер", value: "tt0499448" },
-      { label: "TMDB ID", value: "2454" },
     ],
   },
   {
@@ -13862,7 +13576,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "The Chronicles of Narnia" },
       { label: "Жанры", value: "Фэнтези, Приключения, Боевик" },
       { label: "Внутренний номер", value: "tt0980970" },
-      { label: "TMDB ID", value: "10140" },
     ],
   },
   {
@@ -13888,7 +13601,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Despicable Me" },
       { label: "Жанры", value: "Анимация, Приключения, Семейный" },
       { label: "Внутренний номер", value: "tt1323594" },
-      { label: "TMDB ID", value: "20352" },
     ],
   },
   {
@@ -13914,7 +13626,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Despicable Me" },
       { label: "Жанры", value: "Анимация, Приключения, Семейный" },
       { label: "Внутренний номер", value: "tt1690953" },
-      { label: "TMDB ID", value: "93456" },
     ],
   },
   {
@@ -13940,7 +13651,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Despicable Me" },
       { label: "Жанры", value: "Анимация, Приключения, Семейный" },
       { label: "Внутренний номер", value: "tt3469046" },
-      { label: "TMDB ID", value: "324852" },
     ],
   },
   {
@@ -13966,7 +13676,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Despicable Me" },
       { label: "Жанры", value: "Анимация, Приключения, Семейный" },
       { label: "Внутренний номер", value: "tt7510222" },
-      { label: "TMDB ID", value: "519182" },
     ],
   },
   {
@@ -13992,7 +13701,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Despicable Me" },
       { label: "Жанры", value: "Анимация, Приключения, Семейный" },
       { label: "Внутренний номер", value: "tt2293640" },
-      { label: "TMDB ID", value: "211672" },
     ],
   },
   {
@@ -14018,7 +13726,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Despicable Me" },
       { label: "Жанры", value: "Анимация, Приключения, Семейный" },
       { label: "Внутренний номер", value: "tt5113044" },
-      { label: "TMDB ID", value: "438148" },
     ],
   },
   {
@@ -14044,7 +13751,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "How to Train Your Dragon" },
       { label: "Жанры", value: "Анимация, Фэнтези, Приключения" },
       { label: "Внутренний номер", value: "tt1646971" },
-      { label: "TMDB ID", value: "82702" },
     ],
   },
   {
@@ -14070,7 +13776,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "How to Train Your Dragon" },
       { label: "Жанры", value: "Анимация, Фэнтези, Приключения" },
       { label: "Внутренний номер", value: "tt2386490" },
-      { label: "TMDB ID", value: "166428" },
     ],
   },
   {
@@ -14096,7 +13801,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Frozen" },
       { label: "Жанры", value: "Анимация, Приключения, Семейный" },
       { label: "Внутренний номер", value: "tt2294629" },
-      { label: "TMDB ID", value: "109445" },
     ],
   },
   {
@@ -14122,7 +13826,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Frozen" },
       { label: "Жанры", value: "Анимация, Приключения, Семейный" },
       { label: "Внутренний номер", value: "tt4520988" },
-      { label: "TMDB ID", value: "330457" },
     ],
   },
   {
@@ -14148,7 +13851,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Finding Nemo" },
       { label: "Жанры", value: "Анимация, Приключения, Семейный" },
       { label: "Внутренний номер", value: "tt0266543" },
-      { label: "TMDB ID", value: "12" },
     ],
   },
   {
@@ -14174,7 +13876,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Finding Nemo" },
       { label: "Жанры", value: "Анимация, Приключения, Семейный" },
       { label: "Внутренний номер", value: "tt2277860" },
-      { label: "TMDB ID", value: "127380" },
     ],
   },
   {
@@ -14200,7 +13901,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Cars" },
       { label: "Жанры", value: "Анимация, Приключения, Семейный" },
       { label: "Внутренний номер", value: "tt0317219" },
-      { label: "TMDB ID", value: "920" },
     ],
   },
   {
@@ -14226,7 +13926,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Cars" },
       { label: "Жанры", value: "Анимация, Приключения, Семейный" },
       { label: "Внутренний номер", value: "tt1216475" },
-      { label: "TMDB ID", value: "49013" },
     ],
   },
   {
@@ -14252,7 +13951,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Cars" },
       { label: "Жанры", value: "Анимация, Приключения, Семейный" },
       { label: "Внутренний номер", value: "tt3606752" },
-      { label: "TMDB ID", value: "260514" },
     ],
   },
   {
@@ -14278,7 +13976,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Monsters, Inc." },
       { label: "Жанры", value: "Анимация, Приключения, Семейный" },
       { label: "Внутренний номер", value: "tt0198781" },
-      { label: "TMDB ID", value: "585" },
     ],
   },
   {
@@ -14304,7 +14001,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Monsters, Inc." },
       { label: "Жанры", value: "Анимация, Приключения, Семейный" },
       { label: "Внутренний номер", value: "tt1453405" },
-      { label: "TMDB ID", value: "62211" },
     ],
   },
   {
@@ -14330,7 +14026,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "The Incredibles" },
       { label: "Жанры", value: "Анимация, Приключения, Семейный" },
       { label: "Внутренний номер", value: "tt3606756" },
-      { label: "TMDB ID", value: "260513" },
     ],
   },
   {
@@ -14356,7 +14051,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Madagascar" },
       { label: "Жанры", value: "Анимация, Приключения, Семейный" },
       { label: "Внутренний номер", value: "tt0351283" },
-      { label: "TMDB ID", value: "953" },
     ],
   },
   {
@@ -14382,7 +14076,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Madagascar" },
       { label: "Жанры", value: "Анимация, Приключения, Семейный" },
       { label: "Внутренний номер", value: "tt0479952" },
-      { label: "TMDB ID", value: "10527" },
     ],
   },
   {
@@ -14408,7 +14101,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Madagascar" },
       { label: "Жанры", value: "Анимация, Приключения, Семейный" },
       { label: "Внутренний номер", value: "tt1277953" },
-      { label: "TMDB ID", value: "80321" },
     ],
   },
   {
@@ -14434,7 +14126,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Madagascar" },
       { label: "Жанры", value: "Анимация, Приключения, Семейный" },
       { label: "Внутренний номер", value: "tt1911658" },
-      { label: "TMDB ID", value: "270946" },
     ],
   },
   {
@@ -14460,7 +14151,6 @@ const moviesRaw: Movie[] = [
       { label: "Франшиза", value: "Moana" },
       { label: "Жанры", value: "Анимация, Приключения, Семейный" },
       { label: "Внутренний номер", value: "tt13622970" },
-      { label: "TMDB ID", value: "1241982" },
     ],
   },
   {
@@ -14913,13 +14603,12 @@ const moviesRaw: Movie[] = [
     poster: getTmdbPoster({ imdbId: "tt14849194", title: "Оставленные", originalTitle: "The Holdovers", year: "2023", type: "Фильм" }),
     description: "Зимняя камерная история о строгом учителе, ученике и поварихе, которые остаются в закрытой школе на каникулы.",
     trailerUrl: "https://www.youtube.com/embed/AhKLpJmHhIg",
-    longDescription: "«Оставленные» — драмеди 2023 года о людях, которые вынужденно проводят рождественские каникулы в пустеющей школе. Карточка добавлена в KinoLuma с нейтральным описанием без выдуманных фактов: здесь есть жанры, трейлер, SEO-описание, FAQ через общий шаблон страницы и плееры, которые строятся по Kinopoisk ID.",
+    longDescription: "«Оставленные» — драмеди 2023 года о людях, которые вынужденно проводят рождественские каникулы в пустеющей школе. Карточка добавлена в KinoLuma с нейтральным описанием без выдуманных фактов: здесь есть жанры, трейлер, описание, дополнительные сведения и варианты просмотра, если они доступны.",
     facts: [
       { label: "Год", value: "2023" },
       { label: "Тип", value: "Фильм" },
       { label: "Страна", value: "США" },
       { label: "Жанры", value: "Драма, Комедия" },
-      { label: "Kinopoisk ID", value: "4499386" },
       { label: "Внутренний номер", value: "tt14849194" },
     ],
     players: createKinopoiskPlayers(4499386),
@@ -14940,13 +14629,12 @@ const moviesRaw: Movie[] = [
     poster: getTmdbPoster({ imdbId: "tt13238346", title: "Прошлые жизни", originalTitle: "Past Lives", year: "2023", type: "Фильм" }),
     description: "Тихая драма о двух друзьях детства, которые встречаются спустя годы и заново осмысляют прошлое.",
     trailerUrl: "https://www.youtube.com/embed/kA244xewjcI",
-    longDescription: "«Прошлые жизни» — фильм 2023 года о памяти, взрослении и связи, которая не исчезает после переезда и долгой разлуки. Карточка использует серверный TMDB-роут для постера, бесплатный шаблонный SEO-слой KinoLuma и плееры по Kinopoisk ID без ручного зашивания секретов.",
+    longDescription: "«Прошлые жизни» — фильм 2023 года о памяти, взрослении и связи, которая не исчезает после переезда и долгой разлуки. Карточка использует внутренний каталог для постера, бесплатный шаблон описания KinoLuma и варианты просмотра по внутреннему номеру без ручного зашивания секретов.",
     facts: [
       { label: "Год", value: "2023" },
       { label: "Тип", value: "Фильм" },
       { label: "Страна", value: "США, Корея Южная" },
       { label: "Жанры", value: "Драма, Мелодрама" },
-      { label: "Kinopoisk ID", value: "1346482" },
       { label: "Внутренний номер", value: "tt13238346" },
     ],
     players: createKinopoiskPlayers(1346482),
@@ -14967,13 +14655,12 @@ const moviesRaw: Movie[] = [
     poster: getTmdbPoster({ imdbId: "tt2906216", title: "Подземелья и драконы: Честь среди воров", originalTitle: "Dungeons & Dragons: Honor Among Thieves", year: "2023", type: "Фильм" }),
     description: "Фэнтези-приключение о команде неидеальных героев, которые ввязываются в опасную авантюру.",
     trailerUrl: "https://www.youtube.com/embed/IiMinixSXII",
-    longDescription: "«Подземелья и драконы: Честь среди воров» — приключенческое фэнтези 2023 года с лёгким юмором, командной динамикой и большим путешествием. В KinoLuma карточка добавлена так, чтобы не ломать текущую архитектуру: данные лежат в movies.ts, SEO и FAQ подтягиваются существующими функциями, а просмотр строится по Kinopoisk ID.",
+    longDescription: "«Подземелья и драконы: Честь среди воров» — приключенческое фэнтези 2023 года с лёгким юмором, командной динамикой и большим путешествием. В KinoLuma карточка добавлена так, чтобы не ломать текущую архитектуру: данные лежат в каталоге, описание и дополнительные сведения подтягиваются существующими функциями, а просмотр строится по внутреннему номеру.",
     facts: [
       { label: "Год", value: "2023" },
       { label: "Тип", value: "Фильм" },
       { label: "Страна", value: "США, Канада" },
       { label: "Жанры", value: "Фэнтези, Приключения, Комедия" },
-      { label: "Kinopoisk ID", value: "762646" },
       { label: "Внутренний номер", value: "tt2906216" },
     ],
     players: createKinopoiskPlayers(762646),
@@ -14994,13 +14681,12 @@ const moviesRaw: Movie[] = [
     poster: getTmdbPoster({ imdbId: "tt11858890", title: "Создатель", originalTitle: "The Creator", year: "2023", type: "Фильм" }),
     description: "Фантастическая драма о будущем, где конфликт людей и искусственного интеллекта становится личной историей.",
     trailerUrl: "https://www.youtube.com/embed/ex3C1-5Dhb8",
-    longDescription: "«Создатель» — научно-фантастический фильм 2023 года о мире будущего, технологиях и выборе, который меняет отношение героя к происходящему вокруг. Описание сделано нейтрально и без выдуманных деталей; карточка получает постер через TMDB-роут, SEO через шаблон KinoLuma и плееры через Kinopoisk ID.",
+    longDescription: "«Создатель» — научно-фантастический фильм 2023 года о мире будущего, технологиях и выборе, который меняет отношение героя к происходящему вокруг. Описание сделано нейтрально и без выдуманных деталей; карточка получает постер через внутренний каталог, описание через шаблон KinoLuma и варианты просмотра по внутреннему номеру.",
     facts: [
       { label: "Год", value: "2023" },
       { label: "Тип", value: "Фильм" },
       { label: "Страна", value: "США" },
       { label: "Жанры", value: "Фантастика, Драма, Приключения" },
-      { label: "Kinopoisk ID", value: "4499408" },
       { label: "Внутренний номер", value: "tt11858890" },
     ],
     players: createKinopoiskPlayers(4499408),
@@ -15021,13 +14707,12 @@ const moviesRaw: Movie[] = [
     poster: getTmdbPoster({ imdbId: "tt23289160", title: "Годзилла: Минус один", originalTitle: "Gojira -1.0", year: "2023", type: "Фильм" }),
     description: "Японская история о послевоенном обществе, которое сталкивается с новой разрушительной угрозой.",
     trailerUrl: "https://www.youtube.com/embed/VvSrHIX5a-0",
-    longDescription: "«Годзилла: Минус один» — фильм 2023 года, где жанровое зрелище соединяется с человеческой драмой и темой восстановления после катастрофы. Карточка добавлена в общий каталог KinoLuma: sitemap и metadata подхватят её после сборки, а плееры работают через Kinopoisk ID.",
+    longDescription: "«Годзилла: Минус один» — фильм 2023 года, где жанровое зрелище соединяется с человеческой драмой и темой восстановления после катастрофы. Карточка добавлена в общий каталог KinoLuma: обновление каталога подхватят её после сборки, а варианты просмотра подключаются из карточки.",
     facts: [
       { label: "Год", value: "2023" },
       { label: "Тип", value: "Фильм" },
       { label: "Страна", value: "Япония" },
       { label: "Жанры", value: "Фантастика, Драма, Приключения" },
-      { label: "Kinopoisk ID", value: "5354707" },
       { label: "Внутренний номер", value: "tt23289160" },
     ],
     players: createKinopoiskPlayers(5354707),
@@ -15048,13 +14733,12 @@ const moviesRaw: Movie[] = [
     poster: getTmdbPoster({ imdbId: "tt16419074", title: "Air: Большой прыжок", originalTitle: "Air", year: "2023", type: "Фильм" }),
     description: "Спортивная бизнес-драма о рискованной сделке, из которой выросла легендарная баскетбольная линейка.",
     trailerUrl: "https://www.youtube.com/embed/Euy4Yu6B3nU",
-    longDescription: "«Air: Большой прыжок» — фильм 2023 года о маркетинговом решении, которое изменило спортивную индустрию. Карточка добавлена без платного ИИ: описание и нижний блок сделаны по шаблону, SEO остаётся на текущих функциях проекта, а плееры создаются по Kinopoisk ID.",
+    longDescription: "«Air: Большой прыжок» — фильм 2023 года о маркетинговом решении, которое изменило спортивную индустрию. Карточка добавлена без выдуманных деталей: описание и нижний блок сделаны по шаблону, описание остаётся в текущем стиле проекта, а варианты просмотра создаются по данным карточки.",
     facts: [
       { label: "Год", value: "2023" },
       { label: "Тип", value: "Фильм" },
       { label: "Страна", value: "США" },
       { label: "Жанры", value: "Биография, Драма, Спорт" },
-      { label: "Kinopoisk ID", value: "5000997" },
       { label: "Внутренний номер", value: "tt16419074" },
     ],
     players: createKinopoiskPlayers(5000997),
@@ -15075,13 +14759,12 @@ const moviesRaw: Movie[] = [
     poster: getTmdbPoster({ imdbId: "tt0386676", title: "Офис", originalTitle: "The Office", year: "2005", type: "Сериал" }),
     description: "Мокьюментари-комедия о буднях сотрудников регионального офиса бумажной компании.",
     trailerUrl: "https://www.youtube.com/embed/cRpbuYnHWQY",
-    longDescription: "«Офис» — комедийный сериал о рабочей рутине, странных совещаниях и людях, которые превращают обычный офис в маленькую вселенную. В KinoLuma сериал добавлен с Kinopoisk ID, поэтому основные плееры строятся автоматически, а SEO и FAQ остаются на существующих шаблонах проекта.",
+    longDescription: "«Офис» — комедийный сериал о рабочей рутине, странных совещаниях и людях, которые превращают обычный офис в маленькую вселенную. В KinoLuma сериал добавлен с внутреннему номеру, поэтому основные варианты просмотра строятся автоматически, а описание и дополнительные сведения остаются на существующих шаблонах проекта.",
     facts: [
       { label: "Год", value: "2005" },
       { label: "Тип", value: "Сериал" },
       { label: "Страна", value: "США" },
       { label: "Жанры", value: "Комедия" },
-      { label: "Kinopoisk ID", value: "253245" },
       { label: "Внутренний номер", value: "tt0386676" },
     ],
     players: createKinopoiskPlayers(253245),
@@ -15102,13 +14785,12 @@ const moviesRaw: Movie[] = [
     poster: getTmdbPoster({ imdbId: "tt11280740", title: "Разделение", originalTitle: "Severance", year: "2022", type: "Сериал" }),
     description: "Корпоративный триллер о сотрудниках, чьи рабочие и личные воспоминания искусственно разделены.",
     trailerUrl: "https://www.youtube.com/embed/xEQP4VVuyrY",
-    longDescription: "«Разделение» — сериал 2022 года о компании Lumon и процедуре, которая отделяет рабочую память от личной. Описание не раскрывает лишнего и не выдумывает факты; карточка использует текущий SEO-слой KinoLuma, FAQPage JSON-LD и плееры через Kinopoisk ID.",
+    longDescription: "«Разделение» — сериал 2022 года о компании Lumon и процедуре, которая отделяет рабочую память от личной. Описание не раскрывает лишнего и не выдумывает факты; карточка использует текущий шаблон описания KinoLuma, дополнительные сведения и варианты просмотра по внутреннему номеру.",
     facts: [
       { label: "Год", value: "2022" },
       { label: "Тип", value: "Сериал" },
       { label: "Страна", value: "США" },
       { label: "Жанры", value: "Фантастика, Триллер, Драма" },
-      { label: "Kinopoisk ID", value: "1343318" },
       { label: "Внутренний номер", value: "tt11280740" },
     ],
     players: createKinopoiskPlayers(1343318),
@@ -15129,13 +14811,12 @@ const moviesRaw: Movie[] = [
     poster: getTmdbPoster({ imdbId: "tt10986410", title: "Тед Лассо", originalTitle: "Ted Lasso", year: "2020", type: "Сериал" }),
     description: "Оптимистичный тренер по американскому футболу получает работу в английском футбольном клубе.",
     trailerUrl: "https://www.youtube.com/embed/3u7EIiohs6U",
-    longDescription: "«Тед Лассо» — сериал о тренере, который попадает в непривычную спортивную среду и отвечает на хаос добротой, упрямством и командной работой. Карточка добавлена в movies.ts, так что после сборки она попадёт в каталог и sitemap без ручного редактирования SEO-файлов.",
+    longDescription: "«Тед Лассо» — сериал о тренере, который попадает в непривычную спортивную среду и отвечает на хаос добротой, упрямством и командной работой. Карточка добавлена в каталоге, так что после сборки она попадёт в каталог и sitemap без ручного редактирования служебных файлов.",
     facts: [
       { label: "Год", value: "2020" },
       { label: "Тип", value: "Сериал" },
       { label: "Страна", value: "США, Великобритания" },
       { label: "Жанры", value: "Комедия, Драма, Спорт" },
-      { label: "Kinopoisk ID", value: "1309707" },
       { label: "Внутренний номер", value: "tt10986410" },
     ],
     players: createKinopoiskPlayers(1309707),
@@ -15156,13 +14837,12 @@ const moviesRaw: Movie[] = [
     poster: getTmdbPoster({ imdbId: "tt7660850", title: "Наследники", originalTitle: "Succession", year: "2018", type: "Сериал" }),
     description: "Сатирическая драма о семье медиамагната, где власть и наследство становятся семейным спортом.",
     trailerUrl: "https://www.youtube.com/embed/OzYxJV_rmE8",
-    longDescription: "«Наследники» — сериал о большой медиаимперии и родственниках, которые постоянно проверяют друг друга на прочность. Карточка добавлена точечно: описание нейтральное, рейтинг не выдуман, плееры завязаны на Kinopoisk ID, а SEO и FAQ формируются существующими функциями KinoLuma.",
+    longDescription: "«Наследники» — сериал о большой медиаимперии и родственниках, которые постоянно проверяют друг друга на прочность. Карточка добавлена точечно: описание нейтральное, рейтинг не выдуман, варианты просмотра связаны с карточкой, а описание и дополнительные сведения формируются существующими функциями KinoLuma.",
     facts: [
       { label: "Год", value: "2018" },
       { label: "Тип", value: "Сериал" },
       { label: "Страна", value: "США" },
       { label: "Жанры", value: "Драма, Комедия" },
-      { label: "Kinopoisk ID", value: "986788" },
       { label: "Внутренний номер", value: "tt7660850" },
     ],
     players: createKinopoiskPlayers(986788),
@@ -15183,13 +14863,12 @@ const moviesRaw: Movie[] = [
     poster: getTmdbPoster({ imdbId: "tt2788316", title: "Сёгун", originalTitle: "Shōgun", year: "2024", type: "Сериал" }),
     description: "Историческая драма о европейском мореплавателе, который оказывается в Японии начала XVII века.",
     trailerUrl: "https://www.youtube.com/embed/yAN5uspO_hk",
-    longDescription: "«Сёгун» — сериал 2024 года о столкновении культур, политических интригах и борьбе за влияние в Японии начала XVII века. Карточка использует существующую архитектуру KinoLuma: movies.ts как источник, автоматический sitemap, metadata, FAQPage и плееры по Kinopoisk ID.",
+    longDescription: "«Сёгун» — сериал 2024 года о столкновении культур, политических интригах и борьбе за влияние в Японии начала XVII века. Карточка использует существующую архитектуру KinoLuma: каталоге как источник, обновление каталога после сборки и варианты просмотра по данным карточки.",
     facts: [
       { label: "Год", value: "2024" },
       { label: "Тип", value: "Сериал" },
       { label: "Страна", value: "США, Япония" },
       { label: "Жанры", value: "Драма, История, Приключения" },
-      { label: "Kinopoisk ID", value: "749562" },
       { label: "Внутренний номер", value: "tt2788316" },
     ],
     players: createKinopoiskPlayers(749562),
@@ -15210,13 +14889,12 @@ const moviesRaw: Movie[] = [
     poster: getTmdbPoster({ imdbId: "tt11016042", title: "Рипли", originalTitle: "Ripley", year: "2024", type: "Сериал" }),
     description: "Чёрно-белая криминальная история о Томе Рипли, который получает предложение отправиться в Европу.",
     trailerUrl: "https://www.youtube.com/embed/0ri2biYLeaI",
-    longDescription: "«Рипли» — мини-сериал 2024 года с атмосферой психологического триллера и неторопливой криминальной интригой. Карточка добавлена без изменения публичной архитектуры: данные остаются в movies.ts, SEO и FAQ формируются текущими функциями, плееры подключаются по Kinopoisk ID.",
+    longDescription: "«Рипли» — мини-сериал 2024 года с атмосферой психологического триллера и неторопливой криминальной интригой. Карточка добавлена без изменения публичной архитектуры: данные остаются в каталоге, описание и дополнительные сведения формируются текущими функциями, варианты просмотра подключаются по данным карточки.",
     facts: [
       { label: "Год", value: "2024" },
       { label: "Тип", value: "Сериал" },
       { label: "Страна", value: "США" },
       { label: "Жанры", value: "Драма, Криминал, Триллер" },
-      { label: "Kinopoisk ID", value: "1311083" },
       { label: "Внутренний номер", value: "tt11016042" },
     ],
     players: createKinopoiskPlayers(1311083),
@@ -15237,13 +14915,12 @@ const moviesRaw: Movie[] = [
     poster: getTmdbPoster({ imdbId: "tt6769208", title: "Голубая планета 2", originalTitle: "Blue Planet II", year: "2017", type: "Документальный" }),
     description: "Документальный цикл BBC о жизни океанов, редких природных явлениях и мире под водой.",
     trailerUrl: "https://www.youtube.com/embed/_38JDGnr0vA",
-    longDescription: "«Голубая планета 2» — документальный проект о Мировом океане, его обитателях и хрупком балансе природных систем. Для KinoLuma добавлены описание, трейлер, факты и плееры по Kinopoisk ID; SEO и FAQ подтягиваются через уже рабочие шаблоны сайта.",
+    longDescription: "«Голубая планета 2» — документальный проект о Мировом океане, его обитателях и хрупком балансе природных систем. Для KinoLuma добавлены описание, трейлер, факты и варианты просмотра по внутреннему номеру; описание и дополнительные сведения подтягиваются через уже рабочие шаблоны сайта.",
     facts: [
       { label: "Год", value: "2017" },
       { label: "Тип", value: "Документальный" },
       { label: "Страна", value: "Великобритания" },
       { label: "Жанры", value: "Документальный, Природа" },
-      { label: "Kinopoisk ID", value: "1073233" },
       { label: "Внутренний номер", value: "tt6769208" },
     ],
     players: createKinopoiskPlayers(1073233),
@@ -15264,13 +14941,12 @@ const moviesRaw: Movie[] = [
     poster: getTmdbPoster({ imdbId: "tt8760684", title: "Аполлон-11", originalTitle: "Apollo 11", year: "2019", type: "Документальный" }),
     description: "Документальный фильм о лунной миссии 1969 года, собранный вокруг архивных кадров и записей.",
     trailerUrl: "https://www.youtube.com/embed/3Co8Z8BQgWc",
-    longDescription: "«Аполлон-11» — документальный фильм 2019 года о знаменитой космической миссии. Карточка подходит для раздела документалок KinoLuma: есть краткое описание, нижний блок «О фильме», трейлер, факты, sitemap после сборки и плееры через Kinopoisk ID.",
+    longDescription: "«Аполлон-11» — документальный фильм 2019 года о знаменитой космической миссии. Карточка подходит для раздела документалок KinoLuma: есть краткое описание, нижний блок «О фильме», трейлер, факты, обновление каталога после сборки и варианты просмотра по внутреннему номеру.",
     facts: [
       { label: "Год", value: "2019" },
       { label: "Тип", value: "Документальный" },
       { label: "Страна", value: "США" },
       { label: "Жанры", value: "Документальный, История, Космос" },
-      { label: "Kinopoisk ID", value: "1235047" },
       { label: "Внутренний номер", value: "tt8760684" },
     ],
     players: createKinopoiskPlayers(1235047),
@@ -15291,13 +14967,12 @@ const moviesRaw: Movie[] = [
     poster: getTmdbPoster({ imdbId: "tt1424432", title: "Сенна", originalTitle: "Senna", year: "2010", type: "Документальный" }),
     description: "Документальная история о карьере Айртона Сенны и его месте в истории Формулы-1.",
     trailerUrl: "https://www.youtube.com/embed/sfosF-ZAbR4",
-    longDescription: "«Сенна» — документальный фильм о легендарном гонщике Формулы-1, его спортивном пути и архивной хронике эпохи. В карточке не добавлены непроверенные рейтинги или награды: только базовые факты, трейлер, описание и плееры, собранные через Kinopoisk ID.",
+    longDescription: "«Сенна» — документальный фильм о легендарном гонщике Формулы-1, его спортивном пути и архивной хронике эпохи. В карточке не добавлены непроверенные рейтинги или награды: только базовые факты, трейлер, описание и варианты просмотра, собранные по данным карточки.",
     facts: [
       { label: "Год", value: "2010" },
       { label: "Тип", value: "Документальный" },
       { label: "Страна", value: "Великобритания, Франция" },
       { label: "Жанры", value: "Документальный, Биография, Спорт" },
-      { label: "Kinopoisk ID", value: "573209" },
       { label: "Внутренний номер", value: "tt1424432" },
     ],
     players: createKinopoiskPlayers(573209),
@@ -15318,13 +14993,12 @@ const moviesRaw: Movie[] = [
     poster: getTmdbPoster({ imdbId: "tt9805674", title: "BBC: Планета Земля III", originalTitle: "Planet Earth III", year: "2023", type: "Документальный" }),
     description: "Новый документальный цикл BBC о природных средах, животных и меняющейся планете.",
     trailerUrl: "https://www.youtube.com/embed/nNWXMAJF7ww",
-    longDescription: "«BBC: Планета Земля III» — документальный сериал 2023 года о разных средах обитания и удивительных формах жизни. Карточка добавлена в KinoLuma как документальный проект: работает шаблонный SEO, FAQPage JSON-LD, sitemap и плееры через Kinopoisk ID.",
+    longDescription: "«BBC: Планета Земля III» — документальный сериал 2023 года о разных средах обитания и удивительных формах жизни. Карточка добавлена в KinoLuma как документальный проект: работает шаблон описания, дополнительные сведения, sitemap и варианты просмотра по внутреннему номеру.",
     facts: [
       { label: "Год", value: "2023" },
       { label: "Тип", value: "Документальный" },
       { label: "Страна", value: "Великобритания" },
       { label: "Жанры", value: "Документальный, Природа" },
-      { label: "Kinopoisk ID", value: "5404281" },
       { label: "Внутренний номер", value: "tt9805674" },
     ],
     players: createKinopoiskPlayers(5404281),
@@ -15345,13 +15019,12 @@ const moviesRaw: Movie[] = [
     poster: getTmdbPoster({ imdbId: "tt10324164", title: "Доисторическая планета", originalTitle: "Prehistoric Planet", year: "2022", type: "Документальный" }),
     description: "Кинематографичный документальный проект о доисторической жизни и мире динозавров.",
     trailerUrl: "https://www.youtube.com/embed/vnoNeMlNeD0",
-    longDescription: "«Доисторическая планета» — документальный проект о жизни древней Земли, реконструированной через современную графику и научно-популярную подачу. Карточка добавлена аккуратно: без переписывания каталога, с текущим SEO, FAQ и плеерами по Kinopoisk ID.",
+    longDescription: "«Доисторическая планета» — документальный проект о жизни древней Земли, реконструированной через современную графику и научно-популярную подачу. Карточка добавлена аккуратно: без переписывания каталога, с текущим описанием, FAQ и плеерами по внутреннему номеру.",
     facts: [
       { label: "Год", value: "2022" },
       { label: "Тип", value: "Документальный" },
       { label: "Страна", value: "США, Великобритания" },
       { label: "Жанры", value: "Документальный, Природа, История" },
-      { label: "Kinopoisk ID", value: "4917950" },
       { label: "Внутренний номер", value: "tt10324164" },
     ],
     players: createKinopoiskPlayers(4917950),
@@ -15372,13 +15045,12 @@ const moviesRaw: Movie[] = [
     poster: getTmdbPoster({ imdbId: "tt8289930", title: "Формула 1. Драйв выживания", originalTitle: "Formula 1: Drive to Survive", year: "2019", type: "Документальный" }),
     description: "Документальный сериал о сезонах Формулы-1, командах, гонщиках и закулисье чемпионата.",
     trailerUrl: "https://www.youtube.com/embed/wtJPe1ksS6E",
-    longDescription: "«Формула 1. Драйв выживания» — документальный сериал о мире Формулы-1, работе команд и напряжении гоночного сезона. В KinoLuma карточка добавлена как документальный проект: постер через TMDB, трейлер, факты, SEO/FAQ через шаблон и плееры по Kinopoisk ID.",
+    longDescription: "«Формула 1. Драйв выживания» — документальный сериал о мире Формулы-1, работе команд и напряжении гоночного сезона. В KinoLuma карточка добавлена как документальный проект: постер через внутренний каталог, трейлер, факты, описание и дополнительные сведения через шаблон и варианты просмотра по внутреннему номеру.",
     facts: [
       { label: "Год", value: "2019" },
       { label: "Тип", value: "Документальный" },
       { label: "Страна", value: "Великобритания" },
       { label: "Жанры", value: "Документальный, Спорт" },
-      { label: "Kinopoisk ID", value: "1240162" },
       { label: "Внутренний номер", value: "tt8289930" },
     ],
     players: createKinopoiskPlayers(1240162),
@@ -15838,6 +15510,8 @@ const moviesRaw: Movie[] = [
     players: createKinopoiskPlayers(654439),
   },
 
+  ...manualPremiumAdditions,
+  ...manualPopularAnime,
   ...generatedKinoLumaMovies,
   ...curatedExpectedReleases,
   ...generatedKinopoiskRequestedMovies,
@@ -15910,7 +15584,29 @@ function isPublicCatalogMovie(movie: Movie) {
   return true;
 }
 
-export const movies: Movie[] = moviesRaw.filter(isPublicCatalogMovie);
+function getPublicMovieUniqueKey(movie: Movie) {
+  const slug = normalizePublicCatalogText(movie.slug || "");
+  if (slug) return `slug:${slug}`;
+
+  if (movie.kinopoiskId) return `kp:${movie.kinopoiskId}`;
+  if (movie.imdbId) return `imdb:${normalizePublicCatalogText(movie.imdbId)}`;
+
+  return `title:${normalizePublicCatalogText(`${movie.title}-${movie.originalTitle}-${movie.year}`)}`;
+}
+
+const seenPublicMovieKeys = new Set<string>();
+
+function isUniquePublicMovie(movie: Movie) {
+  const key = getPublicMovieUniqueKey(movie);
+  if (seenPublicMovieKeys.has(key)) return false;
+
+  seenPublicMovieKeys.add(key);
+  return true;
+}
+
+export const movies: Movie[] = moviesRaw
+  .filter(isPublicCatalogMovie)
+  .filter(isUniquePublicMovie);
 
 
 movies.forEach((movie) => {

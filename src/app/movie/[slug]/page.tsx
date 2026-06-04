@@ -7,7 +7,6 @@ import {
   getMovieBreadcrumbJsonLd,
   getMovieFaqJsonLd,
   getMovieJsonLd,
-  getMovieKeywords,
   getMovieMetaDescription,
   getMovieSeoTitle,
   getMovieWebPageJsonLd,
@@ -55,7 +54,6 @@ export async function generateMetadata({
     metadataBase: new URL(siteUrl),
     title,
     description,
-    keywords: getMovieKeywords(movie),
     alternates: {
       canonical: pageUrl,
     },

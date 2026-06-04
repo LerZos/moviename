@@ -649,17 +649,37 @@ export function buildFactoriosUrl(
 }
 
 export function buildAutoPlayers(input: AutoPlayerInput): KinoLumaPlayer[] {
-  if (!canAutoGeneratePlayers(input)) {
-    return [];
-  }
-
   const fallbackKinopoiskId =
     input.kinopoiskId || getFallbackKinopoiskIdBySlug(input.slug);
   const kinopoiskId = cleanNumberString(fallbackKinopoiskId);
   const imdbId = normalizeImdbId(input.imdbId);
-  const rendexVideoId = extractRendexVideoId(input.rendexVideoId);
   const collapseUrl =
     buildCollapseKinopoiskUrl(kinopoiskId) || buildCollapseImdbUrl(imdbId);
+
+  if (isAnimeAutoPlayerInput(input)) {
+    return collapseUrl
+      ? [
+          {
+            id: kinopoiskId
+              ? `collapse-kp-${kinopoiskId}`
+              : `collapse-imdb-${imdbId}`,
+            name: "Основной",
+            type: "collapse",
+            provider: "collapse",
+            embedUrl: collapseUrl,
+            contentKind: kinopoiskId ? "kp" : "imdb",
+            contentType: kinopoiskId ? "kp" : "imdb",
+            contentId: kinopoiskId || imdbId,
+          },
+        ]
+      : [];
+  }
+
+  if (!canAutoGeneratePlayers(input)) {
+    return [];
+  }
+
+  const rendexVideoId = extractRendexVideoId(input.rendexVideoId);
   const factoriosUrl = buildFactoriosUrl(kinopoiskId);
   const players: KinoLumaPlayer[] = [];
 

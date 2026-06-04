@@ -260,43 +260,18 @@ export function getMovieMetaDescription(movie: Movie) {
 
 export function getMovieKeywords(movie: Movie) {
   const kind = getSeoContentKind(movie);
-  const titleVariants = [
-    movie.title,
-    movie.originalTitle,
-    ...movie.searchTitles,
-  ].filter(Boolean);
 
+  // Meta keywords не дают полезного SEO-веса, поэтому не раздуваем их сотнями
+  // повторов. Небольшой список остаётся только для структурированных данных.
   return Array.from(
     new Set(
       [
-        ...titleVariants,
-        ...titleVariants.flatMap((title) => [
-          `${title} KinoLuma`,
-          `${title} смотреть онлайн`,
-          `${title} смотреть онлайн бесплатно`,
-          `${title} смотреть онлайн без регистрации`,
-          `${title} трейлер`,
-          `${title} описание`,
-          `${title} рейтинг`,
-          `${title} ${movie.year}`,
-          `${title} ${movie.year} смотреть онлайн`,
-        ]),
+        movie.title,
+        movie.originalTitle,
+        ...movie.searchTitles.slice(0, 4),
         kind,
         movie.type,
-        `${kind} смотреть онлайн`,
-        `${kind} смотреть онлайн бесплатно`,
-        brandName,
-        seoOnlineSuffix,
-        `${brandName} фильмы`,
-        `${brandName} смотреть онлайн`,
-        "фильмы онлайн",
-        "сериалы онлайн",
-        "аниме онлайн",
-        "мультфильмы онлайн",
-        "трейлеры фильмов",
-        "описания фильмов",
-        "рейтинги фильмов",
-        ...movie.genres,
+        ...movie.genres.slice(0, 6),
         String(movie.year),
       ].filter(Boolean),
     ),
@@ -318,8 +293,6 @@ export function getMovieSchemaType(movie: Movie) {
 
   if (movie.type === "Аниме") {
     const duration = getFactValue(movie, ["Длительность"]);
-  const budget = getFactValue(movie, ["Бюджет"]);
-  const contentRating = getFactValue(movie, ["Возраст", "Возрастной рейтинг", "MPAA"]);
     return duration?.toLowerCase().includes("серия") ? "TVSeries" : "Movie";
   }
 
@@ -656,17 +629,6 @@ export function getCatalogMetadata(slug: string): Metadata {
     metadataBase: new URL(siteUrl),
     title: route.title,
     description: route.description,
-    keywords: [
-      brandName,
-      route.label,
-      route.title,
-      `${route.label} смотреть онлайн`,
-      `${route.label} смотреть онлайн бесплатно`,
-      `${route.label} смотреть онлайн без регистрации`,
-      "трейлеры",
-      "описания",
-      "рейтинги",
-    ],
     alternates: {
       canonical,
     },
@@ -744,17 +706,6 @@ export function getGenreMetadata(categorySlug: string, genreSlug: string): Metad
     metadataBase: new URL(siteUrl),
     title,
     description,
-    keywords: [
-      brandName,
-      genre,
-      route.label,
-      `${genre} ${route.label.toLowerCase()} смотреть онлайн`,
-      `${genre} ${route.label.toLowerCase()} смотреть онлайн бесплатно`,
-      `${genre} ${route.label.toLowerCase()} без регистрации`,
-      "трейлеры",
-      "описания",
-      "рейтинги",
-    ],
     alternates: {
       canonical,
     },

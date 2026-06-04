@@ -242,7 +242,7 @@ export const curatedExpectedReleases: Movie[] = [
   }),
   createExpectedRelease({
     id: 900007,
-    slug: "masters-of-the-universe-2026",
+    slug: "masters-of-the-universe-2026-expected",
     title: "Властелины Вселенной",
     originalTitle: "Masters of the Universe",
     aliases: ["he man", "химен", "скелетор", "masters of universe"],
