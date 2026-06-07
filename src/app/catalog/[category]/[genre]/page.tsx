@@ -10,7 +10,7 @@ import {
   getGenreMetadata,
 } from "../../../lib/seo";
 import CatalogPageClient from "../CatalogPageClient";
-import { getPublicMovies } from "../../../lib/movies/movieOverrides";
+import { getCachedPublicMovies } from "../../../lib/movies/movieOverrides";
 
 export const dynamicParams = true;
 
@@ -45,7 +45,7 @@ export default async function CatalogGenrePage({ params }: CatalogGenrePageProps
     notFound();
   }
 
-  const publicMovies = await getPublicMovies();
+  const publicMovies = await getCachedPublicMovies();
   const items = publicMovies.filter((movie) => movie.type === route.type && movie.genres.includes(genreName));
 
   return (
@@ -77,7 +77,7 @@ export default async function CatalogGenrePage({ params }: CatalogGenrePageProps
         }}
       />
 
-      <CatalogPageClient categorySlug={category} genreSlug={decodedGenre} initialContent={publicMovies} />
+      <CatalogPageClient categorySlug={category} genreSlug={decodedGenre} initialContent={items} />
     </>
   );
 }

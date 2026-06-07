@@ -9,7 +9,7 @@ import {
   getCollectionPageJsonLd,
 } from "../../lib/seo";
 import CatalogPageClient from "./CatalogPageClient";
-import { getPublicMovies } from "../../lib/movies/movieOverrides";
+import { getCachedPublicMovies } from "../../lib/movies/movieOverrides";
 
 type CatalogPageProps = {
   params: Promise<{
@@ -36,7 +36,7 @@ export default async function CatalogCategoryPage({ params }: CatalogPageProps) 
     notFound();
   }
 
-  const publicMovies = await getPublicMovies();
+  const publicMovies = await getCachedPublicMovies();
   const items = publicMovies.filter((movie) => movie.type === route.type);
 
   return (
@@ -67,7 +67,7 @@ export default async function CatalogCategoryPage({ params }: CatalogPageProps) 
         }}
       />
 
-      <CatalogPageClient categorySlug={category} initialContent={publicMovies} />
+      <CatalogPageClient categorySlug={category} initialContent={items} />
     </>
   );
 }

@@ -1,5 +1,11 @@
 import type { Movie } from "../../data/movies";
 
+type FeaturedMovie = Pick<
+  Movie,
+  "id" | "slug" | "title" | "type" | "year" | "rating" | "genres" | "poster"
+> &
+  Partial<Pick<Movie, "source" | "facts" | "backdrop">>;
+
 export const DAILY_FEATURED_COUNT = 12;
 
 const MSK_OFFSET_MS = 3 * 60 * 60 * 1000;
@@ -36,7 +42,7 @@ function getYearNumber(year: string) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function isExpectedRelease(item: Movie) {
+function isExpectedRelease(item: FeaturedMovie) {
   const source = (item.source ?? "").toLowerCase();
   const genres = (item.genres ?? []).map((genre) => genre.toLowerCase()).join(" ");
   const factsText = (item.facts ?? [])
@@ -55,7 +61,7 @@ function isExpectedRelease(item: Movie) {
   );
 }
 
-function hasRealPoster(item: Movie) {
+function hasRealPoster(item: FeaturedMovie) {
   return Boolean(
     item.poster &&
       !item.poster.startsWith("data:image") &&
@@ -63,7 +69,7 @@ function hasRealPoster(item: Movie) {
   );
 }
 
-function isGoodFeaturedCandidate(item: Movie, currentYear: number) {
+function isGoodFeaturedCandidate(item: FeaturedMovie, currentYear: number) {
   if (!item.slug || !item.title) return false;
   if (!hasRealPoster(item) && !item.backdrop) return false;
 
@@ -74,7 +80,7 @@ function isGoodFeaturedCandidate(item: Movie, currentYear: number) {
   return isReleasedOrNearRelease && hasHealthyRating;
 }
 
-function getFeaturedScore(item: Movie, dayKey: string, index: number) {
+function getFeaturedScore(item: FeaturedMovie, dayKey: string, index: number) {
   const year = getYearNumber(item.year);
   const stableRandom = hashText(`${dayKey}:${item.slug}:${item.id}`) / 0xffffffff;
   const ratingScore = Math.max(0, item.rating) * 18;
@@ -85,8 +91,8 @@ function getFeaturedScore(item: Movie, dayKey: string, index: number) {
   return stableRandom * 1000 + ratingScore + modernBonus + visualBonus + typeBonus - index * 0.002;
 }
 
-function diversifyByType(items: Movie[], count: number) {
-  const result: Movie[] = [];
+function diversifyByType<T extends FeaturedMovie>(items: T[], count: number) {
+  const result: T[] = [];
   const typeLimits: Record<string, number> = {
     Фильм: Math.max(6, Math.ceil(count * 0.7)),
     Сериал: Math.max(2, Math.ceil(count * 0.28)),
@@ -127,8 +133,8 @@ function diversifyByType(items: Movie[], count: number) {
   return result;
 }
 
-export function getDailyFeaturedItems(
-  items: Movie[],
+export function getDailyFeaturedItems<T extends FeaturedMovie>(
+  items: T[],
   now = new Date(),
   count = DAILY_FEATURED_COUNT,
 ) {

@@ -1,3 +1,5 @@
+import { revalidateTag, unstable_cache } from "next/cache";
+
 import {
   movies,
   sanitizeMovieForPublicDisplay,
@@ -559,8 +561,10 @@ function applyOverride(
   } as Movie;
 }
 
+const baseMoviesBySlug = new Map(movies.map((movie) => [movie.slug, movie]));
+
 export function getBaseMovieBySlug(slug: string) {
-  return movies.find((movie) => movie.slug === slug) || null;
+  return baseMoviesBySlug.get(slug) || null;
 }
 
 export async function getPublicMovies(): Promise<Movie[]> {
@@ -582,9 +586,26 @@ export async function getPublicMovies(): Promise<Movie[]> {
     .map((movie) => sanitizeMovieForPublicDisplay(movie));
 }
 
+
+// Do not wrap the full public movie list in unstable_cache: Next.js has a
+// 2 MB data-cache entry limit, while the full catalog can be larger.
+// Keep the exported name so pages can continue using the optimized lighter
+// client payloads without triggering the oversized cache error.
+export const getCachedPublicMovies = getPublicMovies;
+
 export async function getPublicBaseMovieBySlug(
   slug: string,
 ): Promise<Movie | null> {
+  const fallbackMovie = getBaseMovieBySlug(slug);
+
+  // В обычном режиме каталог уже лежит в data/movies.ts. Не ходим в Supabase
+  // за movie_drafts на каждую страницу фильма: это давало задержку на серверном
+  // рендере. Если опубликованные drafts действительно нужны публично, включи
+  // KINOLUMA_LOAD_PUBLISHED_DRAFTS=true.
+  if (!shouldLoadPublishedDraftMovies()) {
+    return fallbackMovie ? sanitizeMovieForPublicDisplay(fallbackMovie) : null;
+  }
+
   try {
     const { data, error } = await supabaseAdmin
       .from("movie_drafts")
@@ -600,7 +621,6 @@ export async function getPublicBaseMovieBySlug(
         "Не удалось загрузить опубликованный movie_draft",
         error,
       );
-      const fallbackMovie = getBaseMovieBySlug(slug);
       return fallbackMovie ? sanitizeMovieForPublicDisplay(fallbackMovie) : null;
     }
 
@@ -616,7 +636,6 @@ export async function getPublicBaseMovieBySlug(
     );
   }
 
-  const fallbackMovie = getBaseMovieBySlug(slug);
   return fallbackMovie ? sanitizeMovieForPublicDisplay(fallbackMovie) : null;
 }
 
@@ -664,6 +683,16 @@ export async function getMovieWithOverrides(
   return sanitizeMovieForPublicDisplay(applyOverride(baseMovie, override));
 }
 
+
+export const getCachedMovieWithOverrides = unstable_cache(
+  getMovieWithOverrides,
+  ["movie-with-overrides"],
+  {
+    revalidate: 3600,
+    tags: ["movies"],
+  },
+);
+
 export async function saveMovieOverride(
   slug: string,
   data: MovieOverrideData,
@@ -682,4 +711,6 @@ export async function saveMovieOverride(
   if (error) {
     throw error;
   }
+
+  revalidateTag("movies", "max");
 }

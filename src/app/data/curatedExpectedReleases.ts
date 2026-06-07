@@ -1,4 +1,5 @@
 import type { ContentType, Movie } from "./movies";
+import { createExpectedPoster, getTmdbExpectedPoster } from "../lib/imageLinks";
 
 type ExpectedReleaseInput = {
   id: number;
@@ -15,107 +16,6 @@ type ExpectedReleaseInput = {
   franchise: string;
   director?: string;
 };
-
-function escapePosterText(text: string) {
-  return text
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&apos;");
-}
-
-function splitPosterLine(text: string, maxLength: number, maxLines: number) {
-  const words = text.split(" ").filter(Boolean);
-  const lines: string[] = [];
-
-  for (const word of words) {
-    const currentLine = lines[lines.length - 1];
-
-    if (!currentLine) {
-      lines.push(word);
-      continue;
-    }
-
-    if (`${currentLine} ${word}`.length <= maxLength) {
-      lines[lines.length - 1] = `${currentLine} ${word}`;
-      continue;
-    }
-
-    if (lines.length < maxLines) {
-      lines.push(word);
-    }
-  }
-
-  return lines.length > 0 ? lines.slice(0, maxLines) : [text];
-}
-
-function createExpectedPoster(title: string, originalTitle: string, label = "СКОРО") {
-  const titleLines = splitPosterLine(title.toUpperCase(), 17, 3);
-  const originalLines = splitPosterLine(originalTitle, 24, 2);
-  const titleStartY = titleLines.length === 1 ? 490 : titleLines.length === 2 ? 462 : 432;
-  const originalStartY = originalLines.length === 1 ? 610 : 588;
-
-  const titleText = titleLines
-    .map(
-      (line, index) =>
-        `<text x="250" y="${titleStartY + index * 44}" text-anchor="middle" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="900" letter-spacing="-0.5">${escapePosterText(line)}</text>`,
-    )
-    .join("");
-
-  const originalText = originalLines
-    .map(
-      (line, index) =>
-        `<text x="250" y="${originalStartY + index * 26}" text-anchor="middle" fill="#d4d4d4" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="800" opacity="0.85">${escapePosterText(line)}</text>`,
-    )
-    .join("");
-
-  const svg = `
-    <svg width="500" height="750" viewBox="0 0 500 750" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="bg" x1="0" y1="0" x2="0" y2="750" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stop-color="#18181b"/>
-          <stop offset="50%" stop-color="#050505"/>
-          <stop offset="100%" stop-color="#000000"/>
-        </linearGradient>
-        <radialGradient id="glow" cx="50%" cy="22%" r="70%">
-          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.28"/>
-          <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
-        </radialGradient>
-      </defs>
-      <rect width="500" height="750" fill="url(#bg)"/>
-      <rect width="500" height="750" fill="url(#glow)"/>
-      <rect x="30" y="30" width="440" height="690" rx="38" stroke="#ffffff" stroke-opacity="0.18" stroke-width="2"/>
-      <circle cx="250" cy="246" r="116" fill="#ffffff" opacity="0.055"/>
-      <path d="M250 132L278 218L369 218L296 271L324 358L250 304L176 358L204 271L131 218L222 218L250 132Z" fill="#ffffff" opacity="0.88"/>
-      <rect x="136" y="374" width="228" height="44" rx="22" fill="#ffffff" fill-opacity="0.94"/>
-      <text x="250" y="403" text-anchor="middle" fill="#000000" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="900" letter-spacing="4">${escapePosterText(label)}</text>
-      ${titleText}
-      ${originalText}
-      <text x="250" y="674" text-anchor="middle" fill="#737373" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="900">KinoLuma</text>
-    </svg>
-  `;
-
-  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-}
-
-function getTmdbExpectedPoster(input: {
-  title: string;
-  originalTitle: string;
-  year: string;
-  type: ContentType;
-}) {
-  const params = new URLSearchParams();
-
-  params.set("title", input.title);
-  params.set("originalTitle", input.originalTitle);
-  params.set("year", input.year);
-  params.set("type", input.type);
-  params.set("quality", "high");
-  params.set("v", "expected-curated-1");
-
-  return `/api/tmdb/poster?${params.toString()}`;
-}
 
 function createExpectedRelease(input: ExpectedReleaseInput): Movie {
   const type = input.type ?? "Фильм";

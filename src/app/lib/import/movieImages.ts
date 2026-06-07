@@ -1,7 +1,7 @@
+import { IMAGE_SOURCE_LINKS, buildTmdbImageUrl } from '../imageLinks';
 import type { MovieType } from './types';
 
-const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
-const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
+const TMDB_BASE_URL = IMAGE_SOURCE_LINKS.tmdbApiBase;
 const KINOPOISK_BASE_URL = 'https://api.kinopoisk.dev/v1.4';
 
 export type MovieImageLookupInput = {
@@ -101,7 +101,7 @@ function buildTmdbImage(path: unknown, size: 'w500' | 'w780' | 'original') {
   if (text.startsWith('http')) return text;
   if (!text.startsWith('/')) return null;
 
-  return `${TMDB_IMAGE_BASE_URL}/${size}${text}`;
+  return buildTmdbImageUrl(text, size);
 }
 
 function cleanImageUrl(value: unknown) {

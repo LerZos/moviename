@@ -5,6 +5,7 @@ import type { CSSProperties } from "react";
 import { useEffect, useRef, useState } from "react";
 
 import type { Movie } from "../data/movies";
+import { canResolveTrailerUrl, resolveTrailerUrl } from "../lib/trailers";
 
 type CollectionMovieGridClientProps = {
   items: Movie[];
@@ -45,7 +46,7 @@ function getPremiereText(item: Movie) {
 }
 
 function hasTrailer(item: Movie) {
-  return Boolean(item.trailerUrl && item.trailerUrl.trim().length > 0);
+  return canResolveTrailerUrl(item);
 }
 
 export default function CollectionMovieGridClient({
@@ -141,12 +142,14 @@ export default function CollectionMovieGridClient({
     router.push(`/movie/${item.slug}`);
   }
 
-  function openTrailer(item: Movie) {
-    if (!hasTrailer(item)) {
+  async function openTrailer(item: Movie) {
+    const trailerUrl = await resolveTrailerUrl(item);
+
+    if (!trailerUrl) {
       return;
     }
 
-    setTrailerItem(item);
+    setTrailerItem({ ...item, trailerUrl });
   }
 
   if (items.length === 0) {
@@ -229,7 +232,7 @@ export default function CollectionMovieGridClient({
                     disabled={!hasTrailer(item)}
                     className="collection-movie-trailer-button"
                   >
-                    Трейлер
+                    {hasTrailer(item) ? "Трейлер" : "Нет трейлера"}
                   </button>
 
                   <button
@@ -314,7 +317,7 @@ export default function CollectionMovieGridClient({
                   disabled={!hasTrailer(selectedItem)}
                   className="collection-details-primary"
                 >
-                  Смотреть трейлер
+                  {hasTrailer(selectedItem) ? "Смотреть трейлер" : "Трейлер скоро"}
                 </button>
 
                 <button

@@ -4,6 +4,14 @@ import { generatedKinopoiskRequestedMovies } from "./generatedKinopoiskRequested
 import { curatedExpectedReleases } from "./curatedExpectedReleases";
 import { manualPremiumAdditions } from "./manualPremiumAdditions";
 import { manualPopularAnime } from "./manualPopularAnime";
+import { manualCuratedExpansionPack } from "./manualCuratedExpansionPack";
+import {
+  IMAGE_LINKS,
+  createCartoonPoster,
+  createKinoLumaPoster,
+  getKinopoiskPoster,
+  getTmdbPoster,
+} from "../lib/imageLinks";
 
 export type ContentType = "Фильм" | "Сериал" | "Аниме" | "Мультфильм" | "Документальный";
 
@@ -62,95 +70,6 @@ export type Movie = {
   players?: PlayerProvider[];
 };
 
-function createKinoLumaPoster(title: string, originalTitle: string, label = "ФИЛЬМ") {
-  const safeTitle = escapePosterText(title.toUpperCase());
-  const safeOriginalTitle = escapePosterText(originalTitle);
-  const safeLabel = escapePosterText(label);
-
-  const svg = `
-    <svg width="500" height="750" viewBox="0 0 500 750" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="bg" x1="0" y1="0" x2="0" y2="750" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stop-color="#2f2f35"/>
-          <stop offset="52%" stop-color="#0b0b0b"/>
-          <stop offset="100%" stop-color="#000000"/>
-        </linearGradient>
-        <radialGradient id="glow" cx="50%" cy="20%" r="70%">
-          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.24"/>
-          <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
-        </radialGradient>
-      </defs>
-      <rect width="500" height="750" fill="url(#bg)"/>
-      <rect width="500" height="750" fill="url(#glow)"/>
-      <rect x="30" y="30" width="440" height="690" rx="36" stroke="#ffffff" stroke-opacity="0.16" stroke-width="2"/>
-      <circle cx="250" cy="270" r="118" fill="#ffffff" opacity="0.055"/>
-      <circle cx="250" cy="270" r="78" stroke="#ffffff" stroke-opacity="0.20" stroke-width="12"/>
-      <path d="M226 222V318L306 270L226 222Z" fill="#ffffff" opacity="0.88"/>
-      <rect x="124" y="394" width="252" height="44" rx="22" fill="#ffffff" fill-opacity="0.92"/>
-      <text x="250" y="423" text-anchor="middle" fill="#000000" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="900" letter-spacing="3">${safeLabel}</text>
-      <text x="250" y="510" text-anchor="middle" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="32" font-weight="900">${safeTitle}</text>
-      <text x="250" y="558" text-anchor="middle" fill="#a3a3a3" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="800">${safeOriginalTitle}</text>
-      <text x="250" y="662" text-anchor="middle" fill="#737373" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="900">KinoLuma</text>
-    </svg>
-  `;
-
-  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-}
-
-
-function escapePosterText(text: string) {
-  return text
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&apos;");
-}
-
-
-function getTmdbPoster(input: {
-  tmdbId?: number;
-  imdbId?: string;
-  title: string;
-  originalTitle?: string;
-  year?: string | number;
-  type?: ContentType | string;
-}) {
-  const params = new URLSearchParams();
-
-  if (input.tmdbId) params.set("tmdbId", String(input.tmdbId));
-  if (input.imdbId) params.set("imdbId", input.imdbId);
-  params.set("title", input.title);
-  if (input.originalTitle) params.set("originalTitle", input.originalTitle);
-  if (input.year) params.set("year", String(input.year));
-  if (input.type) params.set("type", String(input.type));
-
-  // Меняем версию, чтобы браузер не держал старый 302-редирект на /kinoluma-icon.png.
-  params.set("quality", "high");
-  params.set("v", "3");
-
-  return `/api/tmdb/poster?${params.toString()}`;
-}
-
-function getKinopoiskPoster(input: {
-  kinopoiskId?: number | string | null;
-  fallback?: string;
-}) {
-  const id = String(input.kinopoiskId || "").match(/\d+/)?.[0] || "";
-  if (!id) return input.fallback || "/kinoluma-icon.png";
-
-  const params = new URLSearchParams();
-  params.set("kpId", id);
-  // v=kp-2 нужен, чтобы браузер и Vercel не держали старый 302-редирект на /kinoluma-icon.png.
-  params.set("v", "kp-2");
-
-  if (input.fallback && !input.fallback.startsWith("data:")) {
-    params.set("fallback", input.fallback);
-  }
-
-  return `/api/kinopoisk/poster?${params.toString()}`;
-}
-
 function createKinopoiskPlayers(kinopoiskId: number): PlayerProvider[] {
   const id = String(kinopoiskId);
 
@@ -174,106 +93,6 @@ function createKinopoiskPlayers(kinopoiskId: number): PlayerProvider[] {
     },
   ];
 }
-
-function splitPosterLine(text: string, maxLength: number, maxLines: number) {
-  const words = text.split(" ").filter(Boolean);
-  const lines: string[] = [];
-
-  for (const word of words) {
-    const currentLine = lines[lines.length - 1];
-
-    if (!currentLine) {
-      lines.push(word);
-      continue;
-    }
-
-    if (`${currentLine} ${word}`.length <= maxLength) {
-      lines[lines.length - 1] = `${currentLine} ${word}`;
-      continue;
-    }
-
-    if (lines.length < maxLines) {
-      lines.push(word);
-    }
-  }
-
-  return lines.length > 0 ? lines.slice(0, maxLines) : [text];
-}
-
-function createCartoonPoster(
-  title: string,
-  originalTitle: string,
-  accent = "#facc15",
-  secondary = "#fb7185",
-) {
-  const titleLines = splitPosterLine(title.toUpperCase(), 16, 3);
-  const originalLines = splitPosterLine(originalTitle, 24, 2);
-  const titleStartY = titleLines.length === 1 ? 500 : titleLines.length === 2 ? 470 : 440;
-  const originalStartY = originalLines.length === 1 ? 608 : 586;
-
-  const titleText = titleLines
-    .map(
-      (line, index) =>
-        `<text x="250" y="${titleStartY + index * 45}" text-anchor="middle" fill="#ffffff" stroke="#111827" stroke-opacity="0.35" stroke-width="6" paint-order="stroke" font-family="Arial, Helvetica, sans-serif" font-size="36" font-weight="900" letter-spacing="-0.5">${escapePosterText(line)}</text>`,
-    )
-    .join("");
-
-  const originalText = originalLines
-    .map(
-      (line, index) =>
-        `<text x="250" y="${originalStartY + index * 26}" text-anchor="middle" fill="#f8fafc" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="800" opacity="0.86">${escapePosterText(line)}</text>`,
-    )
-    .join("");
-
-  const svg = `
-    <svg width="500" height="750" viewBox="0 0 500 750" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="bg" x1="0" y1="0" x2="0" y2="750" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stop-color="#0f172a"/>
-          <stop offset="48%" stop-color="#111827"/>
-          <stop offset="100%" stop-color="#030712"/>
-        </linearGradient>
-        <radialGradient id="glow" cx="50%" cy="20%" r="70%">
-          <stop offset="0%" stop-color="${accent}" stop-opacity="0.70"/>
-          <stop offset="56%" stop-color="${secondary}" stop-opacity="0.18"/>
-          <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
-        </radialGradient>
-        <linearGradient id="shade" x1="0" y1="0" x2="0" y2="750" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stop-color="#000000" stop-opacity="0"/>
-          <stop offset="58%" stop-color="#000000" stop-opacity="0.10"/>
-          <stop offset="100%" stop-color="#000000" stop-opacity="0.70"/>
-        </linearGradient>
-      </defs>
-
-      <rect width="500" height="750" fill="url(#bg)"/>
-      <rect width="500" height="750" fill="url(#glow)"/>
-      <circle cx="94" cy="142" r="46" fill="${accent}" opacity="0.82"/>
-      <circle cx="410" cy="176" r="72" fill="${secondary}" opacity="0.72"/>
-      <circle cx="382" cy="446" r="108" fill="${accent}" opacity="0.18"/>
-      <path d="M80 538C150 438 224 478 288 354C336 260 370 246 436 204" stroke="#ffffff" stroke-opacity="0.17" stroke-width="72" stroke-linecap="round"/>
-      <path d="M120 176C176 116 262 104 328 148C398 194 414 286 362 354C308 424 198 410 148 340C106 282 78 222 120 176Z" fill="#ffffff" opacity="0.10"/>
-      <path d="M166 274C198 236 242 236 274 274C306 236 350 236 382 274" stroke="#ffffff" stroke-opacity="0.36" stroke-width="18" stroke-linecap="round"/>
-      <circle cx="190" cy="258" r="15" fill="#ffffff" opacity="0.72"/>
-      <circle cx="350" cy="258" r="15" fill="#ffffff" opacity="0.72"/>
-      <path d="M210 348C246 382 300 382 336 348" stroke="${accent}" stroke-opacity="0.82" stroke-width="16" stroke-linecap="round"/>
-      <g fill="#ffffff" opacity="0.70">
-        <circle cx="82" cy="340" r="3"/><circle cx="132" cy="476" r="2.5"/><circle cx="326" cy="112" r="3"/><circle cx="422" cy="356" r="2.5"/><circle cx="236" cy="170" r="2.5"/>
-      </g>
-      <rect width="500" height="750" fill="url(#shade)"/>
-      <rect x="28" y="28" width="444" height="694" rx="34" stroke="#ffffff" stroke-opacity="0.16" stroke-width="2"/>
-      <text x="64" y="86" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="900" letter-spacing="3">МУЛЬТФИЛЬМ</text>
-      <rect x="134" y="366" width="232" height="44" rx="22" fill="#020617" fill-opacity="0.46" stroke="#ffffff" stroke-opacity="0.16"/>
-      <text x="250" y="394" text-anchor="middle" fill="${accent}" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="900" letter-spacing="3">MOVIEHUB KIDS</text>
-      ${titleText}
-      ${originalText}
-      <rect x="150" y="646" width="200" height="42" rx="21" fill="#ffffff" fill-opacity="0.94"/>
-      <text x="250" y="672" text-anchor="middle" fill="#000000" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="900">Смотреть легально</text>
-    </svg>
-  `;
-
-  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-}
-
 
 function compactMovieText(text: string) {
   return text.replace(/\s+/g, " ").trim();
@@ -508,6 +327,7 @@ function hydrateMovieContent(movie: Movie) {
 }
 
 const moviesRaw: Movie[] = [
+  ...manualCuratedExpansionPack,
   {
       id: 1,
       kinopoiskId: 4540126,
@@ -519,7 +339,7 @@ const moviesRaw: Movie[] = [
       year: "2024",
       rating: 8.5,
       genres: ["Фантастика", "Приключения", "Драма"],
-      poster: "https://image.tmdb.org/t/p/w500/1pdfLvkbY9ohJlCjQH2CZjjYVvJ.jpg",
+      poster: IMAGE_LINKS.dunePartTwoPoster,
       description: "Эпическая фантастика о власти, пустыне и судьбе.",
       trailerUrl: "https://www.youtube.com/embed/Way9Dexny3w",
       longDescription:
@@ -563,7 +383,7 @@ const moviesRaw: Movie[] = [
       year: "2023",
       rating: 8.3,
       genres: ["Биография", "Драма", "История"],
-      poster: "https://image.tmdb.org/t/p/w500/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg",
+      poster: IMAGE_LINKS.oppenheimerPoster,
       description: "История учёного, который изменил ход XX века.",
       trailerUrl: "https://www.youtube.com/embed/uYPbbksJxIg",
       longDescription:
@@ -604,7 +424,7 @@ const moviesRaw: Movie[] = [
       year: "2014",
       rating: 8.7,
       genres: ["Фантастика", "Драма", "Приключения"],
-      poster: "https://upload.wikimedia.org/wikipedia/ru/c/c3/Interstellar_2014.jpg",
+      poster: IMAGE_LINKS.interstellarPoster,
       description: "Путешествие через космос ради спасения человечества.",
       trailerUrl: "https://www.youtube.com/embed/2LqzF5WauAw",
       longDescription:
@@ -645,7 +465,7 @@ const moviesRaw: Movie[] = [
       year: "2022",
       rating: 7.8,
       genres: ["Криминал", "Драма", "Экшен"],
-      poster: "https://image.tmdb.org/t/p/w500/74xTEgt7R36Fpooo50r9T25onhq.jpg",
+      poster: IMAGE_LINKS.theBatmanPoster,
       description: "Мрачная детективная история о Готэме.",
       trailerUrl: "https://www.youtube.com/embed/mqqft2x_Aa4",
       longDescription:
@@ -694,7 +514,7 @@ const moviesRaw: Movie[] = [
       year: "2023",
       rating: 8.6,
       genres: ["Анимация", "Экшен", "Приключения"],
-      poster: "https://image.tmdb.org/t/p/w500/8Vt6mWEReuy4Of61Lnj5Xj704m8.jpg",
+      poster: IMAGE_LINKS.spiderManAcrossTheSpiderVersePoster,
       description: "Стильная мультивселенная Человека-паука.",
       trailerUrl: "https://www.youtube.com/embed/shW9i6k8cB0",
       longDescription:
@@ -735,7 +555,7 @@ const moviesRaw: Movie[] = [
       year: "2022",
       rating: 7.6,
       genres: ["Фантастика", "Приключения", "Экшен"],
-      poster: "https://image.tmdb.org/t/p/w500/t6HIqrRAclMCA60NsSmeqe9RmNV.jpg",
+      poster: IMAGE_LINKS.avatarTheWayOfWaterPoster,
       description: "Возвращение на Пандору и история семьи Салли.",
       trailerUrl: "https://www.youtube.com/embed/6AvFHlKS6OE",
       longDescription:
@@ -776,7 +596,7 @@ const moviesRaw: Movie[] = [
       year: "2016",
       rating: 8.7,
       genres: ["Фантастика", "Ужасы", "Драма"],
-      poster: "https://image.tmdb.org/t/p/w500/49WJfeN0moxb9IPfGn8AIqMGskD.jpg",
+      poster: IMAGE_LINKS.strangerThingsPoster,
       description: "Друзья, тайны маленького города и паранормальные события.",
       trailerUrl: "https://www.youtube.com/embed/b9EkMc79ZSU",
       longDescription:
@@ -817,7 +637,7 @@ const moviesRaw: Movie[] = [
       year: "2023",
       rating: 8.7,
       genres: ["Драма", "Фантастика", "Приключения"],
-      poster: "https://image.tmdb.org/t/p/w500/uKvVjHNqB5VmOrdxqAt2F7J78ED.jpg",
+      poster: IMAGE_LINKS.theLastOfUsPoster,
       description: "История выживания, доверия и опасного путешествия.",
       trailerUrl: "https://www.youtube.com/embed/uLtkt8BonwM",
       longDescription:
@@ -858,7 +678,7 @@ const moviesRaw: Movie[] = [
       year: "2022",
       rating: 8.1,
       genres: ["Комедия", "Мистика", "Фэнтези"],
-      poster: "https://image.tmdb.org/t/p/w500/jeGtaMwGxPmQN5xM4ClnwPQcNQz.jpg",
+      poster: IMAGE_LINKS.wednesdayPoster,
       description: "Мрачная, ироничная история Уэнсдей Аддамс.",
       trailerUrl: "https://www.youtube.com/embed/Q73UhUTs6y0",
       longDescription:
@@ -899,7 +719,7 @@ const moviesRaw: Movie[] = [
       year: "2022",
       rating: 8.4,
       genres: ["Фэнтези", "Драма", "Приключения"],
-      poster: "https://image.tmdb.org/t/p/w500/7QMsOTMUswlwxJP0rTTZfmz2tX2.jpg",
+      poster: IMAGE_LINKS.houseOfTheDragonPoster,
       description: "История дома Таргариенов до событий Игры престолов.",
       trailerUrl: "https://www.youtube.com/embed/DotnJ7tTA34",
       longDescription:
@@ -940,7 +760,7 @@ const moviesRaw: Movie[] = [
       year: "2008",
       rating: 9.5,
       genres: ["Драма", "Криминал", "Триллер"],
-      poster: "https://image.tmdb.org/t/p/w500/3xnWaLQjelJDDF7LT1WBo6f4BRe.jpg",
+      poster: IMAGE_LINKS.breakingBadPoster,
       description: "Один из самых известных криминальных сериалов.",
       trailerUrl: "https://www.youtube.com/embed/HhesaQXLuRY",
       longDescription:
@@ -981,7 +801,7 @@ const moviesRaw: Movie[] = [
       year: "2011",
       rating: 9.2,
       genres: ["Фэнтези", "Драма", "Приключения"],
-      poster: "https://image.tmdb.org/t/p/w500/1XS1oqL89opfnbLl8WnZY1O1uJx.jpg",
+      poster: IMAGE_LINKS.gameOfThronesPoster,
       description: "Борьба за власть, интриги и великие дома Вестероса.",
       trailerUrl: "https://www.youtube.com/embed/KYKpcWuZDYs",
       longDescription:
@@ -1029,7 +849,7 @@ const moviesRaw: Movie[] = [
         year: "2013",
         type: "series",
       }),
-      posterFallbacks: ["https://image.tmdb.org/t/p/w500/hTP1DtLGFamjfu8WqjnuQdP1n4i.jpg"],
+      posterFallbacks: [IMAGE_LINKS.attackOnTitanPosterFallback],
       description: "Люди против гигантов и большая тайна за стенами.",
       trailerUrl: "https://www.youtube.com/embed/3xNH23QkNpk",
       longDescription:
@@ -1073,7 +893,7 @@ const moviesRaw: Movie[] = [
       year: "2019",
       rating: 8.6,
       genres: ["Аниме", "Экшен", "Фэнтези"],
-      poster: "https://image.tmdb.org/t/p/w500/1IMWXXlET7jWahhPbXcBwZxgyqe.jpg",
+      poster: IMAGE_LINKS.demonSlayerPoster,
       description: "История Танджиро и его пути охотника на демонов.",
       trailerUrl: "https://www.youtube.com/embed/VQGCKyvzIM4",
       longDescription:
@@ -1112,7 +932,7 @@ const moviesRaw: Movie[] = [
       year: "2016",
       rating: 8.4,
       genres: ["Аниме", "Романтика", "Драма"],
-      poster: "https://image.tmdb.org/t/p/w500/q719jXXEzOoYaps6babgKnONONX.jpg",
+      poster: IMAGE_LINKS.yourNamePoster,
       description: "Красивая история о связи двух людей через расстояние.",
       trailerUrl: "https://www.youtube.com/embed/xU47nhruN-Q",
       longDescription:
@@ -1151,7 +971,7 @@ const moviesRaw: Movie[] = [
       year: "2002",
       rating: 8.4,
       genres: ["Аниме", "Экшен", "Приключения"],
-      poster: "https://image.tmdb.org/t/p/w500/vauCEnR7CiyBDzRCeElKkCaXIYu.jpg",
+      poster: IMAGE_LINKS.narutoPoster,
       description: "История юного ниндзя, который мечтает стать Хокаге.",
       trailerUrl: "https://www.youtube.com/embed/-G9BqkgZXRA",
       longDescription:
@@ -1190,7 +1010,7 @@ const moviesRaw: Movie[] = [
       year: "2016",
       rating: 9.5,
       genres: ["Документальный", "Природа"],
-      poster: "https://image.tmdb.org/t/p/w500/5maYKYzWpE68ycxGh1luu4P2LOS.jpg",
+      poster: IMAGE_LINKS.planetEarthIiPoster,
       description: "Документальный проект о природе и жизни на Земле.",
       trailerUrl: "https://www.youtube.com/embed/c8aFcHFu8QM",
       longDescription:
@@ -1231,7 +1051,7 @@ const moviesRaw: Movie[] = [
       year: "2019",
       rating: 9.2,
       genres: ["Документальный", "Природа"],
-      poster: "https://image.tmdb.org/t/p/w500/wRSnArnQBmeUYb5GWDU595bGsBr.jpg",
+      poster: IMAGE_LINKS.ourPlanetPoster,
       description: "Красивый документальный сериал о планете и её экосистемах.",
       trailerUrl: "https://www.youtube.com/embed/0_pu6A5YG1o",
       longDescription:
@@ -1277,7 +1097,7 @@ const moviesRaw: Movie[] = [
       year: "2020",
       rating: 7.6,
       genres: ["Документальный", "Технологии"],
-      poster: "https://upload.wikimedia.org/wikipedia/en/2/27/Social_dilemma_xlg.jpg",
+      poster: IMAGE_LINKS.theSocialDilemmaPoster,
       description: "Документальная история о влиянии соцсетей на людей.",
       trailerUrl: "https://www.youtube.com/embed/uaaC57tcci0",
       longDescription:
@@ -1318,7 +1138,7 @@ const moviesRaw: Movie[] = [
       year: "2010",
       rating: 8.8,
       genres: ["Фантастика", "Экшен", "Триллер"],
-      poster: "https://image.tmdb.org/t/p/w500/9gk7adHYeDvHkCSEqAvQNLV5Uge.jpg",
+      poster: IMAGE_LINKS.inceptionPoster,
       description:
         "Команда специалистов проникает в сны, где идея может стать оружием.",
       trailerUrl: "https://www.youtube.com/embed/YoHD9XEInc0",
@@ -1360,7 +1180,7 @@ const moviesRaw: Movie[] = [
       year: "1999",
       rating: 8.7,
       genres: ["Фантастика", "Экшен"],
-      poster: "https://image.tmdb.org/t/p/w500/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg",
+      poster: IMAGE_LINKS.theMatrixPoster,
       description:
         "Киберпанк-классика о реальности, свободе выбора и красной таблетке.",
       trailerUrl: "https://www.youtube.com/embed/vKQi3bBA1y8",
@@ -1402,7 +1222,7 @@ const moviesRaw: Movie[] = [
       year: "2015",
       rating: 8.1,
       genres: ["Экшен", "Приключения", "Фантастика"],
-      poster: "https://image.tmdb.org/t/p/w500/hA2ple9q4qnwxp3hKVNhroipsir.jpg",
+      poster: IMAGE_LINKS.madMaxFuryRoadPoster,
       description: "Пыль, скорость и безумная погоня через пустоши.",
       trailerUrl: "https://www.youtube.com/embed/hEJnMQG9ev8",
       longDescription:
@@ -1443,7 +1263,7 @@ const moviesRaw: Movie[] = [
       year: "2008",
       rating: 9.0,
       genres: ["Экшен", "Криминал", "Драма"],
-      poster: "https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg",
+      poster: IMAGE_LINKS.theDarkKnightPoster,
       description:
         "Готэм сталкивается с хаосом, который невозможно просто арестовать.",
       trailerUrl: "https://www.youtube.com/embed/EXeTwQWrcwY",
@@ -1485,7 +1305,7 @@ const moviesRaw: Movie[] = [
       year: "2017",
       rating: 8.0,
       genres: ["Фантастика", "Драма", "Триллер"],
-      poster: "https://image.tmdb.org/t/p/w500/gajva2L0rPYkEWjzgFlBXCAVBE5.jpg",
+      poster: IMAGE_LINKS.bladeRunner2049Poster,
       description:
         "Медленная, стильная и холодная фантастика о памяти и личности.",
       trailerUrl: "https://www.youtube.com/embed/gCcx85zbxz4",
@@ -1527,7 +1347,7 @@ const moviesRaw: Movie[] = [
       year: "2022",
       rating: 8.2,
       genres: ["Экшен", "Драма"],
-      poster: "https://image.tmdb.org/t/p/w500/62HCnUTziyWcpDaBO2i1DX17ljH.jpg",
+      poster: IMAGE_LINKS.topGunMaverickPoster,
       description: "Возвращение легендарного пилота и зрелищные воздушные сцены.",
       trailerUrl: "https://www.youtube.com/embed/giXco2jaZ_4",
       longDescription:
@@ -1568,7 +1388,7 @@ const moviesRaw: Movie[] = [
       year: "2016",
       rating: 7.9,
       genres: ["Фантастика", "Драма"],
-      poster: "https://image.tmdb.org/t/p/w500/x2FJsf1ElAgr63Y3PNPtJrcmpoe.jpg",
+      poster: IMAGE_LINKS.arrivalPoster,
       description:
         "Контакт с внеземной цивилизацией превращается в загадку языка и времени.",
       trailerUrl: "https://www.youtube.com/embed/tFMo3UJ4B4g",
@@ -1610,7 +1430,7 @@ const moviesRaw: Movie[] = [
       year: "2020",
       rating: 7.3,
       genres: ["Фантастика", "Экшен", "Триллер"],
-      poster: "https://image.tmdb.org/t/p/w500/aCIFMriQh8rvhxpN1IWGgvH0Tlg.jpg",
+      poster: IMAGE_LINKS.tenetPoster,
       description:
         "Шпионский экшен, где время работает не так, как привык зритель.",
       trailerUrl: "https://www.youtube.com/embed/LdOM0x0XDMo",
@@ -1657,7 +1477,7 @@ const moviesRaw: Movie[] = [
       year: "2014",
       rating: 7.9,
       genres: ["Фантастика", "Экшен"],
-      poster: "https://image.tmdb.org/t/p/w500/uUHvlkLavotfGsNtosDy8ShsIYF.jpg",
+      poster: IMAGE_LINKS.edgeOfTomorrowPoster,
       description:
         "Солдат снова и снова проживает один день, чтобы найти путь к победе.",
       trailerUrl: "https://www.youtube.com/embed/yUmSVcttXnI",
@@ -1699,7 +1519,7 @@ const moviesRaw: Movie[] = [
       year: "2023",
       rating: 7.7,
       genres: ["Экшен", "Криминал", "Триллер"],
-      poster: "https://image.tmdb.org/t/p/w500/vZloFAK7NmvMGKE7VkF5UHaz0I.jpg",
+      poster: IMAGE_LINKS.johnWickChapter4Poster,
       description:
         "Стильный боевик о человеке, которому лучше не мешать отдыхать.",
       trailerUrl: "https://www.youtube.com/embed/qEVUtrk8_B4",
@@ -1741,7 +1561,7 @@ const moviesRaw: Movie[] = [
       year: "2006",
       rating: 8.5,
       genres: ["Драма", "Триллер", "Фантастика"],
-      poster: "https://image.tmdb.org/t/p/w500/bdN3gXuIZYaJP7ftKK2sU0nPtEA.jpg",
+      poster: IMAGE_LINKS.thePrestigePoster,
       description: "Соперничество двух иллюзионистов превращается в одержимость.",
       trailerUrl: "https://www.youtube.com/embed/o4gHCmTQDVI",
       longDescription:
@@ -1782,7 +1602,7 @@ const moviesRaw: Movie[] = [
       year: "2013",
       rating: 7.7,
       genres: ["Фантастика", "Драма", "Триллер"],
-      poster: "https://image.tmdb.org/t/p/w500/kZ2nZw8D681aphje8NJi8EfbL1U.jpg",
+      poster: IMAGE_LINKS.gravityPoster,
       description: "Выживание в космосе, где тишина страшнее любого монстра.",
       trailerUrl: "https://www.youtube.com/embed/OiTiKOy59o4",
       longDescription:
@@ -1830,9 +1650,9 @@ const moviesRaw: Movie[] = [
       rating: 8.1,
       genres: ["Анимация", "Приключения", "Комедия"],
       poster:
-        "https://upload.wikimedia.org/wikipedia/en/thumb/b/bf/The_Super_Mario_Galaxy_Movie_poster.jpeg/250px-The_Super_Mario_Galaxy_Movie_poster.jpeg",
+        IMAGE_LINKS.theSuperMarioGalaxyMoviePoster,
       posterFallbacks: [
-        "https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/The_Super_Mario_Galaxy_Movie_%282026%29_Poster.jpg/1080px-The_Super_Mario_Galaxy_Movie_%282026%29_Poster.jpg",
+        IMAGE_LINKS.theSuperMarioGalaxyMoviePoster2,
       ],
       description:
         "Космическое анимационное приключение по миру Super Mario: ярко, быстро и семейно.",
@@ -1882,10 +1702,10 @@ const moviesRaw: Movie[] = [
       rating: 8.4,
       genres: ["Фантастика", "Драма", "Приключения"],
       poster:
-        "https://image.tmdb.org/t/p/w500/h5FcFJzoeIjimuGhQ5Dw598T2Vu.jpg",
+        IMAGE_LINKS.projectHailMaryPoster,
       posterFallbacks: [
-        "https://upload.wikimedia.org/wikipedia/en/3/3b/Project_Hail_Mary_poster.jpg",
-        "https://upload.wikimedia.org/wikipedia/en/thumb/3/3b/Project_Hail_Mary_poster.jpg/500px-Project_Hail_Mary_poster.jpg",
+        IMAGE_LINKS.projectHailMaryPoster3,
+        IMAGE_LINKS.projectHailMaryPoster3,
       ],
       description:
         "Научно-фантастическая история о миссии, где один человек должен найти шанс для спасения Земли.",
@@ -1936,9 +1756,9 @@ const moviesRaw: Movie[] = [
       rating: 7.8,
       genres: ["Биография", "Музыка", "Драма"],
       poster:
-        "https://upload.wikimedia.org/wikipedia/en/3/37/Michael_%282026_film_poster%29.png",
+        IMAGE_LINKS.michaelPoster,
       posterFallbacks: [
-        "https://upload.wikimedia.org/wikipedia/en/thumb/3/37/Michael_%282026_film_poster%29.png/500px-Michael_%282026_film_poster%29.png",
+        IMAGE_LINKS.michaelPoster2,
       ],
       description:
         "Музыкальная биографическая драма о сцене, славе и цене большой легенды.",
@@ -1987,9 +1807,9 @@ const moviesRaw: Movie[] = [
       rating: 7.7,
       genres: ["Драма", "Комедия"],
       poster:
-        "https://upload.wikimedia.org/wikipedia/en/9/97/The_Devil_Wears_Prada_2_%28film_poster%29.png",
+        IMAGE_LINKS.theDevilWearsPrada2Poster,
       posterFallbacks: [
-        "https://upload.wikimedia.org/wikipedia/en/thumb/9/97/The_Devil_Wears_Prada_2_%28film_poster%29.png/500px-The_Devil_Wears_Prada_2_%28film_poster%29.png",
+        IMAGE_LINKS.theDevilWearsPrada2Poster2,
       ],
       description:
         "Возвращение в мир моды, редакций и идеального холодного взгляда.",
@@ -2033,10 +1853,10 @@ const moviesRaw: Movie[] = [
       rating: 7.1,
       genres: ["Ужасы", "Триллер"],
       poster:
-        "https://upload.wikimedia.org/wikipedia/en/c/c2/Scream_7_%28poster%29.jpg",
+        IMAGE_LINKS.scream7Poster,
       posterFallbacks: [
-        "https://image.tmdb.org/t/p/w500/jcejzY3BakzUVvRX3I4bsDQPlTd.jpg",
-        "https://upload.wikimedia.org/wikipedia/en/thumb/c/c2/Scream_7_%28poster%29.jpg/500px-Scream_7_%28poster%29.jpg",
+        IMAGE_LINKS.scream7Poster3,
+        IMAGE_LINKS.scream7Poster3,
       ],
       description:
         "Новая глава слэшера: маска возвращается, а спокойная жизнь снова оказывается слишком подозрительной.",
@@ -2080,9 +1900,9 @@ const moviesRaw: Movie[] = [
       rating: 7.2,
       genres: ["Фантастика", "Экшен", "Триллер"],
       poster:
-        "https://upload.wikimedia.org/wikipedia/en/4/43/Mercy_2026_poster.jpeg",
+        IMAGE_LINKS.mercyPoster,
       posterFallbacks: [
-        "https://upload.wikimedia.org/wikipedia/en/thumb/4/43/Mercy_2026_poster.jpeg/500px-Mercy_2026_poster.jpeg",
+        IMAGE_LINKS.mercyPoster2,
       ],
       description:
         "Фантастический триллер о будущем, где система правосудия стала слишком быстрой.",
@@ -2126,9 +1946,9 @@ const moviesRaw: Movie[] = [
       rating: 7.5,
       genres: ["Экшен", "Комедия", "Фантастика"],
       poster:
-        "https://cdn.marvel.com/content/2x/call_back_e16_1sheetbusshelter_rd2_v1b_rs_mech4.jpg",
+        IMAGE_LINKS.wonderManPoster,
       posterFallbacks: [
-        "https://upload.wikimedia.org/wikipedia/en/thumb/b/bd/Wonder_Man_%28TV_series%29_logo.png/500px-Wonder_Man_%28TV_series%29_logo.png",
+        IMAGE_LINKS.wonderManPoster2,
       ],
       description:
         "Сериал про актёра, супергеройскую роль и момент, когда кастинг становится слишком реальным.",
@@ -2178,10 +1998,10 @@ const moviesRaw: Movie[] = [
       rating: 7.6,
       genres: ["Фантастика", "Приключения", "Драма"],
       poster:
-        "https://treknews.net/wp-content/uploads/2025/07/SFA_Overhead_PR_Vert_CTA_4x5_1080x1350-819x1024.jpg",
+        IMAGE_LINKS.starTrekStarfleetAcademyPoster,
       posterFallbacks: [
-        "https://cdn.mos.cms.futurecdn.net/EYiH8Dr2rgCdRP6VxEJZt4.jpg",
-        "https://blog.trekcore.com/wp-content/uploads/2025/12/sfa-key-art-cast.jpg",
+        IMAGE_LINKS.starTrekStarfleetAcademyPoster3,
+        IMAGE_LINKS.starTrekStarfleetAcademyPoster3,
       ],
       description:
         "Новая группа курсантов учится выживать в академии, дружбе и большой космической ответственности.",
@@ -2224,7 +2044,7 @@ const moviesRaw: Movie[] = [
       year: "1994",
       rating: 8.5,
       genres: ["Анимация", "Приключения", "Семейный", "Музыка", "Драма"],
-      poster: "https://upload.wikimedia.org/wikipedia/ru/thumb/6/62/Lion_king_ver1.jpg/330px-Lion_king_ver1.jpg",
+      poster: IMAGE_LINKS.theLionKing1994Poster,
       description:
         "Большая история взросления, ответственности и возвращения домой под музыку, которую сложно не подпевать.",
       trailerUrl: "https://www.youtube.com/embed/lFzVJEksoDY",
@@ -2265,7 +2085,7 @@ const moviesRaw: Movie[] = [
       year: "1995",
       rating: 8.3,
       genres: ["Анимация", "Комедия", "Приключения", "Семейный", "Фэнтези"],
-      poster: "https://upload.wikimedia.org/wikipedia/ru/thumb/a/a6/Toy_Story_1995_Poster.jpg/250px-Toy_Story_1995_Poster.jpg",
+      poster: IMAGE_LINKS.toyStoryPoster,
       description:
         "Игрушки оживают, дружба проходит стресс-тест, а ревность получает урок размером с космический скафандр.",
       trailerUrl: "https://www.youtube.com/embed/v-PjgYDrg70",
@@ -2306,7 +2126,7 @@ const moviesRaw: Movie[] = [
       year: "2008",
       rating: 8.4,
       genres: ["Анимация", "Фантастика", "Приключения", "Семейный", "Романтика"],
-      poster: "https://upload.wikimedia.org/wikipedia/ru/c/c4/WALL-E_poster.png",
+      poster: IMAGE_LINKS.wallEPoster,
       description:
         "Маленький робот, большая планета и почти немой мультфильм, который говорит громче многих блокбастеров.",
       trailerUrl: "https://www.youtube.com/embed/CZ1CATNbXg0",
@@ -2347,7 +2167,7 @@ const moviesRaw: Movie[] = [
       year: "2001",
       rating: 7.9,
       genres: ["Анимация", "Комедия", "Приключения", "Семейный", "Фэнтези"],
-      poster: "https://upload.wikimedia.org/wikipedia/ru/thumb/3/39/Shrek.jpg/330px-Shrek.jpg",
+      poster: IMAGE_LINKS.shrekPoster,
       description:
         "Сказка, которая пришла в болото, перевернула правила жанра и доказала: герой не обязан быть глянцевым.",
       trailerUrl: "https://www.youtube.com/embed/CwXOrWvPBPk",
@@ -2388,7 +2208,7 @@ const moviesRaw: Movie[] = [
       year: "2007",
       rating: 8.1,
       genres: ["Анимация", "Комедия", "Семейный", "Драма", "Кулинария"],
-      poster: "https://upload.wikimedia.org/wikipedia/ru/thumb/d/d1/Ratatui.jpg/330px-Ratatui.jpg",
+      poster: IMAGE_LINKS.ratatouillePoster,
       description:
         "Крыса мечтает стать шеф-поваром в Париже. Звучит как хаос, но получается один из самых вкусных мультфильмов.",
       trailerUrl: "https://www.youtube.com/embed/NgsQ8mVkN8w",
@@ -2429,7 +2249,7 @@ const moviesRaw: Movie[] = [
       year: "2015",
       rating: 8.1,
       genres: ["Анимация", "Комедия", "Семейный", "Драма", "Фэнтези"],
-      poster: "https://upload.wikimedia.org/wikipedia/ru/1/18/%D0%93%D0%BE%D0%BB%D0%BE%D0%B2%D0%BE%D0%BB%D0%BE%D0%BC%D0%BA%D0%B0_2015.jpg",
+      poster: IMAGE_LINKS.insideOutPoster,
       description:
         "Путешествие по эмоциям внутри головы, где Радость и Печаль наконец перестают спорить за пульт управления.",
       trailerUrl: "https://www.youtube.com/embed/yRUAzGQ3nSY",
@@ -2470,7 +2290,7 @@ const moviesRaw: Movie[] = [
       year: "2017",
       rating: 8.4,
       genres: ["Анимация", "Музыка", "Семейный", "Приключения", "Фэнтези"],
-      poster: "https://upload.wikimedia.org/wikipedia/ru/thumb/d/d7/Coco_%282017_film%29_logo.jpg/330px-Coco_%282017_film%29_logo.jpg",
+      poster: IMAGE_LINKS.cocoPoster,
       description:
         "Музыкальное путешествие в мир памяти, семьи и мечты, после которого слово “прабабушка” звучит особенно тепло.",
       trailerUrl: "https://www.youtube.com/embed/Rvr68u6k5sI",
@@ -2511,7 +2331,7 @@ const moviesRaw: Movie[] = [
       year: "2010",
       rating: 8.1,
       genres: ["Анимация", "Приключения", "Семейный", "Фэнтези", "Экшен"],
-      poster: "https://upload.wikimedia.org/wikipedia/ru/thumb/a/a3/How_to_Train_Your_Dragon.jpg/250px-How_to_Train_Your_Dragon.jpg",
+      poster: IMAGE_LINKS.howToTrainYourDragonPoster,
       description:
         "Парень-викинг и дракон доказывают деревне, что дружба иногда сильнее традиций и громких топоров.",
       trailerUrl: "https://www.youtube.com/embed/oKiYuIsPxYk",
@@ -2552,7 +2372,7 @@ const moviesRaw: Movie[] = [
       year: "1994",
       rating: 9.3,
       genres: ["Драма", "Криминал"],
-      poster: "https://image.tmdb.org/t/p/w500/q6y0Go1tsGEsmtFryDOJo3dEmqu.jpg",
+      poster: IMAGE_LINKS.theShawshankRedemptionPoster,
       description: "История надежды, дружбы и внутренней свободы за стенами тюрьмы.",
       trailerUrl: "https://www.youtube.com/embed/PLl99DlL6b4",
       longDescription:
@@ -2593,7 +2413,7 @@ const moviesRaw: Movie[] = [
       year: "1994",
       rating: 8.8,
       genres: ["Драма", "Романтика", "Комедия"],
-      poster: "https://image.tmdb.org/t/p/w500/arw2vcBveWOVZr6pxd9XTd1TdQa.jpg",
+      poster: IMAGE_LINKS.forrestGumpPoster,
       description: "Трогательная история человека, который проходит через эпоху с открытым сердцем.",
       trailerUrl: "https://www.youtube.com/embed/bLvqoHBptjg",
       longDescription:
@@ -2634,7 +2454,7 @@ const moviesRaw: Movie[] = [
       year: "2001",
       rating: 8.9,
       genres: ["Фэнтези", "Приключения", "Драма"],
-      poster: "https://image.tmdb.org/t/p/w500/6oom5QYQ2yQTMJIbnvbkBL9cHo6.jpg",
+      poster: IMAGE_LINKS.theLordOfTheRingsTheFellowshipOfTheRingPoster,
       description: "Начало большого путешествия через Средиземье ради уничтожения кольца.",
       trailerUrl: "https://www.youtube.com/embed/V75dMMIW2B4",
       longDescription:
@@ -2675,7 +2495,7 @@ const moviesRaw: Movie[] = [
       year: "2024",
       rating: 8.2,
       genres: ["Анимация", "Приключения", "Семейный", "Фантастика"],
-      poster: "https://image.tmdb.org/t/p/w500/wTnV3PCVW5O92JMrFvvrRcV39RU.jpg",
+      poster: IMAGE_LINKS.theWildRobotPoster,
       description: "Робот оказывается на диком острове и учится понимать жизнь вокруг.",
       trailerUrl: "https://www.youtube.com/embed/67vbA5ZJdKQ",
       longDescription:
@@ -2716,7 +2536,7 @@ const moviesRaw: Movie[] = [
       year: "2024",
       rating: 7.6,
       genres: ["Анимация", "Комедия", "Семейный", "Драма"],
-      poster: "https://image.tmdb.org/t/p/w500/vpnVM9B6NMmQpWeZvzLvDESb2QY.jpg",
+      poster: IMAGE_LINKS.insideOut2Poster,
       description: "У Райли появляются новые эмоции, и в голове снова начинается ремонт без предупреждения.",
       trailerUrl: "https://www.youtube.com/embed/LEjhY15eCx0",
       longDescription:
@@ -2757,7 +2577,7 @@ const moviesRaw: Movie[] = [
       year: "2024",
       rating: 7.5,
       genres: ["Экшен", "Приключения", "Фантастика"],
-      poster: "https://image.tmdb.org/t/p/w500/iADOJ8Zymht2JPMoy3R7xceZprc.jpg",
+      poster: IMAGE_LINKS.furiosaAMadMaxSagaPoster,
       description: "История Фуриосы до Дороги ярости: пустошь, власть и выживание.",
       trailerUrl: "https://www.youtube.com/embed/XJMuhwVlca4",
       longDescription:
@@ -2798,7 +2618,7 @@ const moviesRaw: Movie[] = [
       year: "2024",
       rating: 7.1,
       genres: ["Ужасы", "Фантастика", "Триллер"],
-      poster: "https://image.tmdb.org/t/p/w500/b33nnKl1GSFbao4l3fZDDqsMx0F.jpg",
+      poster: IMAGE_LINKS.alienRomulusPoster,
       description: "Космический хоррор о группе молодых людей и очень плохой находке.",
       trailerUrl: "https://www.youtube.com/embed/x0XDEhP4MQs",
       longDescription:
@@ -2839,7 +2659,7 @@ const moviesRaw: Movie[] = [
       year: "2016",
       rating: 8.1,
       genres: ["Аниме", "Драма", "Школа"],
-      poster: "https://image.tmdb.org/t/p/w500/tuFaWiqX0TXoWu7DGNcmX3UW7sT.jpg",
+      poster: IMAGE_LINKS.aSilentVoicePoster,
       description: "Школьная драма о вине, взрослении и попытке наладить связь.",
       trailerUrl: "https://www.youtube.com/embed/nfK6UgLra7g",
       longDescription:
@@ -2877,7 +2697,7 @@ const moviesRaw: Movie[] = [
       year: "2001",
       rating: 8.6,
       genres: ["Аниме", "Фэнтези", "Приключения"],
-      poster: "https://image.tmdb.org/t/p/w500/39wmItIWsg5sZMyRUHLkWBcuVCM.jpg",
+      poster: IMAGE_LINKS.spiritedAwayPoster,
       description: "Волшебное путешествие девочки в мир духов, где нужно найти смелость.",
       trailerUrl: "https://www.youtube.com/embed/ByXuk9QqQkk",
       longDescription:
@@ -2915,7 +2735,7 @@ const moviesRaw: Movie[] = [
       year: "2009",
       rating: 7.8,
       genres: ["Анимация", "Фэнтези", "Приключения", "Мистика"],
-      poster: "https://image.tmdb.org/t/p/w500/4jeFXQYytChdZYE9JYO7Un87IlW.jpg",
+      poster: IMAGE_LINKS.coralinePoster,
       description: "Кукольная сказка с мрачной атмосферой и очень подозрительной идеальной реальностью.",
       trailerUrl: "https://www.youtube.com/embed/m9bOpeuvNwY",
       longDescription:
@@ -2956,9 +2776,9 @@ const moviesRaw: Movie[] = [
       year: "2006",
       rating: 9.4,
       genres: ["Документальный", "Природа"],
-      poster: "https://kinogo.media/uploads/posts/2021-10/1634926941_iphone360_279548.jpg",
+      poster: IMAGE_LINKS.planetEarthPoster,
       posterFallbacks: [
-        "https://upload.wikimedia.org/wikipedia/en/thumb/7/7f/Planet_Earth_DVD_cover.jpg/330px-Planet_Earth_DVD_cover.jpg"
+        IMAGE_LINKS.gladiatorPoster
       ],
       description: "Классический документальный проект BBC о природе и самых удивительных местах планеты.",
       trailerUrl: "https://www.youtube.com/embed/lMta7k46JWE",
@@ -3009,9 +2829,9 @@ const moviesRaw: Movie[] = [
       "Экшен",
       "Приключения"
     ],
-    "poster": "https://image.tmdb.org/t/p/w500/ty8TGRuvJLPUmAR1H1nRIsgwvim.jpg",
+    "poster": IMAGE_LINKS.gladiatorPoster,
     "posterFallbacks": [
-      "https://upload.wikimedia.org/wikipedia/en/8/8d/Gladiator_ver1.jpg"
+      IMAGE_LINKS.gladiatorPoster2
     ],
     "description": "Историческая драма о генерале, который теряет всё и выходит на арену ради справедливости.",
     "trailerUrl": "https://www.youtube.com/embed/P5ieIbInFpg",
@@ -3100,9 +2920,9 @@ const moviesRaw: Movie[] = [
       "Драма",
       "Комедия"
     ],
-    "poster": "https://image.tmdb.org/t/p/w500/d5iIlFn5s0ImszYzBPb8JPIfbXD.jpg",
+    "poster": IMAGE_LINKS.pulpFictionPoster,
     "posterFallbacks": [
-      "https://upload.wikimedia.org/wikipedia/en/8/82/Pulp_Fiction_cover.jpg"
+      IMAGE_LINKS.pulpFictionPoster2
     ],
     "description": "Нелинейная криминальная классика с диалогами, которые давно ушли в цитаты.",
     "trailerUrl": "https://www.youtube.com/embed/s7EdQ4FqbhY",
@@ -3189,9 +3009,9 @@ const moviesRaw: Movie[] = [
       "Драма",
       "Триллер"
     ],
-    "poster": "https://image.tmdb.org/t/p/w500/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg",
+    "poster": IMAGE_LINKS.fightClubPoster,
     "posterFallbacks": [
-      "https://upload.wikimedia.org/wikipedia/en/f/fc/Fight_Club_poster.jpg"
+      IMAGE_LINKS.fightClubPoster2
     ],
     "description": "Психологическая история о пустоте, бунте и правилах, о которых все всё равно говорят.",
     "trailerUrl": "https://www.youtube.com/embed/qtRKdVHc-cE",
@@ -3281,9 +3101,9 @@ const moviesRaw: Movie[] = [
       "Криминал",
       "Драма"
     ],
-    "poster": "https://image.tmdb.org/t/p/w500/191nKfP0ehp3uIvWqgPbFmI4lv9.jpg",
+    "poster": IMAGE_LINKS.se7enPoster,
     "posterFallbacks": [
-      "https://upload.wikimedia.org/wikipedia/en/6/68/Seven_%28movie%29_poster.jpg"
+      IMAGE_LINKS.se7enPoster2
     ],
     "description": "Мрачный детектив о двух напарниках и серии преступлений, построенных как страшная головоломка.",
     "trailerUrl": "https://www.youtube.com/embed/znmZoVkCjpI",
@@ -3371,9 +3191,9 @@ const moviesRaw: Movie[] = [
       "Криминал",
       "Драма"
     ],
-    "poster": "https://avatars.mds.yandex.net/get-kinopoisk-image/10703959/ebf237d7-64a3-4b75-98f1-d228d54658e5/220x330",
+    "poster": IMAGE_LINKS.theGodfatherKinopoiskPoster,
     "posterFallbacks": [
-      "https://upload.wikimedia.org/wikipedia/en/1/1c/Godfather_ver1.jpg"
+      IMAGE_LINKS.theGodfatherPoster
     ],
     "description": "Криминальная сага о семье Корлеоне, власти и цене наследия.",
     "trailerUrl": "https://www.youtube.com/embed/sY1S34973zA",
@@ -3462,9 +3282,9 @@ const moviesRaw: Movie[] = [
       "Фэнтези",
       "Криминал"
     ],
-    "poster": "https://image.tmdb.org/t/p/w500/8VG8fDNiy50H4FedGwdSVUPoaJe.jpg",
+    "poster": IMAGE_LINKS.theGreenMilePoster,
     "posterFallbacks": [
-      "https://upload.wikimedia.org/wikipedia/en/c/ce/Green_mile.jpg"
+      IMAGE_LINKS.theGreenMilePoster2
     ],
     "description": "Трогательная драма о надзирателях, заключённом и чуде, которое трудно объяснить.",
     "trailerUrl": "https://www.youtube.com/embed/Ki4haFrqSrw",
@@ -3552,9 +3372,9 @@ const moviesRaw: Movie[] = [
       "Драма",
       "Музыка"
     ],
-    "poster": "https://image.tmdb.org/t/p/w500/7fn624j5lj3xTme2SgiLCeuedmO.jpg",
+    "poster": IMAGE_LINKS.whiplashPoster,
     "posterFallbacks": [
-      "https://upload.wikimedia.org/wikipedia/en/0/01/Whiplash_poster.jpg"
+      IMAGE_LINKS.whiplashPoster2
     ],
     "description": "Жёсткая музыкальная драма о таланте, давлении и цене идеального темпа.",
     "trailerUrl": "https://www.youtube.com/embed/7d_jQycdQGo",
@@ -3643,9 +3463,9 @@ const moviesRaw: Movie[] = [
       "Триллер",
       "Комедия"
     ],
-    "poster": "https://image.tmdb.org/t/p/w500/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg",
+    "poster": IMAGE_LINKS.parasitePoster,
     "posterFallbacks": [
-      "https://upload.wikimedia.org/wikipedia/en/5/53/Parasite_%282019_film%29.png"
+      IMAGE_LINKS.parasitePoster2
     ],
     "description": "Социальный триллер, где чужой дом становится сценой для очень неудобной правды.",
     "trailerUrl": "https://www.youtube.com/embed/5xH0HfJHsaY",
@@ -3734,9 +3554,9 @@ const moviesRaw: Movie[] = [
       "Криминал",
       "Триллер"
     ],
-    "poster": "https://image.tmdb.org/t/p/w500/udDclJoHjfjb8Ekgsd4FDteOkCU.jpg",
+    "poster": IMAGE_LINKS.joker2019Poster,
     "posterFallbacks": [
-      "https://upload.wikimedia.org/wikipedia/en/e/e1/Joker_%282019_film%29_poster.jpg"
+      IMAGE_LINKS.joker2019Poster2
     ],
     "description": "Мрачная история Артура Флека и города, который не умеет слышать слабых.",
     "trailerUrl": "https://www.youtube.com/embed/zAGVQLHvwOY",
@@ -3825,7 +3645,7 @@ const moviesRaw: Movie[] = [
       "История",
       "Мини-сериал"
     ],
-    "poster": "https://image.tmdb.org/t/p/w500/hlLXt2tOPT6RRnjiUmoxyG1LTFi.jpg",
+    "poster": IMAGE_LINKS.chernobylPoster,
     "description": "Мини-сериал о катастрофе, решениях людей и цене молчания.",
     "trailerUrl": "https://www.youtube.com/embed/s9APLXM9Ei8",
     "longDescription": "После взрыва на Чернобыльской АЭС учёные, ликвидаторы и чиновники оказываются перед реальностью, которую нельзя отменить приказом. Сериал показывает не только катастрофу, но и борьбу фактов против страха и политического удобства.",
@@ -3913,7 +3733,7 @@ const moviesRaw: Movie[] = [
       "Криминал",
       "Драма"
     ],
-    "poster": "https://image.tmdb.org/t/p/w500/7WTsnHkbA0FaG6R9twfFde0I9hl.jpg",
+    "poster": IMAGE_LINKS.sherlockPoster,
     "description": "Современная версия Холмса, где дедукция работает быстрее уведомлений на телефоне.",
     "trailerUrl": "https://www.youtube.com/embed/qlcWFoNqZHc",
     "longDescription": "Шерлок Холмс и доктор Ватсон расследуют дела в современном Лондоне, где классическая дедукция встречается с технологиями, медиа и очень странными преступниками. Сериал делает знакомого героя быстрым, остроумным и опасно наблюдательным.",
@@ -4000,7 +3820,7 @@ const moviesRaw: Movie[] = [
       "Драма",
       "Криминал"
     ],
-    "poster": "https://image.tmdb.org/t/p/w500/fC2HDm5t0kHl7mTm7jxMR31b7by.jpg",
+    "poster": IMAGE_LINKS.betterCallSaulPoster,
     "description": "История превращения Джимми Макгилла в адвоката, которого лучше не недооценивать.",
     "trailerUrl": "https://www.youtube.com/embed/HN4oydykJFc",
     "longDescription": "Джимми Макгилл пытается построить карьеру юриста честно, хитро и иногда слишком творчески. Сериал показывает медленную, точную трансформацию человека, который умеет говорить красиво, но всё чаще выбирает опасные обходные пути.",
@@ -4090,7 +3910,7 @@ const moviesRaw: Movie[] = [
       "Драма",
       "Супергерои"
     ],
-    "poster": "https://image.tmdb.org/t/p/w500/stTEycfG9928HYGEISBFaG1ngjM.jpg",
+    "poster": IMAGE_LINKS.theBoysPoster,
     "description": "Сатирический сериал о мире, где супергерои стали брендами, а бренды — почти властью.",
     "trailerUrl": "https://www.youtube.com/embed/M1bhOaLV4FU",
     "longDescription": "В мире, где супергерои работают на корпорацию и живут как знаменитости, группа обычных людей пытается показать их настоящую сторону. Сериал смешивает экшен, сатиру и мрачный взгляд на культ популярности.",
@@ -4178,7 +3998,7 @@ const moviesRaw: Movie[] = [
       "Драма",
       "История"
     ],
-    "poster": "https://image.tmdb.org/t/p/w500/vUUqzWa2LnHIVqkaKVlVGkVcZIW.jpg",
+    "poster": IMAGE_LINKS.peakyBlindersPoster,
     "description": "Криминальная сага о семье Шелби, амбициях и очень опасном стиле.",
     "trailerUrl": "https://www.youtube.com/embed/oVzVdvGIC7U",
     "longDescription": "После Первой мировой войны Томас Шелби превращает семейную банду в растущую силу Бирмингема. В сериале политика, бизнес и криминал идут рядом, а каждый шаг вверх требует новой сделки с совестью.",
@@ -4266,7 +4086,7 @@ const moviesRaw: Movie[] = [
       "Драма",
       "Детектив"
     ],
-    "poster": "https://image.tmdb.org/t/p/w500/apbrbWs8M9lyOpJYU5WXrpFbk1Z.jpg",
+    "poster": IMAGE_LINKS.darkPoster,
     "description": "Немецкая фантастическая загадка, где семейные тайны путаются со временем.",
     "trailerUrl": "https://www.youtube.com/embed/rrwycJ08PSA",
     "longDescription": "В маленьком городе Винден исчезновение ребёнка открывает цепочку событий, связанную с несколькими поколениями. Сериал превращает путешествия во времени в семейный лабиринт, где каждое решение отзывается далеко вперёд и назад.",
@@ -4356,7 +4176,7 @@ const moviesRaw: Movie[] = [
       "Приключения",
       "Экшен"
     ],
-    "poster": "https://image.tmdb.org/t/p/w500/sWgBv7LV2PRoQgkxwlibdGXKz1S.jpg",
+    "poster": IMAGE_LINKS.theMandalorianPoster,
     "description": "Космический вестерн о наёмнике, который неожиданно получает очень маленькую ответственность.",
     "trailerUrl": "https://www.youtube.com/embed/aOC8E8z_ifw",
     "longDescription": "Одинокий мандалорский охотник за головами выполняет задания на окраинах галактики, пока встреча с загадочным ребёнком не меняет его путь. Сериал соединяет дух приключений, вестерн и мир Star Wars без лишнего шума.",
@@ -4446,7 +4266,7 @@ const moviesRaw: Movie[] = [
       "Драма",
       "Экшен"
     ],
-    "poster": "https://image.tmdb.org/t/p/w500/fqldf2t8ztc9aiwn3k6mlX3tvRT.jpg",
+    "poster": IMAGE_LINKS.arcanePoster,
     "description": "Анимационная драма о двух городах, двух сёстрах и цене прогресса.",
     "trailerUrl": "https://www.youtube.com/embed/fXmAurh012s",
     "longDescription": "Пилтовер и Заун живут рядом, но разделены статусом, технологиями и обидами. История Вай и Джинкс показывает, как личная травма и политический конфликт могут сломать связь, которая казалась неразрушимой.",
@@ -4535,7 +4355,7 @@ const moviesRaw: Movie[] = [
       "Детектив",
       "Сверхъестественное"
     ],
-    "poster": "https://image.tmdb.org/t/p/w500/iigTJJskR1PcjjXqxdyJwVB3BoU.jpg",
+    "poster": IMAGE_LINKS.deathNotePoster,
     "description": "Интеллектуальная дуэль о школьнике, тетради и власти решать чужие судьбы.",
     "trailerUrl": "https://www.youtube.com/embed/NlJZ-YgAt-c",
     "longDescription": "Лайт Ягами находит тетрадь, способную убивать людей, чьи имена в неё записаны. Его идея справедливости быстро сталкивается с расследованием загадочного L, и история превращается в шахматную партию между двумя гениями.",
@@ -4634,7 +4454,7 @@ const moviesRaw: Movie[] = [
       "Фэнтези",
       "Сверхъестественное"
     ],
-    "poster": "https://image.tmdb.org/t/p/w500/fHpKWq9ayzSk8nSwqRuaAUemRKh.jpg",
+    "poster": IMAGE_LINKS.jujutsuKaisenPoster,
     "description": "Динамичное аниме о проклятиях, магии и учениках, которым рано расслабляться.",
     "trailerUrl": "https://www.youtube.com/embed/pkKu9hLT-t8",
     "longDescription": "Юдзи Итадори оказывается связан с могущественным проклятием и поступает в школу магов, где учатся бороться с опасными сущностями. Аниме быстро переключается между юмором, боевой постановкой и серьёзными ставками.",
@@ -4732,7 +4552,7 @@ const moviesRaw: Movie[] = [
       "Фэнтези",
       "Драма"
     ],
-    "poster": "https://image.tmdb.org/t/p/w500/5ZFUEOULaVml7pQuXxhpR2SmVUw.jpg",
+    "poster": IMAGE_LINKS.fullmetalAlchemistBrotherhoodPoster,
     "description": "История двух братьев, алхимии и закона равноценного обмена.",
     "trailerUrl": "https://www.youtube.com/embed/2uq34TeWEdQ",
     "longDescription": "Эдвард и Альфонс Элрики ищут способ вернуть потерянное после трагического эксперимента. Их путь раскрывает не только правила алхимии, но и большую политическую тайну, где цена силы всегда оказывается личной.",
@@ -4831,7 +4651,7 @@ const moviesRaw: Movie[] = [
       "Экшен",
       "Комедия"
     ],
-    "poster": "https://image.tmdb.org/t/p/w500/cMD9Ygz11zjJzAovURpO75Qg7rT.jpg",
+    "poster": IMAGE_LINKS.onePiecePoster,
     "description": "Большое пиратское приключение о мечтах, команде и поиске легендарного сокровища.",
     "trailerUrl": "https://www.youtube.com/embed/S8_YwFLCh4U",
     "longDescription": "Монки Д. Луффи собирает команду, чтобы отправиться к Гранд Лайн и найти сокровище One Piece. За весёлым приключением скрывается огромный мир, где дружба, свобода и мечты важнее любой карты.",
@@ -4930,7 +4750,7 @@ const moviesRaw: Movie[] = [
       "Фэнтези",
       "Драма"
     ],
-    "poster": "https://image.tmdb.org/t/p/w500/npdB6eFzizki0WaZ1OvKcJrWe97.jpg",
+    "poster": IMAGE_LINKS.chainsawManPoster,
     "description": "Безумное и энергичное аниме о парне, демонах и мечте о нормальной жизни.",
     "trailerUrl": "https://www.youtube.com/embed/v4yLeNt-kCU",
     "longDescription": "Дэнджи живёт в долгах и охотится на демонов вместе с Почитой, пока обстоятельства не превращают его в Человека-бензопилу. История сочетает экшен, абсурдный юмор и очень человеческое желание просто жить лучше.",
@@ -5028,7 +4848,7 @@ const moviesRaw: Movie[] = [
       "Экшен",
       "Драма"
     ],
-    "poster": "https://image.tmdb.org/t/p/w500/7jSWOc6jWSw5hZ78HB8Hw3pJxuk.jpg",
+    "poster": IMAGE_LINKS.cyberpunkEdgerunnersPoster,
     "description": "Неоновая история Найт-Сити о скорости, мечтах и цене улучшений.",
     "trailerUrl": "https://www.youtube.com/embed/JtqIas3bYhg",
     "longDescription": "Дэвид Мартинес попадает в мир наёмников, имплантов и больших рисков. Найт-Сити обещает быстрый подъём, но каждая новая возможность там почти всегда требует слишком дорогой оплаты.",
@@ -5126,7 +4946,7 @@ const moviesRaw: Movie[] = [
       "Драма",
       "Приключения"
     ],
-    "poster": "https://images.kinorium.com/movie/poster/2060815/w1500_51470371.jpg",
+    "poster": IMAGE_LINKS.vinlandSagaPoster,
     "description": "Историческая аниме-драма о мести, взрослении и поиске настоящей свободы.",
     "trailerUrl": "https://www.youtube.com/embed/f8JrZ7Q_p-8",
     "longDescription": "Торфинн растёт в мире викингов, войн и личной мести. Но чем дальше идёт его путь, тем сильнее история смещается от битв к вопросу: что значит жить свободно и не повторять круг насилия.",
@@ -5225,7 +5045,7 @@ const moviesRaw: Movie[] = [
       "Приключения",
       "Драма"
     ],
-    "poster": "https://image.tmdb.org/t/p/w500/xDiXDfZwC6XYC6fxHI1jl3A3Ill.jpg",
+    "poster": IMAGE_LINKS.cowboyBebopPoster,
     "description": "Космический нуар с джазом, охотниками за головами и прошлым, от которого не улететь.",
     "trailerUrl": "https://www.youtube.com/embed/RI08P5SaJNU",
     "longDescription": "Экипаж корабля Bebop берётся за разные задания по всей Солнечной системе. За лёгким стилем и музыкой скрываются одиночество, старые ошибки и истории людей, которые постоянно пытаются догнать завтрашний день.",
@@ -5324,7 +5144,7 @@ const moviesRaw: Movie[] = [
       "Приключения",
       "Семейный"
     ],
-    "poster": "https://image.tmdb.org/t/p/w500/wWt4JYXTg5Wr3xBW2phBrMKgp3x.jpg",
+    "poster": IMAGE_LINKS.kungFuPandaPoster,
     "description": "История ленивого мечтателя По, который внезапно получает шанс стать воином.",
     "trailerUrl": "https://www.youtube.com/embed/PXi3Mv6KMzY",
     "longDescription": "По обожает лапшу и кунг-фу, но сам не похож на легендарного героя. Когда его неожиданно выбирают Воином Дракона, ему приходится доказать, что сила может прятаться там, где её никто не ищет.",
@@ -5414,7 +5234,7 @@ const moviesRaw: Movie[] = [
       "Приключения",
       "Детектив"
     ],
-    "poster": "https://image.tmdb.org/t/p/w500/hlK0e0wAQ3VLuJcsfIYPvb4JVud.jpg",
+    "poster": IMAGE_LINKS.zootopiaPoster,
     "description": "Детективная история в городе животных, где маленькая крольчиха берётся за большое дело.",
     "trailerUrl": "https://www.youtube.com/embed/jWM0ct-OLsM",
     "longDescription": "Джуди Хоппс приезжает в Зверополис, чтобы стать настоящим полицейским, но быстро понимает: мечта требует больше, чем энтузиазм. Вместе с хитрым Ником Уайлдом она расследует дело, которое меняет взгляд города на самого себя.",
@@ -5503,7 +5323,7 @@ const moviesRaw: Movie[] = [
       "Семейный",
       "Музыка"
     ],
-    "poster": "https://image.tmdb.org/t/p/w500/4JeejGugONWpJkbnvL12hVoYEDa.jpg",
+    "poster": IMAGE_LINKS.moanaPoster,
     "description": "Музыкальное приключение о девушке, океане и поиске своего пути.",
     "trailerUrl": "https://www.youtube.com/embed/LKFuXETZUsI",
     "longDescription": "Моана отправляется за риф, чтобы спасти свой остров и понять, кем она хочет быть. На пути ей помогает полубог Мауи, а главным наставником становится сам океан — довольно нестандартный, но эффектный коуч.",
@@ -5592,7 +5412,7 @@ const moviesRaw: Movie[] = [
       "Комедия",
       "Семейный"
     ],
-    "poster": "https://image.tmdb.org/t/p/w500/2LqaLgk4Z226KkgPJuiOQ58wvrm.jpg",
+    "poster": IMAGE_LINKS.theIncrediblesPoster,
     "description": "Семейная супергеройская история о том, что спасать мир проще, когда дома есть поддержка.",
     "trailerUrl": "https://www.youtube.com/embed/-UaGUdNJdRQ",
     "longDescription": "Семья Парр пытается жить обычной жизнью после запрета супергероев, но прошлое и новые угрозы быстро возвращают их в дело. Мультфильм смешивает экшен, семейную драму и отличный ретро-стиль.",
@@ -5680,7 +5500,7 @@ const moviesRaw: Movie[] = [
       "Наука",
       "Космос"
     ],
-    "poster": "https://kinogo.online/uploads/posts/2021-03/1615665601-1144240884.jpg",
+    "poster": IMAGE_LINKS.cosmosASpacetimeOdysseyPoster,
     "description": "Документальное путешествие по Вселенной, науке и месту человека в огромном космосе.",
     "trailerUrl": "https://www.youtube.com/embed/XFF2ECZ8m1A",
     "longDescription": "Нил Деграсс Тайсон ведёт зрителя через историю науки, строение Вселенной и идеи, которые изменили наше понимание мира. Проект объясняет сложные вещи через визуальные образы и чувство удивления.",
@@ -5768,7 +5588,7 @@ const moviesRaw: Movie[] = [
       "Спорт",
       "Биография"
     ],
-    "poster": "https://image.tmdb.org/t/p/w500/zU0htwkhNvBQdVSIKB9s6hgVeFK.jpg",
+    "poster": IMAGE_LINKS.theLastDancePoster,
     "description": "Документальный сериал о Майкле Джордане, Chicago Bulls и сезоне, ставшем легендой.",
     "trailerUrl": "https://www.youtube.com/embed/N9Z9JtNcCWY",
     "longDescription": "Проект возвращает зрителя в финальный чемпионский сезон Chicago Bulls и показывает, как строилась одна из самых известных спортивных династий. Это история таланта, давления, лидерства и команды, которая стала символом эпохи.",
@@ -5853,7 +5673,7 @@ const moviesRaw: Movie[] = [
         "Драма",
         "Криминал",
       ],
-      poster: "https://kinopoisk-ru.clstorage.net/2a95Th371/ce5fd6dh031/9C3Jy3slmvceAtTBAgdMaA3T7Ev5QhuB-Qxj2-8i3oj_tcRKPTkOiHomYozQy71zd3cihjkMsqduTj_qGBXe5XT-yNyp4s1iCZAGQQFSDe9IEDsbfJAOEP5ItI046RKC8z-Yw7LzBoNid_EcFtxqZqdnNQQ9GvSiq9KxbAxZjfv67oeKsX0S_BHTGEWJRI_lFJRnTKlF1gbrDKFVoKPeDrG710s4O81A6HAy3QfU6SfnpzoOvdSsrKrYv_DIUgV5fOWEQz0yH_WQ1NPJy04LL9JTZI3vDZEBa4ujnWqgnoa9eZPIPLvGAms5t5fDVCtl5uBwgnXbJe6qE300QtbJOXzmT4-8_lO-kVXeRw-LR2ySUywL4cJYBuoK494laJiOfjlURfO9S0Gqdz3ZSNDor6VvfMR1nK1nLl7wOUMcBnl2KULD939a9d4amkrASwXmUpIjhCgOXE7mQqgb6KYcBvq620W1_8fB6zdx3cdVoWEv6TqPNJLpaCYX_3ZO1QQ9vm5LQn-3Uz_QGt4MRA2Nahsb44ciBt7Eaw2gEuCikwQw_t5OeP1CCKVzfZkGWiohrWb7TT2Zr6tuFnK6DthLsjjsDM6_vJF3FFyZTwxECK1cHeQCKUcfRisFKd2lJdeLN3TSwP-zzUxsv7GZDtVsL6Hju040kimurtR0eEUfTXl-pkoLfjXSeljc2EHDxYlgFZzgwurGnMFpAK2TLKoYALp1XoS2tA-L7_rwEk0YoGxtr78DvBElr-dVsv-F2U30seLLQ3-_EPyfEBdDC0QE7Z_Z4Mqny1FCo0fiEqhvU8-wtFQFNjtOjGf69pFBH2zk5GW3jjhSIihsX754z5HB8njhgs97Nxo3FliWTQWFRaTQHGiNIgZbCWiOa1OpppRCPv9UA77wTovjdH7Xg1-kZGio-Mv7GarqJBl4PQrViXx1qsnJ-zqVMBqZEI2IS4fqnFknj-_Jm4hjhi-UKOYeQHm2nI1-Oc5CobQ52AdSqGOlbv2E81xuaqXZ9blLmUe-ce2LAfZymnpR3deCAk6AZ94Sro0kiVCAKcSs1Knj2Mu595WCunDHgqe-MpxF36nnZu2_C_pV5uotEXC6SxlOsLpug8e-MtL1XtCbBEfLxiBbFW2Pow-eAOrML9Zna5cIeHmSSju7QUKoM33TwNij4KYqfgu7niqoL9x_cExWzvRwKkoKNnfa8B-bGMLDB0xi0hPvhSnPEIXjg2NSKmvVhrYz20s_8EZPbPg4FUNd6i3sKjpPvRNn5qJdtHXOkAl0N6yPzfM23XyTnNYIRwyHJZSSbsVsB9SBZo7iEeeum0r-P9UNcjpNBKLxv90DGCLtp-02AvAeYmukl7T1i1FHcXyjREb_upT0W9sQQwUKRqxV2ibDYAsXyGwGJVRt4JwLM76ey7N5jUJrOTeaBhXr5C6nfcq80OqgZBYw90XYDTL46EwF8XBbfZJQ38iJQgOiH5Pow6INX8YnCKCVZqqVhv73Uwq3dc5JYrq-mAncomQh7vsPPBrtJOYfPvgL0c929aCAQ_n3Wn8QGZECyAvE7d4cJYjiyZJI4UCsFewmFgj989sL_fyFxOP3-FEO2KPnZGD_ijuTLagjm3OxC1HPePXhz4xzvtpyFtxcycrNS6IXXmXELkJShGcAqFXh5xsKMrZTDTg3zMUlvneUSVfubOTptoVwWeznKxb8uEyfQz147IOKsfdbNR_VVkpExY6sHdvuC6AGU4avAuBYJCMZiD111o78uMIFKLn-F4maa-ahaX6D_5VmZC_dv7TOHwmzcCbAxLy6GvhSF1cJiczE4xUUKAVnDlfBaMrsm6fmWYf_OZeFdvWKh2pwPhxNEqKv524_RDRcKusvWXi3y55IOzStC4M58ts8mZfazIWCwWSfnG3CZ0ebBqPLpFToIpQO-LWbizrygcFpsPASTltlaWihP8t8UKpm71Y9sYjfTj34LIyMcnPc8xPU28uFC4ijFNXozKlN2k6rx2pR4CIXyjZ9GoH8P0WAIvl2EUSfrajmbrfCPZDiYGyX9neGlYd1-usNRPa1Ev1fEpDLQsDOrBzUpkwmCdEN6MTk0-3n0QO29FfDPDDFx6y5uZKE0ujpr-v_yvBRb67j3Dq-wlEMNDBkC0l6fZtykRNbCE2EDyOcUyfIrgiUTywPYRLgIFnM-nOciTBxjkIr-HjTjNUtZqjgdEa0niNn5lZ79EwYTji6LoXJvLLTfBeZ2cGEBo3m0NJtwKLPl8LnBSVY7SJWw3B0l80yugoN7Hp3HcDWIWAtLz5L-1wmr6bUsD1FGE_2MiXIBPo8kLUf05ZPA8yBapvWbUUuQdBG50ovkOYikcvz_luK_TXJxeU5uFLOGivo6OY-SnTSK-8mHDJ3AhmOs_itD4I0uFx4UlcTicFCyGCXla7Lp8rUSuePodImr1dJ-_MTBPI3DAcn8T1fR9Xjo6Zm_QXyWurtb5k1f8RSjHJ14ceF_DqUdZOXGcULTQlmXFEkj-cCV89hwyOe56YTQXqynMM8eEYIa_j8lQBUoixtKTKN_FIn7mzVu34FmgP8eS3Ij3w4VX2SHBkMyU2JIJRcZABuydNB50AoWeFol0w48xbL8DWOhaI5_1FO0KptaSvzS3Kbqatlk_cwAh1AMvypR417fZf2nFhXS48EjCBSWmBC70ETRC-HJVztqFiJc7sSwXA9zcvkNvgcRFSibG_htwp_1iyv4ln_OExeTHzyJAzKu_OYf5RTXgNLigkvlNZkRW6CGwLvCiTRoupUSjKyFgg2-MuKozvx1YETZOBnrz8AMpYmoKCc_HFFUE-492RFS_I4FbRQkRfAQgcArROaaQ9jyJBGIM3j2KQtH8kyMpOCt7kHhKyzNB-AV2EhZ651Q7IeqWdsVPY0ih7Msr_tg84081z8Ud_ZzIQNhqXaEK6MKgKbjq5CZ9Am6hxBNj_dgbSwggsv-Xndg1PqqahgNwO41q5oKw",
+      poster: IMAGE_LINKS.scorpionKinopoiskPoster,
       posterFallbacks: [],
       description: "Динамичный сериал о команде гениальных специалистов, которые решают самые опасные и сложные кризисы для правительства и обычных людей, используя интеллект там, где бессильны обычные методы.",
       trailerUrl: "https://www.youtube.com/watch?v=vkQo84TxzHA",
@@ -5894,7 +5714,7 @@ const moviesRaw: Movie[] = [
       year: "2024",
       rating: 7.6,
       genres: ["Экшен", "Комедия", "Фантастика"],
-      poster: "https://upload.wikimedia.org/wikipedia/en/thumb/4/4c/Deadpool_%26_Wolverine_poster.jpg/250px-Deadpool_%26_Wolverine_poster.jpg",
+      poster: IMAGE_LINKS.deadpoolAndWolverinePoster,
       description: "Дэдпул и Росомаха в шумном, дерзком супергеройском приключении.",
       trailerUrl: "https://www.youtube.com/embed/73_1biulkYk",
       longDescription:
@@ -5936,7 +5756,7 @@ const moviesRaw: Movie[] = [
       year: "2024",
       rating: 6.9,
       genres: ["Фантастика", "Экшен", "Приключения"],
-      poster: "https://upload.wikimedia.org/wikipedia/en/c/cf/Kingdom_of_the_Planet_of_the_Apes_poster.jpg",
+      poster: IMAGE_LINKS.kingdomOfThePlanetOfTheApesPoster,
       description: "Новая глава мира, где наследие Цезаря стало легендой.",
       trailerUrl: "https://www.youtube.com/embed/XtFI7SNtVpY",
       longDescription:
@@ -5977,7 +5797,7 @@ const moviesRaw: Movie[] = [
       year: "2024",
       rating: 6.5,
       genres: ["Экшен", "Комедия", "Криминал"],
-      poster: "https://upload.wikimedia.org/wikipedia/en/thumb/8/8b/Bad_Boys_Ride_or_Die_%282024%29_poster.jpg/250px-Bad_Boys_Ride_or_Die_%282024%29_poster.jpg",
+      poster: IMAGE_LINKS.badBoysRideOrDiePoster,
       description: "Майами, напарники и дело, где отступать уже поздно.",
       trailerUrl: "https://www.youtube.com/embed/hRFY_Fesa9Q",
       longDescription:
@@ -6019,7 +5839,7 @@ const moviesRaw: Movie[] = [
       year: "2024",
       rating: 6.9,
       genres: ["Экшен", "Комедия", "Романтика"],
-      poster: "https://upload.wikimedia.org/wikipedia/en/thumb/1/1f/The_Fall_Guy_%282024%29_poster.jpg/250px-The_Fall_Guy_%282024%29_poster.jpg",
+      poster: IMAGE_LINKS.theFallGuyPoster,
       description: "Каскадёр возвращается на съёмки и случайно попадает в заговор.",
       trailerUrl: "https://www.youtube.com/embed/j7jPnwVGdZ8",
       longDescription:
@@ -6061,7 +5881,7 @@ const moviesRaw: Movie[] = [
       year: "2024",
       rating: 6.1,
       genres: ["Фантастика", "Экшен", "Приключения"],
-      poster: "https://upload.wikimedia.org/wikipedia/en/thumb/b/be/Godzilla_x_kong_the_new_empire_poster.jpg/250px-Godzilla_x_kong_the_new_empire_poster.jpg",
+      poster: IMAGE_LINKS.godzillaXKongTheNewEmpirePoster,
       description: "Два титана сталкиваются с новой угрозой из глубин мира.",
       trailerUrl: "https://www.youtube.com/embed/c0AkaHWg2OI",
       longDescription:
@@ -6103,7 +5923,7 @@ const moviesRaw: Movie[] = [
       year: "2024",
       rating: 6.0,
       genres: ["Фантастика", "Экшен", "Приключения"],
-      poster: "https://upload.wikimedia.org/wikipedia/en/a/a3/Venom_The_Last_Dance_Poster.jpg",
+      poster: IMAGE_LINKS.venomTheLastDancePoster,
       description: "Эдди и Веном бегут от угроз сразу из двух миров.",
       trailerUrl: "https://www.youtube.com/embed/HyIyd9joTTc",
       longDescription:
@@ -6145,7 +5965,7 @@ const moviesRaw: Movie[] = [
       year: "2024",
       rating: 6.3,
       genres: ["Ужасы", "Фантастика", "Драма"],
-      poster: "https://upload.wikimedia.org/wikipedia/en/thumb/e/e7/A_Quiet_Place_Day_One_%282024%29_poster.jpg/250px-A_Quiet_Place_Day_One_%282024%29_poster.jpg",
+      poster: IMAGE_LINKS.aQuietPlaceDayOnePoster,
       description: "Первый день вторжения, когда шум стал главным врагом.",
       trailerUrl: "https://www.youtube.com/embed/YPY7J-flzE8",
       longDescription:
@@ -6186,7 +6006,7 @@ const moviesRaw: Movie[] = [
       year: "2024",
       rating: 6.5,
       genres: ["Экшен", "Приключения", "Триллер"],
-      poster: "https://upload.wikimedia.org/wikipedia/en/2/24/Twisters_Official_US_Theatrical_Poster.jpg",
+      poster: IMAGE_LINKS.twistersPoster,
       description: "Охотники за торнадо возвращаются в сезон большой опасности.",
       trailerUrl: "https://www.youtube.com/embed/wdok0rZdmx4",
       longDescription:
@@ -6227,7 +6047,7 @@ const moviesRaw: Movie[] = [
       year: "2024",
       rating: 6.5,
       genres: ["История", "Драма", "Экшен"],
-      poster: "https://upload.wikimedia.org/wikipedia/en/thumb/0/04/Gladiator_II_%282024%29_poster.jpg/250px-Gladiator_II_%282024%29_poster.jpg",
+      poster: IMAGE_LINKS.gladiatorIiPoster,
       description: "Новая борьба за честь и власть на арене Рима.",
       trailerUrl: "https://www.youtube.com/embed/4rgYUipGJNo",
       longDescription:
@@ -6269,7 +6089,7 @@ const moviesRaw: Movie[] = [
       year: "2025",
       rating: 7.2,
       genres: ["Фантастика", "Экшен", "Приключения"],
-      poster: "https://upload.wikimedia.org/wikipedia/en/thumb/3/32/Superman_%282025_film%29_poster.jpg/250px-Superman_%282025_film%29_poster.jpg",
+      poster: IMAGE_LINKS.superman2025Poster,
       description: "Новый старт Супермена в мире, которому всё ещё нужна надежда.",
       trailerUrl: "https://www.youtube.com/embed/Ox8ZLF6cGM0",
       longDescription:
@@ -6311,7 +6131,7 @@ const moviesRaw: Movie[] = [
       year: "2025",
       rating: 7.2,
       genres: ["Экшен", "Приключения", "Фантастика"],
-      poster: "https://upload.wikimedia.org/wikipedia/en/thumb/9/90/Thunderbolts%2A_poster.jpg/250px-Thunderbolts%2A_poster.jpg",
+      poster: IMAGE_LINKS.thunderboltsPoster,
       description: "Команда антигероев получает шанс на опасное искупление.",
       trailerUrl: "https://www.youtube.com/embed/-sAOWhvheK8",
       longDescription:
@@ -6353,7 +6173,7 @@ const moviesRaw: Movie[] = [
       year: "2025",
       rating: 7.0,
       genres: ["Фантастика", "Экшен", "Приключения"],
-      poster: "https://upload.wikimedia.org/wikipedia/en/thumb/1/13/The_Fantastic_Four_First_Steps_poster.jpg/250px-The_Fantastic_Four_First_Steps_poster.jpg",
+      poster: IMAGE_LINKS.theFantasticFourFirstStepsPoster,
       description: "Marvel представляет Первую семью в ретрофутуристичном мире.",
       trailerUrl: "https://www.youtube.com/embed/18QQWa5MEcs",
       longDescription:

@@ -1,28 +1,5 @@
-import type { Movie, ContentType, PlayerProvider } from "./movies";
-
-type GeneratedPosterInput = {
-  tmdbId?: number;
-  imdbId?: string;
-  title: string;
-  originalTitle?: string;
-  year?: string | number;
-  type?: ContentType | string;
-};
-
-function getGeneratedCartoonPoster(input: GeneratedPosterInput) {
-  const params = new URLSearchParams();
-
-  if (input.tmdbId) params.set("tmdbId", String(input.tmdbId));
-  if (input.imdbId) params.set("imdbId", input.imdbId);
-  params.set("title", input.title);
-  if (input.originalTitle) params.set("originalTitle", input.originalTitle);
-  if (input.year) params.set("year", String(input.year));
-  if (input.type) params.set("type", String(input.type));
-  params.set("quality", "high");
-  params.set("v", "generated-cartoons");
-
-  return `/api/tmdb/poster?${params.toString()}`;
-}
+import type { Movie, PlayerProvider } from "./movies";
+import { getGeneratedCartoonPoster } from "../lib/imageLinks";
 
 function createGeneratedCartoonPlayers(kinopoiskId: number): PlayerProvider[] {
   const id = String(kinopoiskId);

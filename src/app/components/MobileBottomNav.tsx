@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { ArrowUp, Home, Search, Shuffle, UserRound } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-import { movies } from "../data/movies";
+import { movieSlugs } from "../data/movieSlugs";
 
 type MobileBottomNavProps = {
   onSearch?: () => void;
@@ -50,12 +50,12 @@ export default function MobileBottomNav({
   const pathname = usePathname();
   const router = useRouter();
 
-  const randomMovie = useMemo(() => {
-    if (movies.length === 0) {
+  const randomMovieSlug = useMemo(() => {
+    if (movieSlugs.length === 0) {
       return null;
     }
 
-    return movies[Math.floor(Math.random() * movies.length)];
+    return movieSlugs[Math.floor(Math.random() * movieSlugs.length)];
   }, []);
 
   const [isBackToTopVisible, setIsBackToTopVisible] = useState(false);
@@ -100,8 +100,8 @@ export default function MobileBottomNav({
       return;
     }
 
-    if (randomMovie) {
-      router.push(`/movie/${randomMovie.slug}`);
+    if (randomMovieSlug) {
+      router.push(`/movie/${randomMovieSlug}`);
     }
   }
 

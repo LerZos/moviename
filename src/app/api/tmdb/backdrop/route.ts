@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
+import { IMAGE_SOURCE_LINKS } from "../../../lib/imageLinks";
 
-const TMDB_API_BASE = "https://api.themoviedb.org/3";
-const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/original";
+const TMDB_API_BASE = IMAGE_SOURCE_LINKS.tmdbApiBase;
+const TMDB_IMAGE_BASE = IMAGE_SOURCE_LINKS.tmdbImageOriginalBase;
 const FALLBACK_POSTER = "/kinoluma-icon.png";
 const CACHE_CONTROL = "public, max-age=86400, s-maxage=2592000, stale-while-revalidate=2592000";
 

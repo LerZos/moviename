@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import MobileBottomNav from "./components/MobileBottomNav";
-import { movies as staticContent, type Movie } from "./data/movies";
+import type { Movie } from "./data/movies";
 import { supabase } from "./lib/supabase";
+import { canResolveTrailerUrl, resolveTrailerUrl } from "./lib/trailers";
 import {
   emptyMovieActionState,
   getCurrentSupabaseUser,
@@ -34,10 +35,29 @@ import {
   useState,
 } from "react";
 
-type ContentItem = Movie;
+type ContentItem = Pick<
+  Movie,
+  | "id"
+  | "slug"
+  | "title"
+  | "originalTitle"
+  | "searchTitles"
+  | "type"
+  | "year"
+  | "rating"
+  | "genres"
+  | "poster"
+  | "backdrop"
+  | "description"
+  | "trailerUrl"
+  | "tmdbId"
+  | "imdbId"
+  | "kinopoiskId"
+> &
+  Partial<Pick<Movie, "source" | "facts" | "posterFallbacks">>;
 
 type HomeProps = {
-  initialContent?: Movie[];
+  initialContent?: ContentItem[];
   initialFeaturedIds?: number[];
   initialFeaturedDateKey?: string;
 };
@@ -626,6 +646,7 @@ function MovieCard({
   const isRowMode = mode === "row";
   const [isVisible, setIsVisible] = useState(isRowMode);
   const posterFallbackIndexRef = useRef(0);
+  const canPlayTrailer = canResolveTrailerUrl(item);
 
   useEffect(() => {
     if (isRowMode) {
@@ -750,9 +771,13 @@ function MovieCard({
         <div className="movie-card-actions">
           <button
             onClick={() => onOpenTrailer(item)}
-            className="movie-card-action-primary"
+            disabled={!canPlayTrailer}
+            className={`movie-card-action-primary ${
+              canPlayTrailer ? "" : "cursor-not-allowed opacity-45 hover:bg-white hover:text-black hover:shadow-none"
+            }`}
+            title={canPlayTrailer ? "Смотреть трейлер" : "Трейлер пока не добавлен"}
           >
-            Трейлер
+            {canPlayTrailer ? "Трейлер" : "Нет трейлера"}
           </button>
 
           <button
@@ -1118,13 +1143,7 @@ export default function Home({
   initialFeaturedDateKey,
 }: HomeProps) {
   const router = useRouter();
-  const content = useMemo(
-    () =>
-      initialContent && initialContent.length > 0
-        ? initialContent
-        : staticContent,
-    [initialContent],
-  );
+  const content = useMemo(() => initialContent ?? [], [initialContent]);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const filmsSectionRef = useRef<HTMLElement | null>(null);
   const seriesSectionRef = useRef<HTMLElement | null>(null);
@@ -1882,10 +1901,16 @@ export default function Home({
     router.push(`/movie/${item.slug}`);
   }
 
-  function openTrailer(item: ContentItem) {
+  async function openTrailer(item: ContentItem) {
+    const trailerUrl = await resolveTrailerUrl(item);
+
+    if (!trailerUrl) {
+      return;
+    }
+
     setSelectedItem(null);
     setIsDetailsClosing(false);
-    setTrailerItem(item);
+    setTrailerItem({ ...item, trailerUrl });
     setIsTrailerClosing(false);
   }
 
@@ -2016,7 +2041,6 @@ export default function Home({
       }
     }
 
-    loadDailyFeatured();
     const intervalId = window.setInterval(loadDailyFeatured, 60 * 60 * 1000);
 
     return () => {
@@ -5894,12 +5918,18 @@ export default function Home({
           </div>
 
           <div className="mobile-hero-actions mt-8 flex flex-wrap gap-4">
-            <button
-              onClick={() => openTrailer(featuredContent)}
-              className="rounded border-2 border-white bg-white px-6 py-3 font-black text-black transition duration-200 hover:bg-black hover:text-white hover:shadow-[0_0_22px_rgba(255,255,255,0.25)] active:scale-[0.98]"
-            >
-              Смотреть трейлер
-            </button>
+            {canResolveTrailerUrl(featuredContent) ? (
+              <button
+                onClick={() => openTrailer(featuredContent)}
+                className="rounded border-2 border-white bg-white px-6 py-3 font-black text-black transition duration-200 hover:bg-black hover:text-white hover:shadow-[0_0_22px_rgba(255,255,255,0.25)] active:scale-[0.98]"
+              >
+                Смотреть трейлер
+              </button>
+            ) : (
+              <span className="rounded border border-white/10 bg-black/50 px-6 py-3 font-bold text-neutral-500">
+                Трейлер скоро
+              </span>
+            )}
 
             <button
               onClick={() => openDetails(featuredContent)}
@@ -6490,12 +6520,18 @@ export default function Home({
               </div>
 
               <div className="details-modal-actions mt-8 flex flex-wrap items-center gap-3">
-                <button
-                  onClick={() => openTrailer(selectedItem)}
-                  className="rounded border-2 border-white bg-white px-6 py-3 font-black text-black transition duration-200 hover:bg-black hover:text-white hover:shadow-[0_0_22px_rgba(255,255,255,0.25)] active:scale-[0.98]"
-                >
-                  Смотреть трейлер
-                </button>
+                {canResolveTrailerUrl(selectedItem) ? (
+                  <button
+                    onClick={() => openTrailer(selectedItem)}
+                    className="rounded border-2 border-white bg-white px-6 py-3 font-black text-black transition duration-200 hover:bg-black hover:text-white hover:shadow-[0_0_22px_rgba(255,255,255,0.25)] active:scale-[0.98]"
+                  >
+                    Смотреть трейлер
+                  </button>
+                ) : (
+                  <span className="rounded border border-white/10 bg-black/50 px-6 py-3 font-bold text-neutral-500">
+                    Трейлер скоро
+                  </span>
+                )}
 
                 <button
                   onClick={() => openContent(selectedItem)}

@@ -1,6 +1,7 @@
 import { supabaseAdmin } from '../../../../lib/supabase/admin';
 import { assertAdminSecret } from '../../../../lib/import/adminAuth';
 import { tmdbFetch } from '../../../../lib/import/tmdb';
+import { buildTmdbImageUrl } from '../../../../lib/imageLinks';
 import { findBestMovieImages } from '../../../../lib/import/movieImages';
 import {
   fetchVibixByImdbId,
@@ -59,7 +60,7 @@ const MAX_CANDIDATE_IMAGE_ENRICHMENTS = 80;
 function tmdbImage(path: string | null | undefined, size = 'w500') {
   if (!path) return null;
   if (path.startsWith('http')) return path;
-  return `https://image.tmdb.org/t/p/${size}${path}`;
+  return buildTmdbImageUrl(path, size);
 }
 
 function cleanUrl(value: unknown) {

@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { getMovieWithOverrides, getPublicMovies } from "../../lib/movies/movieOverrides";
+import { getCachedMovieWithOverrides } from "../../lib/movies/movieOverrides";
+import type { Movie } from "../../data/movies";
+import { movieCardIndex, type MovieCardIndexItem } from "../../data/movieCardIndex";
 import {
   absoluteUrl,
   getMovieBreadcrumbJsonLd,
@@ -28,11 +30,40 @@ export const revalidate = 3600;
 // и дальше кешируется с revalidate. Sitemap при этом остаётся полным.
 export const dynamicParams = true;
 
+function getSimilarMovies(movie: Movie): MovieCardIndexItem[] {
+  const currentGenres = new Set(movie.genres);
+
+  return movieCardIndex
+    .filter((item) => item.id !== movie.id)
+    .map((item) => {
+      const sharedGenres = item.genres.filter((genre) => currentGenres.has(genre));
+      const score =
+        sharedGenres.length * 4 +
+        (item.type === movie.type ? 2 : 0) +
+        item.rating / 10;
+
+      return { item, sharedGenres, score };
+    })
+    .filter(
+      ({ item, sharedGenres }) =>
+        sharedGenres.length > 0 || item.type === movie.type,
+    )
+    .sort((firstItem, secondItem) => {
+      if (secondItem.score !== firstItem.score) {
+        return secondItem.score - firstItem.score;
+      }
+
+      return secondItem.item.rating - firstItem.item.rating;
+    })
+    .slice(0, 6)
+    .map(({ item }) => item);
+}
+
 export async function generateMetadata({
   params,
 }: MoviePageProps): Promise<Metadata> {
   const { slug } = await params;
-  const movie = await getMovieWithOverrides(slug);
+  const movie = await getCachedMovieWithOverrides(slug);
 
   if (!movie) {
     return {
@@ -95,13 +126,13 @@ export async function generateMetadata({
 
 export default async function MoviePage({ params }: MoviePageProps) {
   const { slug } = await params;
-  const movie = await getMovieWithOverrides(slug);
+  const movie = await getCachedMovieWithOverrides(slug);
 
   if (!movie) {
     notFound();
   }
 
-  const publicMovies = await getPublicMovies();
+  const relatedMovies = getSimilarMovies(movie);
 
   return (
     <>
@@ -133,7 +164,7 @@ export default async function MoviePage({ params }: MoviePageProps) {
         }}
       />
 
-      <MoviePageClient movie={movie} allMovies={publicMovies} />
+      <MoviePageClient movie={movie} relatedMovies={relatedMovies} />
     </>
   );
 }

@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { getPublicMovies } from "../lib/movies/movieOverrides";
+import { getCachedPublicMovies } from "../lib/movies/movieOverrides";
+import type { Movie } from "../data/movies";
 import {
   getBreadcrumbJsonLd,
   siteUrl,
@@ -59,7 +60,7 @@ export const metadata: Metadata = {
   },
 };
 
-type PublicMovie = Awaited<ReturnType<typeof getPublicMovies>>[number];
+type PublicMovie = Movie;
 
 function normalizeExpectedText(value: string) {
   return value.toLowerCase().replaceAll("ё", "е").trim();
@@ -69,14 +70,14 @@ function isCuratedExpectedRelease(movie: PublicMovie) {
   return normalizeExpectedText(movie.source || "") === "kinoluma-curated-expected";
 }
 
-function getExpectedMovies(movies: Awaited<ReturnType<typeof getPublicMovies>>) {
+function getExpectedMovies(movies: PublicMovie[]) {
   return movies
     .filter(isCuratedExpectedRelease)
     .sort((first, second) => first.id - second.id)
     .slice(0, 80);
 }
 
-function getExpectedJsonLd(items: Awaited<ReturnType<typeof getPublicMovies>>) {
+function getExpectedJsonLd(items: PublicMovie[]) {
   const pageUrl = `${siteUrl}/expected`;
 
   return {
@@ -105,7 +106,7 @@ function getExpectedJsonLd(items: Awaited<ReturnType<typeof getPublicMovies>>) {
 }
 
 export default async function ExpectedMoviesPage() {
-  const publicMovies = await getPublicMovies();
+  const publicMovies = await getCachedPublicMovies();
   const expectedMovies = getExpectedMovies(publicMovies);
   return (
     <main className="kinoluma-collections expected-page">

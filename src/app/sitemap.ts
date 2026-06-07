@@ -1,14 +1,14 @@
 import type { MetadataRoute } from "next";
 
 import { seoCollections } from "./data/collections";
-import { getPublicMovies } from "./lib/movies/movieOverrides";
+import { getCachedPublicMovies } from "./lib/movies/movieOverrides";
 import {
   catalogRoutes,
   getCatalogGenreRoutes,
   siteUrl,
 } from "./lib/seo";
 
-const STATIC_LAST_MODIFIED = new Date("2026-06-03T00:00:00.000Z");
+const STATIC_LAST_MODIFIED = new Date("2026-06-07T00:00:00.000Z");
 
 type SitemapEntry = MetadataRoute.Sitemap[number];
 
@@ -53,7 +53,7 @@ function uniqueSitemapEntries(entries: SitemapEntry[]) {
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const publicMovies = await getPublicMovies();
+  const publicMovies = await getCachedPublicMovies();
 
   const entries: SitemapEntry[] = [
     {

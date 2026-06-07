@@ -5,12 +5,8 @@ import Link from "next/link";
 import Script from "next/script";
 import MobileBottomNav from "../../components/MobileBottomNav";
 import { type MouseEvent, useEffect, useMemo, useRef, useState } from "react";
-import {
-  movies as staticAllMovies,
-  type Movie,
-  type MovieFact,
-  type PlayerProvider,
-} from "../../data/movies";
+import type { Movie, MovieFact, PlayerProvider } from "../../data/movies";
+import type { MovieCardIndexItem } from "../../data/movieCardIndex";
 import { supabase } from "../../lib/supabase";
 import {
   getCurrentSupabaseUser,
@@ -26,7 +22,7 @@ import {
 
 type MoviePageClientProps = {
   movie: Movie;
-  allMovies?: Movie[];
+  relatedMovies?: MovieCardIndexItem[];
 };
 
 const WATCH_LATER_KEY = "kinoluma-watch-later";
@@ -356,7 +352,7 @@ function formatMovieRating(rating: number) {
   return `★ ${Number.isInteger(rating) ? rating.toString() : rating.toFixed(1)}`;
 }
 
-function getContentKind(movie: Movie) {
+function getContentKind(movie: Pick<Movie, "type" | "genres"> | MovieCardIndexItem) {
   if (movie.type === "Мультфильм") {
     return "мультфильм";
   }
@@ -421,7 +417,7 @@ function getGeneratedPosterFallback(title: string) {
 
 export default function MoviePageClient({
   movie,
-  allMovies = staticAllMovies,
+  relatedMovies = [],
 }: MoviePageClientProps) {
   const [vibixRendexData, setVibixRendexData] =
     useState<VibixRendexPlayerData | null>(null);
@@ -486,36 +482,7 @@ export default function MoviePageClient({
     [movie],
   );
 
-  const similarMovies = useMemo(() => {
-    const currentGenres = new Set(movie.genres);
-
-    return allMovies
-      .filter((item) => item.id !== movie.id)
-      .map((item) => {
-        const sharedGenres = item.genres.filter((genre) =>
-          currentGenres.has(genre),
-        );
-        const score =
-          sharedGenres.length * 4 +
-          (item.type === movie.type ? 2 : 0) +
-          item.rating / 10;
-
-        return { item, sharedGenres, score };
-      })
-      .filter(
-        ({ item, sharedGenres }) =>
-          sharedGenres.length > 0 || item.type === movie.type,
-      )
-      .sort((firstItem, secondItem) => {
-        if (secondItem.score !== firstItem.score) {
-          return secondItem.score - firstItem.score;
-        }
-
-        return secondItem.item.rating - firstItem.item.rating;
-      })
-      .slice(0, 6)
-      .map(({ item }) => item);
-  }, [allMovies, movie.genres, movie.id, movie.type]);
+  const similarMovies = useMemo(() => relatedMovies, [relatedMovies]);
 
   const cast = movie.cast || [];
   const contentKind = getContentKind(movie);

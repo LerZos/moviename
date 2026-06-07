@@ -1,9 +1,10 @@
-const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
-const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
+import { IMAGE_SOURCE_LINKS, buildTmdbImageUrl } from '../imageLinks';
+
+const TMDB_BASE_URL = IMAGE_SOURCE_LINKS.tmdbApiBase;
 
 export function tmdbImage(path: string | null | undefined, size: 'w500' | 'w780' | 'original' = 'w500'): string | null {
   if (!path) return null;
-  return `${TMDB_IMAGE_BASE_URL}/${size}${path}`;
+  return buildTmdbImageUrl(path, size);
 }
 
 export async function tmdbFetch<T>(path: string): Promise<T> {

@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 
-import { movies as staticContent, type Movie } from "../../data/movies";
+import type { Movie } from "../../data/movies";
+import { canResolveTrailerUrl, resolveTrailerUrl } from "../../lib/trailers";
 
 type CatalogCategory = {
   type: string;
@@ -323,6 +324,7 @@ function CatalogMovieCard({
 }) {
   const [posterSrc, setPosterSrc] = useState(item.poster);
   const [isPosterFallback, setIsPosterFallback] = useState(false);
+  const canPlayTrailer = canResolveTrailerUrl(item);
 
   return (
     <article
@@ -385,9 +387,11 @@ function CatalogMovieCard({
           <button
             type="button"
             onClick={() => onOpenTrailer(item)}
-            className="catalog-card-primary"
+            disabled={!canPlayTrailer}
+            className={`catalog-card-primary ${canPlayTrailer ? "" : "catalog-card-primary-disabled"}`}
+            title={canPlayTrailer ? "Смотреть трейлер" : "Трейлер пока не добавлен"}
           >
-            Трейлер
+            {canPlayTrailer ? "Трейлер" : "Нет трейлера"}
           </button>
 
           <button
@@ -419,10 +423,7 @@ export default function CatalogCategoryPage({
   const categoryKey = categorySlug ?? getCategoryKey(params.category);
   const activeGenreSlug = genreSlug ?? getCategoryKey(params.genre);
   const category = catalogCategories[categoryKey];
-  const content = useMemo(
-    () => (initialContent && initialContent.length > 0 ? initialContent : staticContent),
-    [initialContent],
-  );
+  const content = useMemo(() => initialContent ?? [], [initialContent]);
 
   const [search, setSearch] = useState("");
   const [selectedGenre, setSelectedGenre] = useState("Все");
@@ -513,10 +514,16 @@ export default function CatalogCategoryPage({
     setIsDetailsClosing(false);
   }
 
-  function openTrailer(item: Movie) {
+  async function openTrailer(item: Movie) {
+    const trailerUrl = await resolveTrailerUrl(item);
+
+    if (!trailerUrl) {
+      return;
+    }
+
     setSelectedItem(null);
     setIsDetailsClosing(false);
-    setTrailerItem(item);
+    setTrailerItem({ ...item, trailerUrl });
     setIsTrailerClosing(false);
   }
 
@@ -973,13 +980,19 @@ export default function CatalogCategoryPage({
               </div>
 
               <div className="details-modal-actions mt-8 flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => openTrailer(selectedItem)}
-                  className="rounded border-2 border-white bg-white px-6 py-3 font-black text-black transition duration-200 hover:bg-black hover:text-white hover:shadow-[0_0_22px_rgba(255,255,255,0.25)] active:scale-[0.98]"
-                >
-                  Смотреть трейлер
-                </button>
+                {canResolveTrailerUrl(selectedItem) ? (
+                  <button
+                    type="button"
+                    onClick={() => openTrailer(selectedItem)}
+                    className="rounded border-2 border-white bg-white px-6 py-3 font-black text-black transition duration-200 hover:bg-black hover:text-white hover:shadow-[0_0_22px_rgba(255,255,255,0.25)] active:scale-[0.98]"
+                  >
+                    Смотреть трейлер
+                  </button>
+                ) : (
+                  <span className="rounded border border-white/10 bg-black/50 px-6 py-3 font-bold text-neutral-500">
+                    Трейлер скоро
+                  </span>
+                )}
 
                 <button
                   type="button"

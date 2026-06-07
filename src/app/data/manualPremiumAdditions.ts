@@ -1,4 +1,5 @@
 import type { CastMember, ContentType, Movie, MovieFact, PlayerProvider } from "./movies";
+import { getManualPremiumPoster } from "../lib/imageLinks";
 type ManualPremiumEntry = {
   id: number;
   slug: string;
@@ -20,17 +21,6 @@ type ManualPremiumEntry = {
   description: string;
   longDescription: string;
 };
-function getTmdbPoster(input: { imdbId?: string; title: string; originalTitle?: string; year?: string; type?: string }) {
-  const params = new URLSearchParams();
-  if (input.imdbId) params.set("imdbId", input.imdbId);
-  params.set("title", input.title);
-  if (input.originalTitle) params.set("originalTitle", input.originalTitle);
-  if (input.year) params.set("year", input.year);
-  if (input.type) params.set("type", input.type);
-  params.set("quality", "high");
-  params.set("v", "manual-premium-2");
-  return `/api/tmdb/poster?${params.toString()}`;
-}
 function createCollapseImdbPlayer(entry: Pick<ManualPremiumEntry, "slug" | "imdbId">): PlayerProvider[] {
   return [
     {
@@ -1792,7 +1782,7 @@ export const manualPremiumAdditions: Movie[] = manualPremiumEntries.map((entry) 
   genres: entry.genres,
   countries: entry.countries,
   imdbId: entry.imdbId,
-  poster: getTmdbPoster({ imdbId: entry.imdbId, title: entry.title, originalTitle: entry.originalTitle, year: entry.year, type: entry.type }),
+  poster: getManualPremiumPoster({ imdbId: entry.imdbId, title: entry.title, originalTitle: entry.originalTitle, year: entry.year, type: entry.type }),
   description: entry.description,
   longDescription: entry.longDescription,
   trailerUrl: "",

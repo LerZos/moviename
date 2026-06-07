@@ -1,11 +1,37 @@
 import type { Metadata } from "next";
 import HomeClient from "./HomeClient";
+import type { Movie } from "./data/movies";
 
 import { getHomePageJsonLd, siteUrl } from "./lib/seo";
-import { getPublicMovies } from "./lib/movies/movieOverrides";
+import { getCachedPublicMovies } from "./lib/movies/movieOverrides";
 import { getDailyFeaturedDateKey, getDailyFeaturedItems } from "./lib/home/dailyFeatured";
 
 export const revalidate = 3600;
+
+
+function getHomeClientContent(movies: Movie[]) {
+  return movies.map((movie) => ({
+    id: movie.id,
+    slug: movie.slug,
+    title: movie.title,
+    originalTitle: movie.originalTitle,
+    searchTitles: movie.searchTitles,
+    type: movie.type,
+    year: movie.year,
+    rating: movie.rating,
+    genres: movie.genres,
+    poster: movie.poster,
+    backdrop: movie.backdrop,
+    posterFallbacks: movie.posterFallbacks,
+    description: movie.description,
+    trailerUrl: movie.trailerUrl,
+    tmdbId: movie.tmdbId,
+    imdbId: movie.imdbId,
+    kinopoiskId: movie.kinopoiskId,
+    source: movie.source,
+    facts: movie.facts,
+  }));
+}
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -55,7 +81,8 @@ export const metadata: Metadata = {
 };
 
 export default async function Page() {
-  const publicMovies = await getPublicMovies();
+  const publicMovies = await getCachedPublicMovies();
+  const homeClientContent = getHomeClientContent(publicMovies);
   const dailyFeatured = getDailyFeaturedItems(publicMovies);
   const dailyFeaturedDateKey = getDailyFeaturedDateKey();
 
@@ -68,7 +95,7 @@ export default async function Page() {
         }}
       />
       <HomeClient
-        initialContent={publicMovies}
+        initialContent={homeClientContent}
         initialFeaturedIds={dailyFeatured.map((item) => item.id)}
         initialFeaturedDateKey={dailyFeaturedDateKey}
       />

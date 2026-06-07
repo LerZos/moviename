@@ -17,8 +17,12 @@ import {
 } from "lucide-react";
 
 import MobileBottomNav from "../components/MobileBottomNav";
-import { movies as catalogItems, type Movie } from "../data/movies";
+import {
+  profileCatalogItems as catalogItems,
+  type ProfileCatalogItem,
+} from "../data/profileCatalogItems";
 import { supabase } from "../lib/supabase";
+import { getResolvedTrailerUrl } from "../lib/trailers";
 import {
   clearMovieActions,
   emptyMovieActionState,
@@ -30,7 +34,7 @@ import {
   syncMovieAction,
 } from "../lib/kinolumaSupabase";
 
-type CatalogItem = Movie;
+type CatalogItem = ProfileCatalogItem;
 
 type CatalogItemDetails = {
   description: string;
@@ -437,6 +441,7 @@ function DetailsModal({
 }) {
   const [isTrailerOpen, setIsTrailerOpen] = useState(false);
   const details = getCatalogItemDetails(item);
+  const normalizedTrailerUrl = getResolvedTrailerUrl({ ...item, trailerUrl: details.trailerUrl });
   const isWatchLater = watchLaterIds.includes(item.id);
   const isLiked = likedItemIds.includes(item.id);
   const isDisliked = dislikedItemIds.includes(item.id);
@@ -544,7 +549,7 @@ function DetailsModal({
             </button>
           </div>
 
-          {details.trailerUrl ? (
+          {normalizedTrailerUrl ? (
             <div className="trailer-block">
               <button
                 type="button"
@@ -558,7 +563,7 @@ function DetailsModal({
               {isTrailerOpen && (
                 <div className="trailer-frame-wrap">
                   <iframe
-                    src={details.trailerUrl}
+                    src={normalizedTrailerUrl}
                     title={`Трейлер: ${item.title}`}
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowFullScreen

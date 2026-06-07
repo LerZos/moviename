@@ -1,18 +1,8 @@
 import type { CastMember, Movie, MovieFact, PlayerProvider } from "./movies";
+import { getManualAnimePoster } from "../lib/imageLinks";
 type ManualAnimeEntry = {
   id: number; slug: string; title: string; originalTitle: string; year: string; rating: number; genres: string[]; countries: string[]; imdbId: string; studio: string; creator: string; cast: CastMember[]; description: string; longDescription: string;
 };
-function getTmdbPoster(input: { imdbId?: string; title: string; originalTitle?: string; year?: string; type?: string }) {
-  const params = new URLSearchParams();
-  if (input.imdbId) params.set("imdbId", input.imdbId);
-  params.set("title", input.title);
-  if (input.originalTitle) params.set("originalTitle", input.originalTitle);
-  if (input.year) params.set("year", input.year);
-  if (input.type) params.set("type", input.type);
-  params.set("quality", "high");
-  params.set("v", "manual-anime-2");
-  return `/api/tmdb/poster?${params.toString()}`;
-}
 function createCollapseAnimePlayer(entry: Pick<ManualAnimeEntry, "imdbId">): PlayerProvider[] {
   return [
     {
@@ -506,7 +496,7 @@ export const manualPopularAnime: Movie[] = manualAnimeEntries.map((entry) => ({
   genres: entry.genres,
   countries: entry.countries,
   imdbId: entry.imdbId,
-  poster: getTmdbPoster({ imdbId: entry.imdbId, title: entry.title, originalTitle: entry.originalTitle, year: entry.year, type: "Аниме" }),
+  poster: getManualAnimePoster({ imdbId: entry.imdbId, title: entry.title, originalTitle: entry.originalTitle, year: entry.year, type: "Аниме" }),
   description: entry.description,
   longDescription: entry.longDescription,
   trailerUrl: "",
