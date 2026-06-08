@@ -15475,6 +15475,227 @@ const moviesRaw: Movie[] = [
     ],
     players: createKinopoiskPlayers(463401),
   },
+
+  {
+    id: 910101,
+    kinopoiskId: 327,
+    tmdbId: 240,
+    imdbId: "tt0071562",
+    slug: "krestnyy-otec-2-1974",
+    title: "Крёстный отец 2",
+    originalTitle: "The Godfather Part II",
+    searchTitles: [
+      "Крёстный отец 2",
+      "Крестный отец 2",
+      "The Godfather Part II",
+      "Godfather 2",
+      "krestnyy otec 2",
+      "krestnyy-otec-2-1974",
+    ],
+    type: "Фильм",
+    year: "1974",
+    rating: 8.5,
+    genres: ["Драма", "Криминал"],
+    countries: ["США"],
+    poster: getTmdbPoster({
+      tmdbId: 240,
+      imdbId: "tt0071562",
+      title: "Крёстный отец 2",
+      originalTitle: "The Godfather Part II",
+      year: "1974",
+      type: "Фильм",
+    }),
+    description:
+      "Продолжение саги о семье Корлеоне: Майкл укрепляет власть, а параллельная линия показывает путь молодого Вито к созданию будущей империи.",
+    trailerUrl: "",
+    longDescription:
+      "«Крёстный отец 2» — криминальная драма 1974 года, где история семьи Корлеоне развивается сразу в двух направлениях. Одна линия показывает Майкла, который пытается удержать влияние семьи и расплачивается за власть всё более холодными решениями. Другая возвращает к молодому Вито и объясняет, как начинался путь, изменивший жизнь целого клана." +
+      "\n\nФильм держится не на погонях, а на напряжении, взглядах, семейных разломах и ощущении, что каждое решение оставляет след. Это та редкая вторая часть, которая не просто продолжает оригинал, а расширяет его историю и делает её глубже." +
+      "\n\nНа странице KinoLuma добавлены краткое описание, факты, актёрский состав и варианты просмотра. Если постер или дополнительный плеер появятся через подключённые сервисы, карточка подтянет их без ручной перепрошивки всего сайта — кино мафиозное, но патч у нас законопослушный.",
+    facts: [
+      { label: "Год", value: "1974" },
+      { label: "Тип", value: "Фильм" },
+      { label: "Страна", value: "США" },
+      { label: "Длительность", value: "200 мин" },
+      { label: "Режиссёр", value: "Francis Ford Coppola" },
+      { label: "Сценарий", value: "Francis Ford Coppola, Mario Puzo" },
+      { label: "Студия", value: "Paramount Pictures, The Coppola Company" },
+      { label: "Настроение", value: "криминальная сага, семейная драма, власть и последствия" },
+    ],
+    cast: [
+      { name: "Al Pacino", role: "Майкл Корлеоне" },
+      { name: "Robert De Niro", role: "Вито Корлеоне" },
+      { name: "Robert Duvall", role: "Том Хейген" },
+      { name: "Diane Keaton", role: "Кей Адамс" },
+      { name: "John Cazale", role: "Фредо Корлеоне" },
+      { name: "Talia Shire", role: "Конни Корлеоне" },
+    ],
+  },
+  {
+    id: 910102,
+    kinopoiskId: 4876869,
+    imdbId: "tt17490712",
+    slug: "mortal-kombat-2-2026",
+    title: "Мортал Комбат 2",
+    originalTitle: "Mortal Kombat II",
+    searchTitles: [
+      "Мортал Комбат 2",
+      "Мортал Комбат II",
+      "Mortal Kombat II",
+      "Mortal Kombat 2",
+      "mortal-kombat-2-2026",
+    ],
+    type: "Фильм",
+    year: "2026",
+    rating: 6.2,
+    genres: ["Фэнтези", "Боевик", "Фантастика", "Приключения"],
+    countries: ["США"],
+    source: "kinoluma-manual-requested",
+    poster: getKinopoiskPoster({
+      kinopoiskId: 4876869,
+      fallback: getTmdbPoster({
+        imdbId: "tt17490712",
+        title: "Мортал Комбат 2",
+        originalTitle: "Mortal Kombat II",
+        year: "2026",
+        type: "Фильм",
+      }),
+    }),
+    description:
+      "Продолжение экранизации культовой игровой серии: защитники Земного царства снова оказываются втянуты в турнир, где решается судьба миров.",
+    trailerUrl: "",
+    longDescription:
+      "«Мортал Комбат 2» — фантастический боевик 2026 года и продолжение истории о воинах, которым приходится защищать Земное царство от новой угрозы. Карточка сделана без лишних спойлеров: здесь важны турнир, знакомые герои, напряжение между мирами и ставка, которая быстро становится слишком высокой для обычной драки." +
+      "\n\nФильм рассчитан на зрителей, которым нужен прямой жанровый драйв: боевые искусства, фэнтези, фантастические элементы и узнаваемая атмосфера серии. Описание не уходит в жёсткие подробности, чтобы страница оставалась аккуратной и не превращалась в пересказ финишеров по списку." +
+      "\n\nНа KinoLuma у страницы есть постер, базовые факты, актёрский состав и автоматические варианты просмотра по внутреннему номеру фильма. Дополнительный виджет подтянется сервером, если для карточки найдётся подходящий video ID.",
+    facts: [
+      { label: "Год", value: "2026" },
+      { label: "Тип", value: "Фильм" },
+      { label: "Страна", value: "США" },
+      { label: "Длительность", value: "116 мин" },
+      { label: "Режиссёр", value: "Simon McQuoid" },
+      { label: "Сценарий", value: "Jeremy Slater" },
+      { label: "Студия", value: "New Line Cinema, Atomic Monster, Broken Road Productions" },
+      { label: "Настроение", value: "турнир, фэнтези-экшен, противостояние миров" },
+    ],
+    cast: [
+      { name: "Karl Urban", role: "Johnny Cage" },
+      { name: "Adeline Rudolph", role: "Kitana" },
+      { name: "Jessica McNamee", role: "Sonya Blade" },
+      { name: "Josh Lawson", role: "Kano" },
+      { name: "Ludi Lin", role: "Liu Kang" },
+      { name: "Mehcad Brooks", role: "Jax" },
+      { name: "Hiroyuki Sanada", role: "Scorpion" },
+    ],
+  },
+  {
+    id: 910103,
+    kinopoiskId: 6785084,
+    imdbId: "tt32612507",
+    slug: "mumiya-2026",
+    title: "Мумия",
+    originalTitle: "Lee Cronin's The Mummy",
+    searchTitles: [
+      "Мумия 2026",
+      "Мумия Ли Кронина",
+      "The Mummy 2026",
+      "Lee Cronin's The Mummy",
+      "mumiya-2026",
+    ],
+    type: "Фильм",
+    year: "2026",
+    rating: 6.3,
+    genres: ["Ужасы", "Триллер"],
+    countries: ["Ирландия", "США"],
+    source: "kinoluma-manual-requested",
+    poster: getKinopoiskPoster({
+      kinopoiskId: 6785084,
+      fallback: getTmdbPoster({
+        imdbId: "tt32612507",
+        title: "Мумия",
+        originalTitle: "Lee Cronin's The Mummy",
+        year: "2026",
+        type: "Фильм",
+      }),
+    }),
+    description:
+      "Хоррор-переосмысление истории о мумии: исчезновение ребёнка, древний саркофаг и семейная тайна, которая возвращается слишком мрачно.",
+    trailerUrl: "",
+    longDescription:
+      "«Мумия» 2026 года — хоррор от Ли Кронина, где знакомый миф получает более мрачное и современное звучание. История строится вокруг семьи, древней находки и тревожного возвращения того, что лучше было бы оставить в прошлом." +
+      "\n\nКарточка держит описание в безопасной зоне: без подробных жутких сцен, но с понятным настроением фильма. Это не приключенческая версия про охоту за сокровищами, а более напряжённая история с упором на тайну, страх и семейную драму." +
+      "\n\nНа странице KinoLuma добавлены основные сведения и автоматическая генерация вариантов просмотра. Если внешний виджет вернёт корректный video ID, третий плеер появится рядом с основным и запасным вариантом без ручной правки страницы.",
+    facts: [
+      { label: "Год", value: "2026" },
+      { label: "Тип", value: "Фильм" },
+      { label: "Страна", value: "Ирландия, США" },
+      { label: "Длительность", value: "133 мин" },
+      { label: "Режиссёр", value: "Lee Cronin" },
+      { label: "Студия", value: "New Line Cinema, Atomic Monster, Blumhouse Productions" },
+      { label: "Настроение", value: "мрачный хоррор, тайна, семейная драма" },
+    ],
+    cast: [
+      { name: "Jack Reynor", role: "главная роль" },
+      { name: "Laia Costa", role: "главная роль" },
+      { name: "May Calamawy", role: "главная роль" },
+      { name: "Natalie Grace", role: "главная роль" },
+      { name: "Verónica Falcón", role: "главная роль" },
+    ],
+  },
+  {
+    id: 910104,
+    kinopoiskId: 6458125,
+    imdbId: "tt34378301",
+    slug: "dzhek-rayan-prizrachnaya-voyna-2026",
+    title: "Джек Райан: Призрачная война",
+    originalTitle: "Tom Clancy's Jack Ryan: Ghost War",
+    searchTitles: [
+      "Джек Райан Призрачная война",
+      "Джек Райан: Призрачная война",
+      "Tom Clancy's Jack Ryan: Ghost War",
+      "Jack Ryan Ghost War",
+      "dzhek-rayan-prizrachnaya-voyna-2026",
+    ],
+    type: "Фильм",
+    year: "2026",
+    rating: 0,
+    genres: ["Боевик", "Триллер", "Драма"],
+    countries: ["США"],
+    source: "kinoluma-manual-requested",
+    poster: getKinopoiskPoster({
+      kinopoiskId: 6458125,
+      fallback: getTmdbPoster({
+        imdbId: "tt34378301",
+        title: "Джек Райан: Призрачная война",
+        originalTitle: "Tom Clancy's Jack Ryan: Ghost War",
+        year: "2026",
+        type: "Фильм",
+      }),
+    }),
+    description:
+      "Полнометражное продолжение истории Джека Райана: бывший аналитик снова оказывается в мире шпионажа, где старая команда сталкивается с новым заговором.",
+    trailerUrl: "",
+    longDescription:
+      "«Джек Райан: Призрачная война» — полнометражный шпионский триллер 2026 года с Джоном Красински в роли Джека Райана. Героя снова втягивают в опасную операцию, когда международная миссия раскрывает заговор, связанный с тайной группой и старыми союзниками." +
+      "\n\nФильм продолжает линию сериала и делает ставку на команду знакомых персонажей, оперативную работу и напряжение без лишней перегрузки деталями. В центре — Джек Райан, Майк Новембер, Джеймс Грир и новая союзница Эмма Марлоу." +
+      "\n\nНа странице KinoLuma добавлены краткая карточка, факты, актёры и автоматические варианты просмотра. Рейтинг оставлен пустым, чтобы не выдумывать цифры: когда появятся проверенные данные, его можно обновить через админку или точечный патч.",
+    facts: [
+      { label: "Год", value: "2026" },
+      { label: "Тип", value: "Фильм" },
+      { label: "Страна", value: "США" },
+      { label: "Длительность", value: "106 мин" },
+      { label: "Режиссёр", value: "Andrew Bernstein" },
+      { label: "Студия", value: "Amazon MGM Studios, Paramount Pictures, Skydance Media" },
+      { label: "Настроение", value: "шпионский триллер, заговор, возвращение команды" },
+    ],
+    cast: [
+      { name: "John Krasinski", role: "Jack Ryan" },
+      { name: "Wendell Pierce", role: "James Greer" },
+      { name: "Michael Kelly", role: "Mike November" },
+      { name: "Sienna Miller", role: "Emma Marlowe" },
+      { name: "Betty Gabriel", role: "Elizabeth Wright" },
+    ],
+  },
   ...manualPremiumAdditions,
   ...manualPopularAnime,
   ...generatedKinoLumaMovies,
@@ -15527,8 +15748,13 @@ function isCuratedExpectedRelease(movie: Movie) {
   return normalizePublicCatalogText(movie.source || "") === "kinoluma-curated-expected";
 }
 
+function isManualRequestedMovie(movie: Movie) {
+  return normalizePublicCatalogText(movie.source || "") === "kinoluma-manual-requested";
+}
+
 function isExpectedGeneratedRelease(movie: Movie) {
   if (isCuratedExpectedRelease(movie)) return false;
+  if (isManualRequestedMovie(movie)) return false;
 
   const source = normalizePublicCatalogText(movie.source || "");
   const genres = (movie.genres ?? []).map((genre) => normalizePublicCatalogText(String(genre))).join(" ");
