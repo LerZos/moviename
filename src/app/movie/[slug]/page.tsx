@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { getCachedMovieWithOverrides } from "../../lib/movies/movieOverrides";
 import type { Movie } from "../../data/movies";
+import { generatedRequestedSeoCollections } from "../../data/generatedRequestedCollections";
 import { movieCardIndex, type MovieCardIndexItem } from "../../data/movieCardIndex";
 import {
   absoluteUrl,
@@ -30,23 +31,43 @@ export const revalidate = 3600;
 // и дальше кешируется с revalidate. Sitemap при этом остаётся полным.
 export const dynamicParams = true;
 
+function getRequestedCollectionRelatedSlugs(movieSlug: string) {
+  const seenSlugs = new Set<string>([movieSlug]);
+
+  return generatedRequestedSeoCollections
+    .filter((collection) => collection.itemSlugs.includes(movieSlug))
+    .flatMap((collection) => collection.itemSlugs)
+    .filter((slug) => {
+      if (seenSlugs.has(slug)) return false;
+
+      seenSlugs.add(slug);
+      return true;
+    });
+}
+
 function getSimilarMovies(movie: Movie): MovieCardIndexItem[] {
   const currentGenres = new Set(movie.genres);
+  const requestedRelatedSlugs = getRequestedCollectionRelatedSlugs(movie.slug);
+  const requestedRelatedScore = new Map(
+    requestedRelatedSlugs.map((slug, index) => [slug, 80 - index] as const),
+  );
 
   return movieCardIndex
     .filter((item) => item.id !== movie.id)
     .map((item) => {
       const sharedGenres = item.genres.filter((genre) => currentGenres.has(genre));
+      const collectionScore = requestedRelatedScore.get(item.slug) ?? 0;
       const score =
+        collectionScore +
         sharedGenres.length * 4 +
         (item.type === movie.type ? 2 : 0) +
         item.rating / 10;
 
-      return { item, sharedGenres, score };
+      return { item, sharedGenres, collectionScore, score };
     })
     .filter(
-      ({ item, sharedGenres }) =>
-        sharedGenres.length > 0 || item.type === movie.type,
+      ({ item, sharedGenres, collectionScore }) =>
+        collectionScore > 0 || sharedGenres.length > 0 || item.type === movie.type,
     )
     .sort((firstItem, secondItem) => {
       if (secondItem.score !== firstItem.score) {

@@ -258,26 +258,6 @@ export function getMovieMetaDescription(movie: Movie) {
   );
 }
 
-export function getMovieKeywords(movie: Movie) {
-  const kind = getSeoContentKind(movie);
-
-  // Meta keywords не дают полезного SEO-веса, поэтому не раздуваем их сотнями
-  // повторов. Небольшой список остаётся только для структурированных данных.
-  return Array.from(
-    new Set(
-      [
-        movie.title,
-        movie.originalTitle,
-        ...movie.searchTitles.slice(0, 4),
-        kind,
-        movie.type,
-        ...movie.genres.slice(0, 6),
-        String(movie.year),
-      ].filter(Boolean),
-    ),
-  );
-}
-
 function getFactValue(movie: Movie, labels: string[]) {
   const normalizedLabels = labels.map((label) => label.toLowerCase());
 
@@ -420,7 +400,6 @@ export function getMovieJsonLd(movie: Movie) {
     datePublished: String(movie.year),
     genre: movie.genres,
     inLanguage: "ru-RU",
-    keywords: getMovieKeywords(movie).join(", "),
     provider: {
       "@type": "Organization",
       name: brandName,

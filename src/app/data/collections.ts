@@ -1,4 +1,5 @@
 import { movies, type Movie } from "./movies";
+import { generatedRequestedSeoCollections } from "./generatedRequestedCollections";
 
 export type SeoCollection = {
   slug: string;
@@ -18,6 +19,7 @@ function makeCollection(collection: SeoCollection) {
 }
 
 const rawSeoCollections: SeoCollection[] = [
+  ...generatedRequestedSeoCollections,
   makeCollection({
     slug: "movies-like-interstellar",
     group: "Фильмы похожие на",

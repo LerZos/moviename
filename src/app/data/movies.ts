@@ -1,6 +1,7 @@
 import { generatedKinoLumaMovies } from "./generatedMovies";
 import { generatedKinoLumaCartoons } from "./generatedCartoons";
 import { generatedKinopoiskRequestedMovies } from "./generatedKinopoiskRequested";
+import { generatedRequestedExpansionMovies } from "./generatedRequestedExpansion";
 import { curatedExpectedReleases } from "./curatedExpectedReleases";
 import { manualPremiumAdditions } from "./manualPremiumAdditions";
 import { manualPopularAnime } from "./manualPopularAnime";
@@ -327,6 +328,7 @@ function hydrateMovieContent(movie: Movie) {
 }
 
 const moviesRaw: Movie[] = [
+  ...generatedRequestedExpansionMovies,
   ...manualCuratedExpansionPack,
   {
       id: 1,
