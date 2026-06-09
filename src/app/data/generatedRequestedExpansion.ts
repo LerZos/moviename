@@ -2999,6 +2999,160 @@ const requestedMovieBase: RequestedMovieInput[] = [
 ];
 
 
+type RequestedKinopoiskInfo = {
+  kinopoiskId: number;
+  rating: number;
+};
+
+const REQUESTED_KINOPOISK_INFO: Record<string, RequestedKinopoiskInfo> = {
+  // Основной список из чата. ID и оценки проставлены только по найденным карточкам/выдаче Кинопоиска/Яндекса.
+  "ducktales-2017": { kinopoiskId: 1008491, rating: 8.5 },
+  "the-gorge-2025": { kinopoiskId: 5098653, rating: 7.0 },
+  "five-nights-at-freddys-2023": { kinopoiskId: 952158, rating: 5.8 },
+  "vacation-2015": { kinopoiskId: 484426, rating: 6.5 },
+  "jumanji-1995": { kinopoiskId: 8161, rating: 7.9 },
+  "now-you-see-me-2013": { kinopoiskId: 522892, rating: 7.8 },
+  "lucy-2014": { kinopoiskId: 760326, rating: 6.8 },
+  "rush-hour-1998": { kinopoiskId: 6345, rating: 7.8 },
+  "twenty-one-and-over-2013": { kinopoiskId: 566387, rating: 6.3 },
+  "scary-movie-2000": { kinopoiskId: 5932, rating: 7.0 },
+  "king-kong-2005": { kinopoiskId: 5908, rating: 7.6 },
+  "black-adam-2022": { kinopoiskId: 1009017, rating: 6.1 },
+  "godzilla-2014": { kinopoiskId: 260991, rating: 6.1 },
+  "san-andreas-2015": { kinopoiskId: 652692, rating: 6.2 },
+  "skyscraper-2018": { kinopoiskId: 1041734, rating: 6.1 },
+  "jungle-cruise-2021": { kinopoiskId: 462059, rating: 6.8 },
+  "central-intelligence-2016": { kinopoiskId: 472105, rating: 6.4 },
+  "baywatch-2017": { kinopoiskId: 468940, rating: 5.9 },
+  "the-game-plan-2007": { kinopoiskId: 260342, rating: 7.1 },
+  "tooth-fairy-2010": { kinopoiskId: 406397, rating: 6.1 },
+  "the-rundown-2003": { kinopoiskId: 5412, rating: 7.1 },
+  "walking-tall-2004": { kinopoiskId: 18102, rating: 6.8 },
+  "the-mummy-returns-2001": { kinopoiskId: 760, rating: 7.4 },
+  "uncharted-2022": { kinopoiskId: 468373, rating: 6.8 },
+  "the-impossible-2012": { kinopoiskId: 518037, rating: 8.0 },
+  "in-the-heart-of-the-sea-2015": { kinopoiskId: 463893, rating: 7.2 },
+  "the-lost-city-of-z-2016": { kinopoiskId: 432794, rating: 6.6 },
+  "the-current-war-2017": { kinopoiskId: 680851, rating: 6.7 },
+  "the-devil-all-the-time-2020": { kinopoiskId: 1072788, rating: 7.1 },
+  "cherry-2021": { kinopoiskId: 1245501, rating: 7.1 },
+  "chaos-walking-2021": { kinopoiskId: 634786, rating: 6.5 },
+  "the-gentlemen-series-2024": { kinopoiskId: 1435343, rating: 7.8 },
+
+  // Похожие фильмы и подборки актёров, где ID/оценка уже были уверенно найдены или совпали с существующим каталогом.
+  "the-scorpion-king-2002": { kinopoiskId: 6246, rating: 6.9 },
+  "journey-2-the-mysterious-island-2012": { kinopoiskId: 471905, rating: 6.6 },
+  "gi-joe-retaliation-2013": { kinopoiskId: 466899, rating: 5.9 },
+  "hercules-2014": { kinopoiskId: 464758, rating: 6.6 },
+  "furious-7-2015": { kinopoiskId: 754481, rating: 7.3 },
+  "jumanji-welcome-to-the-jungle-2017": { kinopoiskId: 695609, rating: 6.9 },
+  "jumanji-the-next-level-2019": { kinopoiskId: 1112539, rating: 6.7 },
+  "rampage-2018": { kinopoiskId: 666865, rating: 6.2 },
+  "red-notice-2021": { kinopoiskId: 1115099, rating: 6.6 },
+  "onward-2020": { kinopoiskId: 1080513, rating: 7.8 },
+  "police-story-1985": { kinopoiskId: 24696, rating: 7.6 },
+  "rush-hour-2-2001": { kinopoiskId: 5175, rating: 7.5 },
+  "rush-hour-3-2007": { kinopoiskId: 5174, rating: 7.0 },
+  "shanghai-noon-2000": { kinopoiskId: 8584, rating: 7.1 },
+  "the-karate-kid-2010": { kinopoiskId: 412216, rating: 7.4 },
+  "the-foreigner-2017": { kinopoiskId: 840382, rating: 7.3 },
+  "casino-royale-2006": { kinopoiskId: 49844, rating: 7.9 },
+  "quantum-of-solace-2008": { kinopoiskId: 258475, rating: 6.7 },
+  "skyfall-2012": { kinopoiskId: 408871, rating: 7.6 },
+  "spectre-2015": { kinopoiskId: 678552, rating: 6.9 },
+  "no-time-to-die-2021": { kinopoiskId: 706019, rating: 7.3 },
+  "glass-onion-2022": { kinopoiskId: 1188528, rating: 7.1 },
+  "layer-cake-2004": { kinopoiskId: 79488, rating: 7.2 },
+  "cowboys-and-aliens-2011": { kinopoiskId: 462770, rating: 6.0 },
+  "the-girl-with-the-dragon-tattoo-2011": { kinopoiskId: 491724, rating: 7.7 },
+  "the-secret-life-of-pets-2016": { kinopoiskId: 743088, rating: 6.9 },
+  "national-treasure-2004": { kinopoiskId: 7144, rating: 7.7 },
+  "national-treasure-book-of-secrets-2007": { kinopoiskId: 195408, rating: 7.1 },
+  "journey-to-the-center-of-the-earth-2008": { kinopoiskId: 279102, rating: 6.8 },
+  "night-at-the-museum-2006": { kinopoiskId: 178580, rating: 7.2 },
+  "tomb-raider-2018": { kinopoiskId: 706655, rating: 6.2 },
+  "lara-croft-tomb-raider-2001": { kinopoiskId: 2051, rating: 6.8 },
+  "prince-of-persia-the-sands-of-time-2010": { kinopoiskId: 195394, rating: 7.2 },
+  "raiders-of-the-lost-ark-1981": { kinopoiskId: 339, rating: 8.0 },
+  "indiana-jones-and-the-temple-of-doom-1984": { kinopoiskId: 7121, rating: 7.5 },
+  "indiana-jones-and-the-last-crusade-1989": { kinopoiskId: 472, rating: 8.1 },
+  "indiana-jones-and-the-kingdom-of-the-crystal-skull-2008": { kinopoiskId: 38904, rating: 6.8 },
+  "the-lost-city-2022": { kinopoiskId: 4308624, rating: 6.2 },
+  "kong-skull-island-2017": { kinopoiskId: 843147, rating: 6.8 },
+  "pacific-rim-2013": { kinopoiskId: 462742, rating: 6.9 },
+  "godzilla-king-of-the-monsters-2019": { kinopoiskId: 843650, rating: 6.2 },
+  "godzilla-vs-kong-2021": { kinopoiskId: 843649, rating: 6.7 },
+  "jurassic-world-2015": { kinopoiskId: 594554, rating: 6.9 },
+  "jurassic-world-fallen-kingdom-2018": { kinopoiskId: 924311, rating: 6.2 },
+  "jurassic-world-dominion-2022": { kinopoiskId: 1115128, rating: 6.0 },
+  "twister-1996": { kinopoiskId: 1842, rating: 7.1 },
+  "the-day-after-tomorrow-2004": { kinopoiskId: 2053, rating: 7.7 },
+  "2012-2009": { kinopoiskId: 413447, rating: 6.9 },
+  "geostorm-2017": { kinopoiskId: 843478, rating: 5.9 },
+  "poseidon-2006": { kinopoiskId: 19561, rating: 6.5 },
+  "dantes-peak-1997": { kinopoiskId: 6717, rating: 6.9 },
+  "volcano-1997": { kinopoiskId: 1959, rating: 6.9 },
+  "armageddon-1998": { kinopoiskId: 2941, rating: 7.7 },
+  "deep-impact-1998": { kinopoiskId: 1826, rating: 7.1 },
+  "speed-1994": { kinopoiskId: 1950, rating: 7.8 },
+  "die-hard-1988": { kinopoiskId: 471, rating: 8.0 },
+  "die-hard-with-a-vengeance-1995": { kinopoiskId: 8160, rating: 7.8 },
+  "bad-boys-1995": { kinopoiskId: 3908, rating: 7.6 },
+  "bad-boys-ii-2003": { kinopoiskId: 2928, rating: 7.5 },
+  "men-in-black-1997": { kinopoiskId: 1091, rating: 8.0 },
+  "get-smart-2008": { kinopoiskId: 102133, rating: 7.0 },
+  "johnny-english-2003": { kinopoiskId: 6817, rating: 7.3 },
+  "johnny-english-reborn-2011": { kinopoiskId: 462464, rating: 6.9 },
+  "johnny-english-strikes-again-2018": { kinopoiskId: 1009627, rating: 6.5 },
+  "the-other-guys-2010": { kinopoiskId: 445941, rating: 6.7 },
+  "game-night-2018": { kinopoiskId: 1024878, rating: 7.0 },
+  "murder-mystery-2019": { kinopoiskId: 462420, rating: 6.3 },
+  "murder-mystery-2-2023": { kinopoiskId: 1289699, rating: 5.9 },
+  "sherlock-holmes-2009": { kinopoiskId: 420923, rating: 8.1 },
+  "sherlock-holmes-a-game-of-shadows-2011": { kinopoiskId: 474953, rating: 8.0 },
+  "enola-holmes-2020": { kinopoiskId: 1201538, rating: 6.8 },
+  "detective-pikachu-2019": { kinopoiskId: 700952, rating: 6.6 },
+  "sonic-the-hedgehog-2020": { kinopoiskId: 925625, rating: 6.9 },
+  "sonic-the-hedgehog-2-2022": { kinopoiskId: 1346945, rating: 6.8 },
+  "warcraft-2016": { kinopoiskId: 277328, rating: 7.6 },
+  "assassins-creed-2016": { kinopoiskId: 843479, rating: 5.8 },
+  "dolittle-2020": { kinopoiskId: 1042726, rating: 6.5 },
+  "drunken-master-1978": { kinopoiskId: 24726, rating: 7.8 },
+  "armour-of-god-1986": { kinopoiskId: 24705, rating: 8.0 },
+  "project-a-1983": { kinopoiskId: 21606, rating: 7.9 },
+  "rumble-in-the-bronx-1995": { kinopoiskId: 24693, rating: 7.7 },
+  "ride-along-2014": { kinopoiskId: 455181, rating: 6.3 },
+  "think-like-a-man-2012": { kinopoiskId: 507573, rating: 7.0 },
+  "about-last-night-2014": { kinopoiskId: 601491, rating: 5.7 },
+  "get-hard-2015": { kinopoiskId: 722860, rating: 5.8 },
+  "captain-underpants-2017": { kinopoiskId: 821444, rating: 6.1 },
+  "night-school-2018": { kinopoiskId: 1044912, rating: 5.9 },
+  "the-upside-2017": { kinopoiskId: 596484, rating: 6.3 },
+  "fatherhood-2021": { kinopoiskId: 1231013, rating: 6.8 },
+  "lift-2024": { kinopoiskId: 4422792, rating: 6.1 },
+  "sahara-2005": { kinopoiskId: 23048, rating: 6.7 },
+  "indiana-jones-and-the-dial-of-destiny-2023": { kinopoiskId: 468846, rating: 6.5 },
+  "romancing-the-stone-1984": { kinopoiskId: 12285, rating: 7.7 },
+  "the-goonies-1985": { kinopoiskId: 3926, rating: 7.1 },
+  "clue-1985": { kinopoiskId: 14940, rating: 7.7 },
+  "free-guy-2021": { kinopoiskId: 1199100, rating: 7.4 },
+};
+
+function hasRequestedFact(facts: Movie["facts"], label: string) {
+  return facts?.some((fact) => fact.label.toLowerCase() === label.toLowerCase()) ?? false;
+}
+
+function getRequestedFacts(movie: RequestedMovieInput, info?: RequestedKinopoiskInfo): Movie["facts"] {
+  const facts = [...(movie.facts ?? [])];
+
+  if (info && !hasRequestedFact(facts, "Рейтинг Кинопоиска")) {
+    facts.unshift({ label: "Рейтинг Кинопоиска", value: `${info.rating.toFixed(1)} из 10` });
+  }
+
+  return facts;
+}
+
+
 const REQUESTED_LONG_DESCRIPTION_OVERRIDES: Record<string, string> = {
   "jumanji-1995": "«Джуманджи» (1995) — приключенческий фильм с семейным настроением, где обычная настольная игра превращает дом и весь город в площадку для опасных испытаний. История держится на простой, но цепкой идее: правила уже запущены, отступить нельзя, а каждый новый ход приносит новую проблему.\n\nФильм хорошо подходит для зрителей, которым хочется приключений без тяжёлой мрачности: здесь есть джунгли, хаос, юмор, детское удивление и ощущение большой авантюры. В центре — герои, которым приходится не только спасаться, но и учиться действовать вместе.\n\nНа странице KinoLuma можно быстро оценить жанры, год, настроение, трейлер при наличии и похожие фильмы для продолжения просмотра. Это удобная точка входа, если после «Джуманджи» хочется ещё историй про странные правила, ловушки, команды и приключения.",
   "uncharted-2022": "«Анчартед: На картах не значится» (2022) — приключенческий боевик про охоту за сокровищами, где карты, легенды и рискованные решения важны почти так же, как скорость реакции. История строится вокруг авантюры: герои ищут следы прошлого, спорят, попадают в ловушки и постоянно выбирают между доверием и выгодой.\n\nФильм подойдёт тем, кто любит лёгкий темп, красивые маршруты, погони и атмосферу поисков артефактов. Здесь нет задачи притворяться строгой исторической драмой — это именно зрелищное приключение с игровым ритмом и понятной ставкой.\n\nВ карточке собраны жанры, год, краткое описание, трейлер при наличии и блок «Смотреть также», чтобы сразу перейти к похожим фильмам про сокровища, путешествия и опасные находки.",
@@ -3015,28 +3169,37 @@ const REQUESTED_LONG_DESCRIPTION_OVERRIDES: Record<string, string> = {
 };
 
 export const generatedRequestedExpansionMovies: Movie[] = requestedMovieBase.map((movie) => {
+  const kinopoiskInfo = REQUESTED_KINOPOISK_INFO[movie.slug];
+  const enrichedMovie = {
+    ...movie,
+    ...kinopoiskInfo,
+    rating: kinopoiskInfo?.rating ?? movie.rating,
+    kinopoiskId: kinopoiskInfo?.kinopoiskId ?? movie.kinopoiskId,
+  };
+
   const poster = getGeneratedTmdbPoster({
-    tmdbId: movie.tmdbId,
-    imdbId: movie.imdbId,
-    title: movie.title,
-    originalTitle: movie.originalTitle,
-    year: movie.year,
-    type: movie.type,
+    tmdbId: enrichedMovie.tmdbId,
+    imdbId: enrichedMovie.imdbId,
+    title: enrichedMovie.title,
+    originalTitle: enrichedMovie.originalTitle,
+    year: enrichedMovie.year,
+    type: enrichedMovie.type,
   });
 
   return {
-    ...movie,
-    source: movie.source || "kinoluma-manual-requested",
-    longDescription: REQUESTED_LONG_DESCRIPTION_OVERRIDES[movie.slug] || movie.longDescription,
+    ...enrichedMovie,
+    source: enrichedMovie.source || "kinoluma-manual-requested",
+    longDescription: REQUESTED_LONG_DESCRIPTION_OVERRIDES[enrichedMovie.slug] || enrichedMovie.longDescription,
+    facts: getRequestedFacts(enrichedMovie, kinopoiskInfo),
     poster,
     posterFallbacks: [poster],
     players: buildAutoPlayers({
-      slug: movie.slug,
-      kinopoiskId: movie.kinopoiskId,
-      imdbId: movie.imdbId,
-      rendexVideoId: movie.rendexVideoId,
-      movieType: movie.type,
-      genres: movie.genres,
+      slug: enrichedMovie.slug,
+      kinopoiskId: enrichedMovie.kinopoiskId,
+      imdbId: enrichedMovie.imdbId,
+      rendexVideoId: enrichedMovie.rendexVideoId,
+      movieType: enrichedMovie.type,
+      genres: enrichedMovie.genres,
     }),
   };
 });
