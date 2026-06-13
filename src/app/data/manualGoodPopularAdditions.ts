@@ -26,7 +26,7 @@ const rawManualGoodPopularEntries: ManualGoodPopularEntry[] = [
     ],
     "type": "Фильм",
     "year": "2013",
-    "rating": 0,
+    "rating": 7.3,
     "genres": [
       "Комедия",
       "Приключения",
@@ -81,7 +81,7 @@ const rawManualGoodPopularEntries: ManualGoodPopularEntry[] = [
     ],
     "type": "Фильм",
     "year": "2003",
-    "rating": 0,
+    "rating": 7.2,
     "genres": [
       "Комедия",
       "Музыка",
@@ -139,7 +139,7 @@ const rawManualGoodPopularEntries: ManualGoodPopularEntry[] = [
     ],
     "type": "Фильм",
     "year": "2014",
-    "rating": 0,
+    "rating": 7.3,
     "genres": [
       "Комедия",
       "Драма",
@@ -194,7 +194,7 @@ const rawManualGoodPopularEntries: ManualGoodPopularEntry[] = [
     ],
     "type": "Фильм",
     "year": "2016",
-    "rating": 0,
+    "rating": 7.8,
     "genres": [
       "Комедия",
       "Приключения",
@@ -250,7 +250,7 @@ const rawManualGoodPopularEntries: ManualGoodPopularEntry[] = [
     ],
     "type": "Фильм",
     "year": "2018",
-    "rating": 0,
+    "rating": 7.3,
     "genres": [
       "Комедия",
       "Драма",
@@ -305,7 +305,7 @@ const rawManualGoodPopularEntries: ManualGoodPopularEntry[] = [
     ],
     "type": "Фильм",
     "year": "2018",
-    "rating": 0,
+    "rating": 7.3,
     "genres": [
       "Ужасы",
       "Драма",
@@ -360,7 +360,7 @@ const rawManualGoodPopularEntries: ManualGoodPopularEntry[] = [
     ],
     "type": "Фильм",
     "year": "2012",
-    "rating": 0,
+    "rating": 6.8,
     "genres": [
       "Ужасы",
       "Детектив",
@@ -417,7 +417,7 @@ const rawManualGoodPopularEntries: ManualGoodPopularEntry[] = [
     ],
     "type": "Фильм",
     "year": "2014",
-    "rating": 0,
+    "rating": 6.8,
     "genres": [
       "Ужасы",
       "Драма",
@@ -473,7 +473,7 @@ const rawManualGoodPopularEntries: ManualGoodPopularEntry[] = [
     ],
     "type": "Фильм",
     "year": "2016",
-    "rating": 0,
+    "rating": 6.3,
     "genres": [
       "Ужасы",
       "Триллер",
@@ -528,7 +528,7 @@ const rawManualGoodPopularEntries: ManualGoodPopularEntry[] = [
     ],
     "type": "Фильм",
     "year": "2001",
-    "rating": 0,
+    "rating": 7.6,
     "genres": [
       "Ужасы",
       "Триллер",
@@ -586,7 +586,7 @@ const rawManualGoodPopularEntries: ManualGoodPopularEntry[] = [
     ],
     "type": "Сериал",
     "year": "2020",
-    "rating": 0,
+    "rating": 8.5,
     "genres": [
       "Драма",
       "Спорт"
@@ -640,7 +640,7 @@ const rawManualGoodPopularEntries: ManualGoodPopularEntry[] = [
     ],
     "type": "Сериал",
     "year": "2013–2021",
-    "rating": 0,
+    "rating": 8.4,
     "genres": [
       "Комедия",
       "Криминал"
@@ -694,7 +694,7 @@ const rawManualGoodPopularEntries: ManualGoodPopularEntry[] = [
     ],
     "type": "Сериал",
     "year": "2021–…",
-    "rating": 0,
+    "rating": 8.0,
     "genres": [
       "Комедия",
       "Детектив",
@@ -749,7 +749,7 @@ const rawManualGoodPopularEntries: ManualGoodPopularEntry[] = [
     ],
     "type": "Сериал",
     "year": "2009–2020",
-    "rating": 0,
+    "rating": 8.5,
     "genres": [
       "Комедия",
       "Семейный"
@@ -805,7 +805,7 @@ const rawManualGoodPopularEntries: ManualGoodPopularEntry[] = [
     ],
     "type": "Сериал",
     "year": "2009–2015",
-    "rating": 0,
+    "rating": 8.5,
     "genres": [
       "Комедия"
     ],
@@ -859,7 +859,7 @@ const rawManualGoodPopularEntries: ManualGoodPopularEntry[] = [
     ],
     "type": "Мультфильм",
     "year": "2021",
-    "rating": 0,
+    "rating": 7.2,
     "genres": [
       "Мультфильм",
       "Музыка",
@@ -915,7 +915,7 @@ const rawManualGoodPopularEntries: ManualGoodPopularEntry[] = [
     ],
     "type": "Мультфильм",
     "year": "2021",
-    "rating": 0,
+    "rating": 7.6,
     "genres": [
       "Мультфильм",
       "Комедия",
@@ -972,7 +972,7 @@ const rawManualGoodPopularEntries: ManualGoodPopularEntry[] = [
     ],
     "type": "Мультфильм",
     "year": "2022",
-    "rating": 0,
+    "rating": 6.9,
     "genres": [
       "Мультфильм",
       "Комедия",
@@ -1028,7 +1028,7 @@ const rawManualGoodPopularEntries: ManualGoodPopularEntry[] = [
     ],
     "type": "Мультфильм",
     "year": "2022",
-    "rating": 0,
+    "rating": 7.0,
     "genres": [
       "Мультфильм",
       "Приключения",
@@ -1083,7 +1083,7 @@ const rawManualGoodPopularEntries: ManualGoodPopularEntry[] = [
     ],
     "type": "Мультфильм",
     "year": "2014",
-    "rating": 0,
+    "rating": 7.2,
     "genres": [
       "Мультфильм",
       "Фэнтези",

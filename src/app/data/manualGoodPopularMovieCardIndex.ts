@@ -25,7 +25,7 @@ const manualGoodPopularCardEntries: ManualGoodPopularCardEntry[] = [
     "originalTitle": "The Secret Life of Walter Mitty",
     "type": "Фильм",
     "year": "2013",
-    "rating": 0,
+    "rating": 7.3,
     "genres": [
       "Комедия",
       "Приключения",
@@ -41,7 +41,7 @@ const manualGoodPopularCardEntries: ManualGoodPopularCardEntry[] = [
     "originalTitle": "School of Rock",
     "type": "Фильм",
     "year": "2003",
-    "rating": 0,
+    "rating": 7.2,
     "genres": [
       "Комедия",
       "Музыка",
@@ -58,7 +58,7 @@ const manualGoodPopularCardEntries: ManualGoodPopularCardEntry[] = [
     "originalTitle": "Chef",
     "type": "Фильм",
     "year": "2014",
-    "rating": 0,
+    "rating": 7.3,
     "genres": [
       "Комедия",
       "Драма",
@@ -74,7 +74,7 @@ const manualGoodPopularCardEntries: ManualGoodPopularCardEntry[] = [
     "originalTitle": "Hunt for the Wilderpeople",
     "type": "Фильм",
     "year": "2016",
-    "rating": 0,
+    "rating": 7.8,
     "genres": [
       "Комедия",
       "Приключения",
@@ -91,7 +91,7 @@ const manualGoodPopularCardEntries: ManualGoodPopularCardEntry[] = [
     "originalTitle": "Instant Family",
     "type": "Фильм",
     "year": "2018",
-    "rating": 0,
+    "rating": 7.3,
     "genres": [
       "Комедия",
       "Драма",
@@ -107,7 +107,7 @@ const manualGoodPopularCardEntries: ManualGoodPopularCardEntry[] = [
     "originalTitle": "Hereditary",
     "type": "Фильм",
     "year": "2018",
-    "rating": 0,
+    "rating": 7.3,
     "genres": [
       "Ужасы",
       "Драма",
@@ -123,7 +123,7 @@ const manualGoodPopularCardEntries: ManualGoodPopularCardEntry[] = [
     "originalTitle": "Sinister",
     "type": "Фильм",
     "year": "2012",
-    "rating": 0,
+    "rating": 6.8,
     "genres": [
       "Ужасы",
       "Детектив",
@@ -140,7 +140,7 @@ const manualGoodPopularCardEntries: ManualGoodPopularCardEntry[] = [
     "originalTitle": "The Babadook",
     "type": "Фильм",
     "year": "2014",
-    "rating": 0,
+    "rating": 6.8,
     "genres": [
       "Ужасы",
       "Драма",
@@ -156,7 +156,7 @@ const manualGoodPopularCardEntries: ManualGoodPopularCardEntry[] = [
     "originalTitle": "Lights Out",
     "type": "Фильм",
     "year": "2016",
-    "rating": 0,
+    "rating": 6.3,
     "genres": [
       "Ужасы",
       "Триллер",
@@ -172,7 +172,7 @@ const manualGoodPopularCardEntries: ManualGoodPopularCardEntry[] = [
     "originalTitle": "The Others",
     "type": "Фильм",
     "year": "2001",
-    "rating": 0,
+    "rating": 7.6,
     "genres": [
       "Ужасы",
       "Триллер",
@@ -189,7 +189,7 @@ const manualGoodPopularCardEntries: ManualGoodPopularCardEntry[] = [
     "originalTitle": "The Queen's Gambit",
     "type": "Сериал",
     "year": "2020",
-    "rating": 0,
+    "rating": 8.5,
     "genres": [
       "Драма",
       "Спорт"
@@ -204,7 +204,7 @@ const manualGoodPopularCardEntries: ManualGoodPopularCardEntry[] = [
     "originalTitle": "Brooklyn Nine-Nine",
     "type": "Сериал",
     "year": "2013–2021",
-    "rating": 0,
+    "rating": 8.4,
     "genres": [
       "Комедия",
       "Криминал"
@@ -219,7 +219,7 @@ const manualGoodPopularCardEntries: ManualGoodPopularCardEntry[] = [
     "originalTitle": "Only Murders in the Building",
     "type": "Сериал",
     "year": "2021–…",
-    "rating": 0,
+    "rating": 8.0,
     "genres": [
       "Комедия",
       "Детектив",
@@ -235,7 +235,7 @@ const manualGoodPopularCardEntries: ManualGoodPopularCardEntry[] = [
     "originalTitle": "Modern Family",
     "type": "Сериал",
     "year": "2009–2020",
-    "rating": 0,
+    "rating": 8.5,
     "genres": [
       "Комедия",
       "Семейный"
@@ -251,7 +251,7 @@ const manualGoodPopularCardEntries: ManualGoodPopularCardEntry[] = [
     "originalTitle": "Community",
     "type": "Сериал",
     "year": "2009–2015",
-    "rating": 0,
+    "rating": 8.5,
     "genres": [
       "Комедия"
     ],
@@ -266,7 +266,7 @@ const manualGoodPopularCardEntries: ManualGoodPopularCardEntry[] = [
     "originalTitle": "Encanto",
     "type": "Мультфильм",
     "year": "2021",
-    "rating": 0,
+    "rating": 7.2,
     "genres": [
       "Мультфильм",
       "Музыка",
@@ -283,7 +283,7 @@ const manualGoodPopularCardEntries: ManualGoodPopularCardEntry[] = [
     "originalTitle": "The Mitchells vs. the Machines",
     "type": "Мультфильм",
     "year": "2021",
-    "rating": 0,
+    "rating": 7.6,
     "genres": [
       "Мультфильм",
       "Комедия",
@@ -300,7 +300,7 @@ const manualGoodPopularCardEntries: ManualGoodPopularCardEntry[] = [
     "originalTitle": "The Bad Guys",
     "type": "Мультфильм",
     "year": "2022",
-    "rating": 0,
+    "rating": 6.9,
     "genres": [
       "Мультфильм",
       "Комедия",
@@ -317,7 +317,7 @@ const manualGoodPopularCardEntries: ManualGoodPopularCardEntry[] = [
     "originalTitle": "The Sea Beast",
     "type": "Мультфильм",
     "year": "2022",
-    "rating": 0,
+    "rating": 7.0,
     "genres": [
       "Мультфильм",
       "Приключения",
@@ -333,7 +333,7 @@ const manualGoodPopularCardEntries: ManualGoodPopularCardEntry[] = [
     "originalTitle": "The Book of Life",
     "type": "Мультфильм",
     "year": "2014",
-    "rating": 0,
+    "rating": 7.2,
     "genres": [
       "Мультфильм",
       "Фэнтези",
