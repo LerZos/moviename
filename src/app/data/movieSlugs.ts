@@ -1,6 +1,9 @@
+import { manualGoodPopularMovieSlugs } from "./manualGoodPopularMovieSlugs";
+
 // Лёгкий список slug'ов публичного каталога для клиентских действий вроде кнопки «Случайно».
 // Не импортируй полный data/movies.ts в клиент только ради случайного перехода.
 export const movieSlugs: readonly string[] = [
+  ...manualGoodPopularMovieSlugs,
   "godzilla-minus-one-2023",
   "alien-romulus-2024",
   "gran-turismo-2023",

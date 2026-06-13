@@ -1,0 +1,22 @@
+export const manualGoodPopularMovieSlugs: readonly string[] = [
+  "the-secret-life-of-walter-mitty-2013",
+  "school-of-rock-2003",
+  "chef-2014",
+  "hunt-for-the-wilderpeople-2016",
+  "instant-family-2018",
+  "hereditary-2018",
+  "sinister-2012",
+  "the-babadook-2014",
+  "lights-out-2016",
+  "the-others-2001",
+  "the-queens-gambit-2020",
+  "brooklyn-nine-nine-2013",
+  "only-murders-in-the-building-2021",
+  "modern-family-2009",
+  "community-2009",
+  "encanto-2021",
+  "the-mitchells-vs-the-machines-2021",
+  "the-bad-guys-2022",
+  "the-sea-beast-2022",
+  "the-book-of-life-2014"
+];

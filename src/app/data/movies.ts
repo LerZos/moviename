@@ -6,6 +6,7 @@ import { curatedExpectedReleases } from "./curatedExpectedReleases";
 import { manualPremiumAdditions } from "./manualPremiumAdditions";
 import { manualPopularAnime } from "./manualPopularAnime";
 import { manualCuratedExpansionPack } from "./manualCuratedExpansionPack";
+import { manualGoodPopularAdditions } from "./manualGoodPopularAdditions";
 import {
   IMAGE_LINKS,
   createCartoonPoster,
@@ -330,6 +331,7 @@ function hydrateMovieContent(movie: Movie) {
 const moviesRaw: Movie[] = [
   ...generatedRequestedExpansionMovies,
   ...manualCuratedExpansionPack,
+  ...manualGoodPopularAdditions,
   {
       id: 1,
       kinopoiskId: 4540126,
