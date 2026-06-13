@@ -547,18 +547,34 @@ function isHiddenOverride(override: MovieOverrideData | null | undefined) {
   return Boolean(override && override.hidden === true);
 }
 
+function getSafeOverrideRating(baseRating: number, overrideRating: unknown) {
+  const normalizedRating = getNumber(overrideRating);
+
+  if (normalizedRating === null || normalizedRating <= 0) {
+    return baseRating;
+  }
+
+  return roundRating(normalizedRating);
+}
+
 function applyOverride(
   movie: Movie,
   override: MovieOverrideData | null | undefined,
 ): Movie {
   if (!override) return movie;
 
-  return {
+  const mergedMovie = {
     ...movie,
     ...override,
     id: movie.id,
     slug: movie.slug,
   } as Movie;
+
+  if (Object.prototype.hasOwnProperty.call(override, "rating")) {
+    mergedMovie.rating = getSafeOverrideRating(movie.rating, override.rating);
+  }
+
+  return mergedMovie;
 }
 
 const baseMoviesBySlug = new Map(movies.map((movie) => [movie.slug, movie]));
