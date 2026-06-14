@@ -7,6 +7,7 @@ import { manualPremiumAdditions } from "./manualPremiumAdditions";
 import { manualPopularAnime } from "./manualPopularAnime";
 import { manualCuratedExpansionPack } from "./manualCuratedExpansionPack";
 import { manualGoodPopularAdditions } from "./manualGoodPopularAdditions";
+import { manualFreshMovieAdditions } from "./manualFreshMovieAdditions";
 import {
   IMAGE_LINKS,
   createCartoonPoster,
@@ -332,6 +333,7 @@ const moviesRaw: Movie[] = [
   ...generatedRequestedExpansionMovies,
   ...manualCuratedExpansionPack,
   ...manualGoodPopularAdditions,
+  ...manualFreshMovieAdditions,
   {
       id: 1,
       kinopoiskId: 4540126,
