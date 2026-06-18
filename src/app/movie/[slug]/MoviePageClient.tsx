@@ -329,7 +329,7 @@ function getDefaultFacts(movie: Movie): MovieFact[] {
   return [
     { label: "Год", value: movie.year },
     { label: "Тип", value: movie.type },
-    { label: "Рейтинг", value: `★ ${movie.rating}` },
+    { label: "Рейтинг", value: formatMovieRating(movie.rating) },
     { label: "Жанры", value: movie.genres.join(", ") },
   ];
 }
@@ -344,9 +344,11 @@ function isVisibleFact(fact: MovieFact) {
   return !HIDDEN_FACT_LABELS.has(fact.label.trim());
 }
 
+const UNKNOWN_RATING_TEXT = "Уточняется";
+
 function formatMovieRating(rating: number) {
   if (!Number.isFinite(rating) || rating <= 0) {
-    return "—";
+    return UNKNOWN_RATING_TEXT;
   }
 
   return `★ ${Number.isInteger(rating) ? rating.toString() : rating.toFixed(1)}`;
@@ -592,10 +594,10 @@ export default function MoviePageClient({
   const isDisliked = dislikedItemIds.includes(movie.id);
   const isWatching = watchingItemIds.includes(movie.id);
 
-  const duration = getFactValue(facts, "Длительность", movie.genres[0] || "—");
-  const country = getFactValue(facts, "Страна", movie.type);
+  const duration = getFactValue(facts, "Длительность", "Уточняется");
+  const country = getFactValue(facts, "Страна", "Уточняется");
   const budget = getFactValue(facts, "Бюджет", ratingText);
-  const studio = getFactValue(facts, "Студия", movie.originalTitle);
+  const studio = getFactValue(facts, "Студия", movie.originalTitle || "Уточняется");
 
   useEffect(() => {
     const controller = new AbortController();

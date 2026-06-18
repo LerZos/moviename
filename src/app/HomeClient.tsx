@@ -1273,9 +1273,29 @@ export default function Home({
   }, [selectedType, content]);
 
   const newReleasesContent = useMemo(() => {
-    return content.filter((item) =>
-      [32, 33, 34, 35, 36, 37, 38, 39].includes(item.id),
-    );
+    const pinnedNewReleaseIds = [32, 33, 34, 35, 36, 37, 38, 39];
+
+    const pinnedNewReleases = content.filter((item) => {
+      const releaseYear = Number.parseInt(String(item.year || ""), 10);
+
+      return (
+        pinnedNewReleaseIds.includes(item.id) &&
+        Number.isFinite(releaseYear) &&
+        releaseYear >= 2026
+      );
+    });
+
+    if (pinnedNewReleases.length > 0) {
+      return pinnedNewReleases;
+    }
+
+    return content
+      .filter((item) => {
+        const releaseYear = Number.parseInt(String(item.year || ""), 10);
+
+        return Number.isFinite(releaseYear) && releaseYear >= 2026;
+      })
+      .slice(0, 8);
   }, [content]);
 
   const curatedContent = useMemo(() => {
