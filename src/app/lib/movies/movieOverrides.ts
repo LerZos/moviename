@@ -1,4 +1,4 @@
-import { revalidateTag, unstable_cache } from "next/cache";
+import { cache } from "react";
 
 import {
   movies,
@@ -700,14 +700,11 @@ export async function getMovieWithOverrides(
 }
 
 
-export const getCachedMovieWithOverrides = unstable_cache(
-  getMovieWithOverrides,
-  ["movie-with-overrides"],
-  {
-    revalidate: 3600,
-    tags: ["movies"],
-  },
-);
+// Дедупликация нужна только внутри одного серверного рендера: generateMetadata
+// и сама страница запрашивают один slug. Постоянный Data Cache здесь не нужен,
+// потому что Full Route Cache уже хранит готовую страницу, а админка инвалидирует
+// конкретный URL фильма. Это также не переносит старые локальные данные между deployment.
+export const getCachedMovieWithOverrides = cache(getMovieWithOverrides);
 
 export async function saveMovieOverride(
   slug: string,
@@ -728,5 +725,4 @@ export async function saveMovieOverride(
     throw error;
   }
 
-  revalidateTag("movies", "max");
 }

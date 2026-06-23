@@ -6,7 +6,9 @@ import { getHomePageJsonLd, siteUrl } from "./lib/seo";
 import { getCachedPublicMovies } from "./lib/movies/movieOverrides";
 import { getDailyFeaturedDateKey, getDailyFeaturedItems } from "./lib/home/dailyFeatured";
 
-export const revalidate = 3600;
+// Главная содержит большой клиентский каталог. Суточный fallback оставляет
+// данные свежими, а точечные изменения из админки обновляют страницу через revalidatePath("/").
+export const revalidate = 86400;
 
 
 function getHomeClientContent(movies: Movie[]) {

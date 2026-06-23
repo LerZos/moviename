@@ -333,6 +333,7 @@ export async function POST(request: Request) {
           },
           updatedBy,
         );
+        revalidatePath(`/movie/${movie.slug}`);
 
         results.push(
           createResult(movie, "updated", {
@@ -354,9 +355,10 @@ export async function POST(request: Request) {
     const notFoundCount = results.filter((result) => result.status === "not_found").length;
     const failedCount = results.filter((result) => result.status === "failed").length;
 
-    revalidatePath("/");
-    revalidatePath("/movie/[slug]", "page");
-    revalidatePath("/catalog/[category]", "page");
+    if (updatedCount > 0) {
+      revalidatePath("/");
+      revalidatePath("/catalog/[category]", "page");
+    }
 
     return Response.json({
       ok: true,

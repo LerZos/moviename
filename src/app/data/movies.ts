@@ -187,6 +187,30 @@ function containsPublicProviderName(value: string) {
   return /kinopoisk|кинопоиск|tmdb|themoviedb|imdb|\btt\d{5,}\b/i.test(value);
 }
 
+function isUnknownPublicFactValue(value: string) {
+  const normalizedValue = compactMovieText(value).toLocaleLowerCase("ru-RU");
+
+  return ["", "-", "—", "–", "n/a", "нет данных", "неизвестно"].includes(
+    normalizedValue,
+  );
+}
+
+function isTechnicalPublicFactLabel(label: string) {
+  const normalizedLabel = compactMovieText(label).toLocaleLowerCase("ru-RU");
+
+  return /^(?:источник|source|id|внутренний id|seo-данные|faq-разметка|json-ld)$/.test(
+    normalizedLabel,
+  );
+}
+
+function isPublicMovieFact(fact: MovieFact) {
+  return (
+    !containsPublicProviderName(`${fact.label} ${fact.value}`) &&
+    !isTechnicalPublicFactLabel(fact.label) &&
+    !isUnknownPublicFactValue(fact.value)
+  );
+}
+
 function sanitizePublicMovieText(value: string | undefined) {
   if (!value) return value;
 
@@ -247,11 +271,12 @@ function sanitizeMoviePublicFields(movie: Movie) {
 
   if (movie.facts?.length) {
     movie.facts = movie.facts
-      .filter((fact) => !containsPublicProviderName(`${fact.label} ${fact.value}`))
+      .filter(isPublicMovieFact)
       .map((fact) => ({
         label: sanitizePublicMovieText(fact.label) || fact.label,
         value: sanitizePublicMovieText(fact.value) || fact.value,
-      }));
+      }))
+      .filter(isPublicMovieFact);
   }
 
   return movie;
@@ -337,7 +362,6 @@ const moviesRaw: Movie[] = [
   ...manualGoodPopularAdditions,
   ...manualFreshMovieAdditions,
   ...manualHundredMovieAdditions,
-  ...manualWorldPopular200Additions,
   {
       id: 1,
       kinopoiskId: 4540126,
@@ -15712,7 +15736,8 @@ const moviesRaw: Movie[] = [
   ...curatedExpectedReleases,
   ...generatedKinopoiskRequestedMovies,
   ...generatedKinoLumaCartoons,
-
+  // Этот пакет только дополняет каталог и не заменяет более полные старые карточки.
+  ...manualWorldPopular200Additions,
 ];
 
 const BLOCKED_PUBLIC_CONTENT_TYPES = new Set<ContentType>(["Документальный"]);
@@ -15778,6 +15803,12 @@ function isExpectedGeneratedRelease(movie: Movie) {
 }
 
 function isPublicCatalogMovie(movie: Movie) {
+  // Этот ручной пакет был добавлен как готовые публичные карточки.
+  // Исключение действует только для него и не меняет фильтрацию старого каталога.
+  if (normalizePublicCatalogText(movie.source || "") === "kinoluma-manual-world-popular-200") {
+    return true;
+  }
+
   if (BLOCKED_PUBLIC_CONTENT_TYPES.has(movie.type)) return false;
   if (hasBlockedPublicGenre(movie)) return false;
   if (isExpectedGeneratedRelease(movie)) return false;

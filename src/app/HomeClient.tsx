@@ -92,6 +92,7 @@ type CurrentUser = {
 };
 
 const FEATURED_ROTATION_INTERVAL_MS = 15 * 1000;
+const NEW_RELEASE_YEAR = 2026;
 
 function getFeaturedPosterImage(item: ContentItem) {
   return item.poster;
@@ -119,7 +120,7 @@ function isExpectedRelease(item: ContentItem) {
 
 function getRatingBadgeText(item: ContentItem) {
   if (!Number.isFinite(item.rating) || item.rating <= 0) {
-    return isExpectedRelease(item) ? "Ждём" : "—";
+    return isExpectedRelease(item) ? "Ждём" : "Уточняется";
   }
 
   return `★ ${Number.isInteger(item.rating) ? item.rating : item.rating.toFixed(1)}`;
@@ -1281,7 +1282,7 @@ export default function Home({
       return (
         pinnedNewReleaseIds.includes(item.id) &&
         Number.isFinite(releaseYear) &&
-        releaseYear >= 2026
+        releaseYear === NEW_RELEASE_YEAR
       );
     });
 
@@ -1293,7 +1294,7 @@ export default function Home({
       .filter((item) => {
         const releaseYear = Number.parseInt(String(item.year || ""), 10);
 
-        return Number.isFinite(releaseYear) && releaseYear >= 2026;
+        return Number.isFinite(releaseYear) && releaseYear === NEW_RELEASE_YEAR;
       })
       .slice(0, 8);
   }, [content]);

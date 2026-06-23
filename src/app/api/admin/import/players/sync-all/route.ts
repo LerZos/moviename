@@ -381,6 +381,7 @@ export async function POST(request: Request) {
           },
           updatedBy,
         );
+        revalidatePath(`/movie/${movie.slug}`);
 
         const status: SyncMovieResult["status"] = summary.hasCollapse && summary.hasVibix && summary.hasFactorios ? "updated" : "partial";
         const missing: string[] = [];
@@ -411,9 +412,10 @@ export async function POST(request: Request) {
     const skippedCount = results.filter((result) => result.status === "skipped").length;
     const failedCount = results.filter((result) => result.status === "failed").length;
 
-    revalidatePath("/");
-    revalidatePath("/movie/[slug]", "page");
-    revalidatePath("/catalog/[category]", "page");
+    if (updatedCount + partialCount > 0) {
+      revalidatePath("/");
+      revalidatePath("/catalog/[category]", "page");
+    }
 
     return Response.json({
       ok: true,

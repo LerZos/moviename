@@ -334,14 +334,55 @@ function getDefaultFacts(movie: Movie): MovieFact[] {
   ];
 }
 
-function getFactValue(facts: MovieFact[], label: string, fallback: string) {
-  return facts.find((fact) => fact.label === label)?.value || fallback;
+function normalizeFactLabel(value: string) {
+  return value.trim().toLocaleLowerCase("ru-RU");
 }
 
-const HIDDEN_FACT_LABELS = new Set(["Жанры", "IMDb", "IMDB", "imdb"]);
+function isUnknownFactValue(value: string | undefined) {
+  const normalizedValue = (value || "").trim().toLocaleLowerCase("ru-RU");
+
+  return ["", "-", "—", "–", "n/a", "нет данных", "неизвестно"].includes(
+    normalizedValue,
+  );
+}
+
+function getFactValue(
+  facts: MovieFact[],
+  labels: string | string[],
+  fallback: string,
+) {
+  const normalizedLabels = (Array.isArray(labels) ? labels : [labels]).map(
+    normalizeFactLabel,
+  );
+  const value = facts.find((fact) =>
+    normalizedLabels.includes(normalizeFactLabel(fact.label)),
+  )?.value;
+
+  return isUnknownFactValue(value) ? fallback : value!.trim();
+}
+
+const HIDDEN_FACT_LABELS = new Set([
+  "жанры",
+  "imdb",
+  "tmdb",
+  "kinopoisk",
+  "кинопоиск",
+  "источник",
+  "source",
+  "id",
+  "seo-данные",
+  "faq-разметка",
+  "json-ld",
+]);
 
 function isVisibleFact(fact: MovieFact) {
-  return !HIDDEN_FACT_LABELS.has(fact.label.trim());
+  const normalizedLabel = normalizeFactLabel(fact.label);
+
+  return (
+    !HIDDEN_FACT_LABELS.has(normalizedLabel) &&
+    !/(?:kinopoisk|кинопоиск|tmdb|imdb)/i.test(normalizedLabel) &&
+    !isUnknownFactValue(fact.value)
+  );
 }
 
 const UNKNOWN_RATING_TEXT = "Уточняется";
@@ -511,9 +552,13 @@ export default function MoviePageClient({
     const titleWithYear = `${movie.title} (${movie.year})`;
     const genres = movie.genres.join(", ");
     const rating = movie.rating > 0 ? `${movie.rating.toFixed(1)} из 10` : "появится после обновления карточки";
-    const country = getFactValue(facts, "Страна", "указана в карточке при наличии данных");
-    const duration = getFactValue(facts, "Длительность", "указана в карточке при наличии данных");
-    const studio = getFactValue(facts, "Студия", "указана в карточке при наличии данных");
+    const country = getFactValue(facts, ["Страна", "Страны"], "Уточняется");
+    const duration = getFactValue(
+      facts,
+      ["Длительность", "Хронометраж"],
+      "Уточняется",
+    );
+    const studio = getFactValue(facts, "Студия", "Уточняется");
 
     return [
       {
@@ -594,10 +639,28 @@ export default function MoviePageClient({
   const isDisliked = dislikedItemIds.includes(movie.id);
   const isWatching = watchingItemIds.includes(movie.id);
 
-  const duration = getFactValue(facts, "Длительность", "Уточняется");
-  const country = getFactValue(facts, "Страна", "Уточняется");
-  const budget = getFactValue(facts, "Бюджет", ratingText);
-  const studio = getFactValue(facts, "Студия", movie.originalTitle || "Уточняется");
+  const duration = getFactValue(
+    facts,
+    ["Длительность", "Хронометраж"],
+    "Уточняется",
+  );
+  const countryFact = getFactValue(facts, ["Страна", "Страны"], "");
+  const budgetFact = getFactValue(facts, "Бюджет", "");
+  const studioFact = getFactValue(facts, "Студия", "");
+  const quickFacts = [
+    {
+      label: countryFact ? "Страна" : "Тип",
+      value: countryFact || movie.type,
+    },
+    {
+      label: budgetFact ? "Бюджет" : "Рейтинг",
+      value: budgetFact || ratingText,
+    },
+    {
+      label: studioFact ? "Студия" : "Оригинальное название",
+      value: studioFact || movie.originalTitle || "Уточняется",
+    },
+  ];
 
   useEffect(() => {
     const controller = new AbortController();
@@ -1097,20 +1160,12 @@ export default function MoviePageClient({
             </div>
 
             <div className="quick-facts">
-              <article>
-                <span>Страна / тип</span>
-                <strong>{country}</strong>
-              </article>
-
-              <article>
-                <span>Бюджет / рейтинг</span>
-                <strong>{budget}</strong>
-              </article>
-
-              <article>
-                <span>Студия / оригинал</span>
-                <strong>{studio}</strong>
-              </article>
+              {quickFacts.map((fact) => (
+                <article key={fact.label}>
+                  <span>{fact.label}</span>
+                  <strong>{fact.value}</strong>
+                </article>
+              ))}
             </div>
           </section>
         </section>
@@ -1385,7 +1440,7 @@ export default function MoviePageClient({
                       }}
                     />
 
-                    <span className="similar-rating">★ {item.rating}</span>
+                    <span className="similar-rating">{formatMovieRating(item.rating)}</span>
                   </div>
 
                   <div className="similar-info">
