@@ -6,8 +6,9 @@ import { getHomePageJsonLd, siteUrl } from "./lib/seo";
 import { getCachedPublicMovies } from "./lib/movies/movieOverrides";
 import { getDailyFeaturedDateKey, getDailyFeaturedItems } from "./lib/home/dailyFeatured";
 
-// Главная содержит большой клиентский каталог. Суточный fallback оставляет
-// данные свежими, а точечные изменения из админки обновляют страницу через revalidatePath("/").
+// Главная содержит большой клиентский каталог. Суточный fallback ограничивает
+// повторные ISR-записи; публикация и удаление карточек по-прежнему обновляют её
+// точечно через существующие серверные маршруты.
 export const revalidate = 86400;
 
 

@@ -412,11 +412,6 @@ export async function POST(request: Request) {
     const skippedCount = results.filter((result) => result.status === "skipped").length;
     const failedCount = results.filter((result) => result.status === "failed").length;
 
-    if (updatedCount + partialCount > 0) {
-      revalidatePath("/");
-      revalidatePath("/catalog/[category]", "page");
-    }
-
     return Response.json({
       ok: true,
       result: {

@@ -115,9 +115,13 @@ function buildOverridePayload(body: Record<string, unknown>): MovieOverrideData 
 }
 
 
-function revalidateMovieSurfaces(slug: string) {
-  revalidatePath('/');
+function revalidateMoviePage(slug: string) {
   revalidatePath(`/movie/${slug}`);
+}
+
+function revalidateMovieRemovalSurfaces(slug: string) {
+  revalidateMoviePage(slug);
+  revalidatePath('/');
   revalidatePath('/sitemap.xml');
 
   ['films', 'series', 'anime', 'cartoons', 'documentaries'].forEach((catalogSlug) => {
@@ -156,7 +160,7 @@ export async function PUT(request: Request, context: RouteContext) {
 
     await saveMovieOverride(slug, overridePayload, adminUser?.email || 'admin');
 
-    revalidateMovieSurfaces(slug);
+    revalidateMoviePage(slug);
 
     return Response.json({
       ok: true,
@@ -201,7 +205,7 @@ export async function DELETE(request: Request, context: RouteContext) {
     };
 
     await saveMovieOverride(slug, hiddenPayload, adminUser?.email || 'admin');
-    revalidateMovieSurfaces(slug);
+    revalidateMovieRemovalSurfaces(slug);
 
     return Response.json({
       ok: true,

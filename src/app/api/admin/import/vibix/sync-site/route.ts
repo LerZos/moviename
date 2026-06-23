@@ -355,11 +355,6 @@ export async function POST(request: Request) {
     const notFoundCount = results.filter((result) => result.status === "not_found").length;
     const failedCount = results.filter((result) => result.status === "failed").length;
 
-    if (updatedCount > 0) {
-      revalidatePath("/");
-      revalidatePath("/catalog/[category]", "page");
-    }
-
     return Response.json({
       ok: true,
       result: {
