@@ -513,13 +513,7 @@ export default function ImportDashboardClient() {
   const [editForm, setEditForm] = useState<ManualDraftForm | null>(null);
 
   useEffect(() => {
-    const savedSecret =
-      window.localStorage.getItem("kinoluma_admin_secret") ?? "";
-    setAdminSecret(savedSecret);
-
-    if (savedSecret) {
-      void loadData(savedSecret);
-    }
+    window.localStorage.removeItem("kinoluma_admin_secret");
   }, []);
 
   const visibleDrafts = useMemo(() => {
@@ -622,7 +616,7 @@ export default function ImportDashboardClient() {
         throw new Error(payload.error || "Не удалось загрузить импорт");
       }
 
-      window.localStorage.setItem("kinoluma_admin_secret", secret.trim());
+      setAdminSecret(secret.trim());
       setData(payload);
       setMessage("Данные обновлены");
     } catch (loadError) {

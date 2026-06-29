@@ -244,8 +244,20 @@ function escapeHtmlAttribute(value: string) {
     .replaceAll(">", "&gt;");
 }
 
+function getSafePlayerEmbedUrl(value: string) {
+  const text = value.trim();
+  if (!text) return "";
+
+  try {
+    const url = new URL(text);
+    return url.protocol === "https:" ? url.toString() : "";
+  } catch {
+    return "";
+  }
+}
+
 function buildPlayerIframeHtml(player: PlayerProvider, movie: Movie) {
-  const src = escapeHtmlAttribute(player.embedUrl || "");
+  const src = escapeHtmlAttribute(getSafePlayerEmbedUrl(player.embedUrl || ""));
   const title = escapeHtmlAttribute(`${player.name} — ${movie.title}`);
   const allow = escapeHtmlAttribute(
     isCollapsePlayer(player)

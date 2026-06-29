@@ -43,7 +43,6 @@ function normalizeFallbackUrl(value: string, requestUrl: string) {
     return new URL(DEFAULT_FALLBACK, requestUrl).toString();
   }
 
-  if (isSafeHttpUrl(fallback)) return fallback;
   if (fallback.startsWith("/")) return new URL(fallback, requestUrl).toString();
 
   return new URL(DEFAULT_FALLBACK, requestUrl).toString();

@@ -14,7 +14,9 @@ function getBearerToken(request: Request) {
 }
 
 export function getAdminEmails() {
-  const rawEmails = process.env.ADMIN_EMAILS || 'mone4ok.zxc@gmail.com';
+  const rawEmails =
+    process.env.ADMIN_EMAILS ||
+    (process.env.NODE_ENV === 'production' ? '' : 'mone4ok.zxc@gmail.com');
 
   return rawEmails
     .split(',')

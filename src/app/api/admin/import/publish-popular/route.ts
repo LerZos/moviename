@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { assertAdminSecret } from "../../../../lib/import/adminAuth";
 import { publishPopularMovies } from "../../../../lib/import/publicPopularImport";
 
 export const runtime = "nodejs";
@@ -11,24 +12,9 @@ type RequestBody = {
   includeDocumentaries?: boolean;
 };
 
-function cleanString(value: unknown) {
-  return typeof value === "string" ? value.trim() : "";
-}
-
-function isAuthorized(request: Request) {
-  const expected = cleanString(process.env.KINOLUMA_ADMIN_SECRET);
-  if (!expected) return false;
-  const actual = cleanString(request.headers.get("x-kinoluma-admin-secret"));
-  return actual === expected;
-}
-
 export async function POST(request: Request) {
-  if (!isAuthorized(request)) {
-    return NextResponse.json(
-      { ok: false, error: "Unauthorized" },
-      { status: 401 },
-    );
-  }
+  const authError = assertAdminSecret(request);
+  if (authError) return authError;
 
   try {
     const body = (await request.json().catch(() => ({}))) as RequestBody;

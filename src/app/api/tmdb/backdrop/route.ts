@@ -31,15 +31,6 @@ function getSafeFallbackUrl(request: Request, value: string) {
     return new URL(fallback, request.url);
   }
 
-  try {
-    const url = new URL(fallback);
-    if (url.protocol === "https:" || url.protocol === "http:") {
-      return url;
-    }
-  } catch {
-    return new URL(FALLBACK_POSTER, request.url);
-  }
-
   return new URL(FALLBACK_POSTER, request.url);
 }
 
