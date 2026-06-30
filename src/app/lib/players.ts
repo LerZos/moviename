@@ -962,27 +962,40 @@ export function parsePlayerText(value: unknown): KinoLumaPlayer[] {
       }
 
       if (type === "rendex" || type === "graphicslab" || type === "widget") {
-        const compactContentId = extractRendexVideoId(parts[2]);
-        const longPublisherId = cleanString(parts[2]) || RENDEX_PUBLISHER_ID;
-        const longContentType = normalizeRendexContentType(parts[3] || "movie");
-        const longContentId = extractRendexVideoId(parts[4]);
-        const contentId = longContentId || compactContentId;
-
-        if (!contentId) return null;
-
         const embedCodePlayer = buildRendexPlayerFromEmbedCode(
           parts.slice(2).join("|"),
           name,
         );
         if (embedCodePlayer) return embedCodePlayer;
 
+        const contentTypeAliases = ["movie", "film", "series", "serial", "tv"];
+        const explicitContentType = contentTypeAliases.includes(
+          (parts[2] || "").toLowerCase(),
+        )
+          ? parts[2]
+          : "";
+        const shortContentId = explicitContentType
+          ? extractRendexVideoId(parts.slice(3).join("|"))
+          : "";
+        const compactContentId = extractRendexVideoId(parts[2]);
+        const longPublisherId = cleanString(parts[2]) || RENDEX_PUBLISHER_ID;
+        const longContentType = normalizeRendexContentType(parts[3] || "movie");
+        const longContentId = extractRendexVideoId(parts[4]);
+        const contentId = shortContentId || longContentId || compactContentId;
+
+        if (!contentId) return null;
+
         return {
           id: `rendex-${contentId}`,
           name,
           type: "rendex",
           embedUrl: "",
-          publisherId: longContentId ? longPublisherId : RENDEX_PUBLISHER_ID,
-          contentType: longContentId ? longContentType : "movie",
+          publisherId: shortContentId || !longContentId ? RENDEX_PUBLISHER_ID : longPublisherId,
+          contentType: shortContentId
+            ? normalizeRendexContentType(explicitContentType)
+            : longContentId
+              ? longContentType
+              : "movie",
           contentId,
           scriptSrc: RENDEX_SCRIPT_SRC,
           ...RENDEX_DEFAULT_COLORS,

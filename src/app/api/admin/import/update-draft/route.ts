@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "../../../../lib/supabase/admin";
 import { assertAdminSecret } from "../../../../lib/import/adminAuth";
+import { normalizeTrailerUrl } from "../../../../lib/trailers";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -61,6 +62,22 @@ function cleanGenres(value: unknown) {
 
   return value
     .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function cleanStringList(value: unknown) {
+  if (Array.isArray(value)) {
+    return value
+      .filter((item): item is string => typeof item === "string")
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
+  if (typeof value !== "string") return [];
+
+  return value
+    .split(/[,\n]/)
     .map((item) => item.trim())
     .filter(Boolean);
 }
@@ -356,6 +373,70 @@ function mergeManualRatingIntoRawJson(rawJson: unknown, rating: number | null) {
   };
 }
 
+function extractIframeSrc(value: string) {
+  return value.match(/src=["']([^"']+)["']/i)?.[1]?.trim() || value.trim();
+}
+
+function extractYoutubeKey(value: string | null) {
+  const text = String(value ?? "").trim();
+  if (/^[a-zA-Z0-9_-]{11}$/.test(text)) return text;
+
+  try {
+    const url = new URL(text.startsWith("//") ? `https:${text}` : text);
+    const host = url.hostname.toLowerCase().replace(/^www\./, "");
+
+    if (host === "youtu.be") return url.pathname.split("/").filter(Boolean)[0] || "";
+    if (host === "youtube.com" || host === "m.youtube.com" || host === "music.youtube.com") {
+      if (url.pathname.startsWith("/watch")) return url.searchParams.get("v") || "";
+      if (url.pathname.startsWith("/embed/")) return url.pathname.split("/").filter(Boolean)[1] || "";
+      if (url.pathname.startsWith("/shorts/") || url.pathname.startsWith("/live/")) {
+        return url.pathname.split("/").filter(Boolean)[1] || "";
+      }
+    }
+  } catch {
+    return "";
+  }
+
+  return "";
+}
+
+function normalizeManualTrailer(value: unknown) {
+  const input = cleanText(value);
+
+  if (!input) {
+    return {
+      trailer_url: null,
+      trailer_embed_url: null,
+      trailer_provider: null,
+      trailer_key: null,
+      trailer_source: null,
+      trailer_status: "missing",
+      trailer_confidence: 0,
+    };
+  }
+
+  const source = extractIframeSrc(input);
+  const embedUrl = normalizeTrailerUrl(source);
+  const key = extractYoutubeKey(source) || extractYoutubeKey(embedUrl);
+  const safeSource =
+    /^https?:\/\//i.test(source) ||
+    source.startsWith("//") ||
+    /^[a-zA-Z0-9_-]{11}$/.test(source)
+      ? source
+      : null;
+  const hasTrailer = Boolean(embedUrl || safeSource);
+
+  return {
+    trailer_url: key ? `https://www.youtube.com/watch?v=${key}` : safeSource,
+    trailer_embed_url: embedUrl || safeSource,
+    trailer_provider: key ? "youtube" : null,
+    trailer_key: key || null,
+    trailer_source: hasTrailer ? "manual" : null,
+    trailer_status: hasTrailer ? "accepted" : "missing",
+    trailer_confidence: hasTrailer ? 100 : 0,
+  };
+}
+
 function parseFaq(value: unknown) {
   if (Array.isArray(value)) return value;
 
@@ -397,6 +478,9 @@ function buildUpdate(
     "title",
     "original_title",
     "slug",
+    "poster_url",
+    "backdrop_url",
+    "imdb_id",
     "description",
     "long_description",
     "seo_title",
@@ -406,6 +490,7 @@ function buildUpdate(
     "trailer_provider",
     "trailer_key",
     "trailer_status",
+    "trailer_source",
     "moderation_notes",
   ];
 
@@ -421,6 +506,10 @@ function buildUpdate(
 
   if ("kinopoisk_id" in values) {
     update.kinopoisk_id = cleanNumber(values.kinopoisk_id);
+  }
+
+  if ("tmdb_id" in values) {
+    update.tmdb_id = cleanNumber(values.tmdb_id);
   }
 
   if ("trailer_confidence" in values) {
@@ -443,10 +532,22 @@ function buildUpdate(
     update.genres = cleanGenres(values.genres);
   }
 
+  if ("actors" in values) {
+    update.actors = cleanStringList(values.actors);
+  }
+
+  if ("directors" in values) {
+    update.directors = cleanStringList(values.directors);
+  }
+
   if ("faq_json" in values) {
     update.faq = parseFaq(values.faq_json);
   } else if ("faq" in values) {
     update.faq = parseFaq(values.faq);
+  }
+
+  if ("trailer_input" in values) {
+    Object.assign(update, normalizeManualTrailer(values.trailer_input));
   }
 
   if ("player_links" in values) {

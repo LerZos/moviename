@@ -25,6 +25,7 @@ import {
   RefreshCcw,
   Search,
   PlayCircle,
+  PlusCircle,
   Save,
   ShieldCheck,
   Sparkles,
@@ -93,15 +94,22 @@ type ManualDraftForm = {
   slug: string;
   year: string;
   kinopoisk_id: string;
+  tmdb_id: string;
+  imdb_id: string;
   rating: string;
   type: string;
   status: string;
   genres: string;
+  poster_url: string;
+  backdrop_url: string;
+  actors: string;
+  directors: string;
   description: string;
   long_description: string;
   seo_title: string;
   seo_description: string;
   faq_json: string;
+  trailer_input: string;
   trailer_url: string;
   trailer_embed_url: string;
   trailer_provider: string;
@@ -411,10 +419,16 @@ function draftToManualForm(draft: Draft): ManualDraftForm {
     slug: draft.slug ?? "",
     year: draft.year?.toString() ?? "",
     kinopoisk_id: draft.kinopoisk_id?.toString() ?? "",
+    tmdb_id: draft.tmdb_id?.toString() ?? "",
+    imdb_id: draft.imdb_id ?? "",
     rating: draft.movie_rating?.toString() ?? "",
     type: draft.type ?? "",
     status: draft.status ?? "",
     genres: (draft.genres ?? []).join(", "),
+    poster_url: draft.poster_url ?? "",
+    backdrop_url: draft.backdrop_url ?? "",
+    actors: (draft.actors ?? []).join(", "),
+    directors: (draft.directors ?? []).join(", "),
     description: draft.description ?? "",
     long_description: draft.long_description ?? "",
     seo_title: draft.seo_title ?? "",
@@ -423,6 +437,7 @@ function draftToManualForm(draft: Draft): ManualDraftForm {
       Array.isArray(draft.faq) && draft.faq.length
         ? JSON.stringify(draft.faq, null, 2)
         : "",
+    trailer_input: getTrailerExternalUrl(draft) || getTrailerEmbedUrl(draft) || "",
     trailer_url: draft.trailer_url ?? "",
     trailer_embed_url: draft.trailer_embed_url ?? "",
     trailer_provider: draft.trailer_provider ?? "",
@@ -432,6 +447,41 @@ function draftToManualForm(draft: Draft): ManualDraftForm {
     player_links: draft.player_links ?? "",
     rendex_video_id: draft.rendex_video_id ?? "",
     moderation_notes: draft.moderation_notes ?? "",
+  };
+}
+
+function createEmptyManualForm(): ManualDraftForm {
+  return {
+    title: "",
+    original_title: "",
+    slug: "",
+    year: "",
+    kinopoisk_id: "",
+    tmdb_id: "",
+    imdb_id: "",
+    rating: "",
+    type: "film",
+    status: "draft",
+    genres: "",
+    poster_url: "",
+    backdrop_url: "",
+    actors: "",
+    directors: "",
+    description: "",
+    long_description: "",
+    seo_title: "",
+    seo_description: "",
+    faq_json: "",
+    trailer_input: "",
+    trailer_url: "",
+    trailer_embed_url: "",
+    trailer_provider: "",
+    trailer_key: "",
+    trailer_status: "",
+    trailer_confidence: "",
+    player_links: "",
+    rendex_video_id: "",
+    moderation_notes: "",
   };
 }
 
@@ -510,6 +560,7 @@ export default function ImportDashboardClient() {
   const [candidateSearch, setCandidateSearch] = useState("");
   const [trailerDraft, setTrailerDraft] = useState<Draft | null>(null);
   const [editingDraft, setEditingDraft] = useState<Draft | null>(null);
+  const [isCreatingDraft, setIsCreatingDraft] = useState(false);
   const [editForm, setEditForm] = useState<ManualDraftForm | null>(null);
 
   useEffect(() => {
@@ -732,7 +783,14 @@ export default function ImportDashboardClient() {
     setTrailerDraft(draft);
   }
 
+  function openCreateDraft() {
+    setEditingDraft(null);
+    setIsCreatingDraft(true);
+    setEditForm(createEmptyManualForm());
+  }
+
   function openManualEditor(draft: Draft) {
+    setIsCreatingDraft(false);
     setEditingDraft(draft);
     setEditForm(draftToManualForm(draft));
   }
@@ -746,17 +804,27 @@ export default function ImportDashboardClient() {
   async function saveManualEdit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!editingDraft || !editForm) return;
+    if (!editForm) return;
 
-    const ok = await runPost(
-      "/api/admin/import/update-draft",
-      { draftId: editingDraft.id, values: editForm },
-      "Черновик обновлён вручную",
-    );
+    const ok = isCreatingDraft
+      ? await runPost(
+          "/api/admin/import/create-draft",
+          { values: editForm },
+          "Фильм добавлен в черновики",
+        )
+      : editingDraft
+        ? await runPost(
+            "/api/admin/import/update-draft",
+            { draftId: editingDraft.id, values: editForm },
+            "Черновик обновлён вручную",
+          )
+        : false;
 
     if (ok) {
       setEditingDraft(null);
+      setIsCreatingDraft(false);
       setEditForm(null);
+      setActiveTab("drafts");
     }
   }
 
@@ -806,6 +874,15 @@ export default function ImportDashboardClient() {
           </a>
 
           <div className="top-actions">
+            <button
+              type="button"
+              onClick={openCreateDraft}
+              disabled={isLoading || isWorking}
+              className="primary-button manual-create-button"
+            >
+              <PlusCircle size={17} strokeWidth={2.4} aria-hidden="true" />
+              Добавить фильм
+            </button>
             <button
               type="button"
               onClick={() => void loadData()}
@@ -881,6 +958,15 @@ export default function ImportDashboardClient() {
               </p>
 
               <div className="dashboard-actions">
+                <button
+                  type="button"
+                  onClick={openCreateDraft}
+                  disabled={isLoading || isWorking}
+                  className="primary-button"
+                >
+                  <PlusCircle size={18} strokeWidth={2.4} aria-hidden="true" />
+                  Добавить фильм
+                </button>
                 <button
                   type="button"
                   onClick={() => void loadData()}
@@ -1097,18 +1183,20 @@ export default function ImportDashboardClient() {
         />
       ) : null}
 
-      {editingDraft && editForm ? (
+      {(isCreatingDraft || editingDraft) && editForm ? (
         <ManualEditModal
           draft={editingDraft}
+          isNew={isCreatingDraft}
           form={editForm}
           isWorking={isWorking}
           onChange={updateEditField}
           onClose={() => {
             setEditingDraft(null);
+            setIsCreatingDraft(false);
             setEditForm(null);
           }}
           onSave={saveManualEdit}
-          onDelete={() => void deleteEditingDraft()}
+          onDelete={editingDraft ? () => void deleteEditingDraft() : undefined}
         />
       ) : null}
     </main>
@@ -1829,6 +1917,7 @@ function TrailerModal({
 
 function ManualEditModal({
   draft,
+  isNew,
   form,
   isWorking,
   onChange,
@@ -1836,14 +1925,17 @@ function ManualEditModal({
   onSave,
   onDelete,
 }: {
-  draft: Draft;
+  draft: Draft | null;
+  isNew: boolean;
   form: ManualDraftForm;
   isWorking: boolean;
   onChange: (field: keyof ManualDraftForm, value: string) => void;
   onClose: () => void;
   onSave: (event: FormEvent<HTMLFormElement>) => void;
-  onDelete: () => void;
+  onDelete?: () => void;
 }) {
+  const modalTitle = isNew ? "Новый фильм" : draft?.title || "Черновик";
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <form
@@ -1855,8 +1947,8 @@ function ManualEditModal({
       >
         <div className="modal-head">
           <div>
-            <p className="eyebrow">Ручная правка</p>
-            <h3>{draft.title || "Черновик"}</h3>
+            <p className="eyebrow">{isNew ? "Добавление фильма" : "Ручная правка"}</p>
+            <h3>{modalTitle}</h3>
             <span>
               Изменения сохранятся в Supabase и попадут в agent_feedback.
             </span>
@@ -1899,6 +1991,18 @@ function ManualEditModal({
             placeholder="например 535341"
           />
           <EditField
+            label="TMDB ID"
+            value={form.tmdb_id}
+            onChange={(value) => onChange("tmdb_id", value)}
+            placeholder="например 940721"
+          />
+          <EditField
+            label="IMDb ID"
+            value={form.imdb_id}
+            onChange={(value) => onChange("imdb_id", value)}
+            placeholder="например tt23289160"
+          />
+          <EditField
             label="Рейтинг фильма"
             value={form.rating}
             onChange={(value) => onChange("rating", value)}
@@ -1922,6 +2026,32 @@ function ManualEditModal({
             className="wide"
           />
           <EditField
+            label="Постер URL"
+            value={form.poster_url}
+            onChange={(value) => onChange("poster_url", value)}
+            placeholder="https://..."
+            className="wide"
+          />
+          <EditField
+            label="Backdrop URL"
+            value={form.backdrop_url}
+            onChange={(value) => onChange("backdrop_url", value)}
+            placeholder="https://..."
+            className="wide"
+          />
+          <EditField
+            label="Актёры через запятую"
+            value={form.actors}
+            onChange={(value) => onChange("actors", value)}
+            className="wide"
+          />
+          <EditField
+            label="Режиссёры через запятую"
+            value={form.directors}
+            onChange={(value) => onChange("directors", value)}
+            className="wide"
+          />
+          <EditField
             label="SEO title"
             value={form.seo_title}
             onChange={(value) => onChange("seo_title", value)}
@@ -1933,36 +2063,18 @@ function ManualEditModal({
             onChange={(value) => onChange("seo_description", value)}
             className="wide"
           />
-          <EditField
-            label="Trailer URL"
-            value={form.trailer_url}
-            onChange={(value) => onChange("trailer_url", value)}
-          />
-          <EditField
-            label="Trailer embed URL"
-            value={form.trailer_embed_url}
-            onChange={(value) => onChange("trailer_embed_url", value)}
-          />
-          <EditField
-            label="Trailer provider"
-            value={form.trailer_provider}
-            onChange={(value) => onChange("trailer_provider", value)}
-          />
-          <EditField
-            label="Trailer key"
-            value={form.trailer_key}
-            onChange={(value) => onChange("trailer_key", value)}
-          />
-          <EditField
-            label="Trailer status"
-            value={form.trailer_status}
-            onChange={(value) => onChange("trailer_status", value)}
-          />
-          <EditField
-            label="Trailer confidence"
-            value={form.trailer_confidence}
-            onChange={(value) => onChange("trailer_confidence", value)}
-          />
+          <div className="trailer-simple-field wide">
+            <EditField
+              label="Трейлер"
+              value={form.trailer_input}
+              onChange={(value) => onChange("trailer_input", value)}
+              placeholder="Вставь YouTube-ссылку, embed-ссылку, iframe или ID видео"
+              className="wide"
+            />
+            <p className="field-helper">
+              Одного поля достаточно: можно вставить обычную ссылку вида youtube.com/watch?v=..., youtu.be/..., embed URL или iframe-код.
+            </p>
+          </div>
           <EditField
             label="Rendex ID или <ins>"
             value={form.rendex_video_id}
@@ -2021,15 +2133,17 @@ function ManualEditModal({
         </div>
 
         <div className="modal-actions sticky-actions">
-          <button
-            type="button"
-            onClick={onDelete}
-            disabled={isWorking}
-            className="secondary-button danger-action delete-draft-button"
-          >
-            <Trash2 size={17} strokeWidth={2.4} aria-hidden="true" />
-            Удалить фильм
-          </button>
+          {onDelete ? (
+            <button
+              type="button"
+              onClick={onDelete}
+              disabled={isWorking}
+              className="secondary-button danger-action delete-draft-button"
+            >
+              <Trash2 size={17} strokeWidth={2.4} aria-hidden="true" />
+              Удалить фильм
+            </button>
+          ) : null}
           <div className="modal-save-actions">
             <button
               type="submit"
@@ -2638,6 +2752,12 @@ const adminImportStyles = `
     background: #ffffff;
     color: #000000;
     border: 1px solid #ffffff;
+  }
+
+  .manual-create-button {
+    min-height: 42px;
+    padding: 0 16px;
+    border-radius: 14px;
   }
 
   .primary-button:hover:not(:disabled),
@@ -3523,8 +3643,26 @@ const adminImportStyles = `
     background: rgba(0,0,0,0.34);
   }
 
-  .edit-field.wide {
+  .edit-field.wide,
+  .trailer-simple-field.wide {
     grid-column: 1 / -1;
+  }
+
+  .trailer-simple-field {
+    display: grid;
+    gap: 10px;
+  }
+
+  .trailer-simple-field .edit-field {
+    padding-bottom: 11px;
+  }
+
+  .field-helper {
+    margin: 0;
+    color: rgba(255,255,255,0.58);
+    font-size: 13px;
+    line-height: 1.55;
+    font-weight: 800;
   }
 
   .edit-field span {
