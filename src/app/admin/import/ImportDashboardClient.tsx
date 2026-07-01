@@ -121,6 +121,14 @@ type ManualDraftForm = {
   moderation_notes: string;
 };
 
+const manualTypeOptions = [
+  { value: "film", label: "Фильм" },
+  { value: "series", label: "Сериал" },
+  { value: "cartoon", label: "Мультфильм" },
+  { value: "anime", label: "Аниме" },
+  { value: "documentary", label: "Документальный" },
+];
+
 type ImportRun = {
   id: string;
   started_at: string | null;
@@ -562,6 +570,7 @@ export default function ImportDashboardClient() {
   const [editingDraft, setEditingDraft] = useState<Draft | null>(null);
   const [isCreatingDraft, setIsCreatingDraft] = useState(false);
   const [editForm, setEditForm] = useState<ManualDraftForm | null>(null);
+  const [isAutofillingDraft, setIsAutofillingDraft] = useState(false);
 
   useEffect(() => {
     window.localStorage.removeItem("kinoluma_admin_secret");
@@ -799,6 +808,61 @@ export default function ImportDashboardClient() {
     setEditForm((current) =>
       current ? { ...current, [field]: value } : current,
     );
+  }
+
+  async function autofillManualDraft() {
+    if (!editForm) return;
+
+    if (!adminSecret.trim()) {
+      setError("Введи KINOLUMA_ADMIN_SECRET");
+      return;
+    }
+
+    setIsAutofillingDraft(true);
+    setError(null);
+    setMessage(null);
+
+    try {
+      const response = await fetch("/api/admin/import/autofill-draft", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-kinoluma-admin-secret": adminSecret.trim(),
+        },
+        body: JSON.stringify({ values: editForm }),
+      });
+      const payload = (await response.json()) as {
+        ok?: boolean;
+        error?: string;
+        message?: string;
+        values?: Partial<ManualDraftForm>;
+      };
+
+      if (!response.ok || !payload.ok || !payload.values) {
+        throw new Error(payload.error || "Не удалось автозаполнить карточку");
+      }
+
+      const autofillValues = payload.values;
+
+      setEditForm((current) =>
+        current
+          ? {
+              ...current,
+              ...autofillValues,
+              status: current.status || autofillValues.status || "draft",
+            }
+          : current,
+      );
+      setMessage(payload.message || "Карточка автозаполнена");
+    } catch (actionError) {
+      setError(
+        actionError instanceof Error
+          ? actionError.message
+          : "Неизвестная ошибка автозаполнения",
+      );
+    } finally {
+      setIsAutofillingDraft(false);
+    }
   }
 
   async function saveManualEdit(event: FormEvent<HTMLFormElement>) {
@@ -1189,7 +1253,9 @@ export default function ImportDashboardClient() {
           isNew={isCreatingDraft}
           form={editForm}
           isWorking={isWorking}
+          isAutofilling={isAutofillingDraft}
           onChange={updateEditField}
+          onAutofill={autofillManualDraft}
           onClose={() => {
             setEditingDraft(null);
             setIsCreatingDraft(false);
@@ -1920,7 +1986,9 @@ function ManualEditModal({
   isNew,
   form,
   isWorking,
+  isAutofilling,
   onChange,
+  onAutofill,
   onClose,
   onSave,
   onDelete,
@@ -1929,12 +1997,15 @@ function ManualEditModal({
   isNew: boolean;
   form: ManualDraftForm;
   isWorking: boolean;
+  isAutofilling: boolean;
   onChange: (field: keyof ManualDraftForm, value: string) => void;
+  onAutofill: () => void;
   onClose: () => void;
   onSave: (event: FormEvent<HTMLFormElement>) => void;
   onDelete?: () => void;
 }) {
   const modalTitle = isNew ? "Новый фильм" : draft?.title || "Черновик";
+  const isBusy = isWorking || isAutofilling;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -2008,17 +2079,31 @@ function ManualEditModal({
             onChange={(value) => onChange("rating", value)}
             placeholder="например 7.4"
           />
-          <EditField
+          <EditSelect
             label="Тип"
-            value={form.type}
+            value={form.type || "film"}
             onChange={(value) => onChange("type", value)}
-            placeholder="film / series / anime / cartoon / documentary"
+            options={manualTypeOptions}
           />
           <EditField
             label="Статус"
             value={form.status}
             onChange={(value) => onChange("status", value)}
           />
+          <div className="autofill-panel wide">
+            <button
+              type="button"
+              onClick={onAutofill}
+              disabled={isBusy}
+              className="secondary-button compact-action"
+            >
+              <Sparkles size={16} strokeWidth={2.4} aria-hidden="true" />
+              {isAutofilling ? "Ищу данные..." : "Автозаполнить"}
+            </button>
+            <span>
+              По названию, году, Kinopoisk ID, TMDB ID или IMDb ID подтянет факты из TMDB/Kinopoisk и соберёт описание, SEO и FAQ.
+            </span>
+          </div>
           <EditField
             label="Жанры через запятую"
             value={form.genres}
@@ -2137,7 +2222,7 @@ function ManualEditModal({
             <button
               type="button"
               onClick={onDelete}
-              disabled={isWorking}
+              disabled={isBusy}
               className="secondary-button danger-action delete-draft-button"
             >
               <Trash2 size={17} strokeWidth={2.4} aria-hidden="true" />
@@ -2147,7 +2232,7 @@ function ManualEditModal({
           <div className="modal-save-actions">
             <button
               type="submit"
-              disabled={isWorking}
+              disabled={isBusy}
               className="primary-button"
             >
               <Save size={17} strokeWidth={2.4} aria-hidden="true" />
@@ -2156,7 +2241,7 @@ function ManualEditModal({
             <button
               type="button"
               onClick={onClose}
-              disabled={isWorking}
+              disabled={isBusy}
               className="secondary-button"
             >
               Отмена
@@ -2189,6 +2274,36 @@ function EditField({
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
       />
+    </label>
+  );
+}
+
+function EditSelect({
+  label,
+  value,
+  onChange,
+  options,
+  className = "",
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: Array<{ value: string; label: string }>;
+  className?: string;
+}) {
+  return (
+    <label className={`edit-field ${className}`}>
+      <span>{label}</span>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
     </label>
   );
 }
@@ -3674,6 +3789,7 @@ const adminImportStyles = `
   }
 
   .edit-field input,
+  .edit-field select,
   .edit-field textarea {
     width: 100%;
     border: 0;
@@ -3685,6 +3801,21 @@ const adminImportStyles = `
     font-size: 14px;
     line-height: 1.55;
     font-weight: 800;
+  }
+
+  .edit-field select {
+    cursor: pointer;
+    appearance: none;
+    background:
+      linear-gradient(45deg, transparent 50%, #ffffff 50%) right 16px center / 7px 7px no-repeat,
+      linear-gradient(135deg, #ffffff 50%, transparent 50%) right 10px center / 7px 7px no-repeat,
+      transparent;
+    padding-right: 34px;
+  }
+
+  .edit-field select option {
+    background: #0d0d0d;
+    color: #ffffff;
   }
 
   .edit-field textarea {
@@ -3744,6 +3875,29 @@ const adminImportStyles = `
   .player-generator-row span {
     color: rgba(255,255,255,0.62);
     font-size: 13px;
+    font-weight: 800;
+  }
+
+  .autofill-panel {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 12px 13px;
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 18px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(0,0,0,0.28));
+  }
+
+  .autofill-panel.wide {
+    grid-column: 1 / -1;
+  }
+
+  .autofill-panel span {
+    flex: 1 1 260px;
+    color: rgba(255,255,255,0.62);
+    font-size: 13px;
+    line-height: 1.45;
     font-weight: 800;
   }
 
