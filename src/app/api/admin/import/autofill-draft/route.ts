@@ -1,5 +1,6 @@
 import { assertAdminSecret } from "../../../../lib/import/adminAuth";
-import { tmdbFetch, tmdbImage } from "../../../../lib/import/tmdb";
+import { tmdbImage } from "../../../../lib/import/tmdb";
+import { IMAGE_SOURCE_LINKS } from "../../../../lib/imageLinks";
 import { generateTemplateMovieSeo } from "../../../../lib/seo/generateTemplateMovieSeo";
 
 export const runtime = "nodejs";
@@ -81,6 +82,8 @@ type KinopoiskDoc = {
 };
 type KinopoiskSearchResponse = { docs?: KinopoiskDoc[] };
 
+const TMDB_BASE_URL = IMAGE_SOURCE_LINKS.tmdbApiBase;
+
 function cleanText(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
@@ -141,13 +144,35 @@ function buildPath(path: string, params: Record<string, string | number | null |
 }
 
 async function safeTmdbFetch<T>(path: string): Promise<T | null> {
-  if (!process.env.TMDB_ACCESS_TOKEN?.trim()) return null;
+  const token = process.env.TMDB_ACCESS_TOKEN?.trim() ?? "";
+  const apiKey = process.env.TMDB_API_KEY?.trim() ?? "";
+  if (!token && !apiKey) return null;
 
   try {
-    return await tmdbFetch<T>(path);
+    const url = new URL(path.startsWith("http") ? path : `${TMDB_BASE_URL}${path}`);
+    if (!token && apiKey) {
+      url.searchParams.set("api_key", apiKey);
+    }
+
+    const response = await fetch(url.toString(), {
+      headers: token
+        ? {
+            Authorization: `Bearer ${token}`,
+            accept: "application/json",
+          }
+        : { accept: "application/json" },
+      cache: "no-store",
+    });
+
+    if (!response.ok) return null;
+    return (await response.json()) as T;
   } catch {
     return null;
   }
+}
+
+function hasTmdbCredentials() {
+  return Boolean(process.env.TMDB_ACCESS_TOKEN?.trim() || process.env.TMDB_API_KEY?.trim());
 }
 
 function preferredMediaTypes(type: unknown): MediaType[] {
@@ -476,13 +501,34 @@ export async function POST(request: Request) {
       );
     }
 
+    if (!hasTmdbCredentials() && !getKinopoiskToken()) {
+      return Response.json(
+        {
+          ok: false,
+          error:
+            "На сервере не подключены TMDB_API_KEY/TMDB_ACCESS_TOKEN и KINOPOISK_API_KEY/KINOPOISK_DEV_TOKEN. Автозаполнение не может искать факты.",
+        },
+        { status: 503 },
+      );
+    }
+
     const tmdbResult = await findTmdb(values);
     const tmdb = tmdbResult?.details ?? null;
     const kinopoisk = await findKinopoisk(values, tmdb);
 
     if (!tmdb && !kinopoisk) {
+      const sources = [
+        hasTmdbCredentials() ? "TMDB" : "",
+        getKinopoiskToken() ? "Kinopoisk" : "",
+      ].filter(Boolean);
+
       return Response.json(
-        { ok: false, error: "Не удалось найти фильм в TMDB или Kinopoisk" },
+        {
+          ok: false,
+          error: sources.length
+            ? `Не удалось найти карточку через ${sources.join(" и ")}. Проверь название, год или ID.`
+            : "Не удалось найти карточку: API-ключи не подключены.",
+        },
         { status: 404 },
       );
     }

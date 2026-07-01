@@ -129,6 +129,16 @@ const manualTypeOptions = [
   { value: "documentary", label: "Документальный" },
 ];
 
+const manualStatusOptions = [
+  { value: "draft", label: "Черновик" },
+  { value: "needs_ai_seo", label: "Нужен SEO" },
+  { value: "needs_moderation", label: "Модерация" },
+  { value: "needs_review", label: "Проверка" },
+  { value: "ready", label: "Готово" },
+  { value: "published", label: "Опубликовано" },
+  { value: "rejected", label: "Отклонено" },
+];
+
 type ImportRun = {
   id: string;
   started_at: string | null;
@@ -2079,16 +2089,17 @@ function ManualEditModal({
             onChange={(value) => onChange("rating", value)}
             placeholder="например 7.4"
           />
-          <EditSelect
+          <EditChoiceGroup
             label="Тип"
             value={form.type || "film"}
             onChange={(value) => onChange("type", value)}
             options={manualTypeOptions}
           />
-          <EditField
+          <EditChoiceGroup
             label="Статус"
-            value={form.status}
+            value={form.status || "draft"}
             onChange={(value) => onChange("status", value)}
+            options={manualStatusOptions}
           />
           <div className="autofill-panel wide">
             <button
@@ -2100,9 +2111,12 @@ function ManualEditModal({
               <Sparkles size={16} strokeWidth={2.4} aria-hidden="true" />
               {isAutofilling ? "Ищу данные..." : "Автозаполнить"}
             </button>
-            <span>
-              По названию, году, Kinopoisk ID, TMDB ID или IMDb ID подтянет факты из TMDB/Kinopoisk и соберёт описание, SEO и FAQ.
-            </span>
+            <div>
+              <strong>Факты, описание, SEO и FAQ</strong>
+              <span>
+                По названию, году, Kinopoisk ID, TMDB ID или IMDb ID подтянет данные из TMDB/Kinopoisk и заполнит карточку.
+              </span>
+            </div>
           </div>
           <EditField
             label="Жанры через запятую"
@@ -2278,7 +2292,7 @@ function EditField({
   );
 }
 
-function EditSelect({
+function EditChoiceGroup({
   label,
   value,
   onChange,
@@ -2292,19 +2306,25 @@ function EditSelect({
   className?: string;
 }) {
   return (
-    <label className={`edit-field ${className}`}>
-      <span>{label}</span>
-      <select
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-      >
+    <fieldset className={`edit-field choice-field ${className}`}>
+      <legend>{label}</legend>
+      <div className="choice-grid">
         {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
+          <button
+            key={option.value}
+            type="button"
+            className={option.value === value ? "choice-option active" : "choice-option"}
+            onClick={() => onChange(option.value)}
+            aria-pressed={option.value === value}
+          >
+            <strong>{option.label}</strong>
+            {option.value === value ? (
+              <Check size={14} strokeWidth={3} aria-hidden="true" />
+            ) : null}
+          </button>
         ))}
-      </select>
-    </label>
+      </div>
+    </fieldset>
   );
 }
 
@@ -3653,6 +3673,8 @@ const adminImportStyles = `
     width: min(980px, 100%);
     max-height: min(88vh, 920px);
     overflow: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.24) transparent;
     border-radius: 30px;
     border: 1px solid rgba(255,255,255,0.13);
     background:
@@ -3661,6 +3683,31 @@ const adminImportStyles = `
     box-shadow: 0 40px 120px rgba(0,0,0,0.72);
     padding: 24px;
     color: #ffffff;
+  }
+
+  .modal-panel::-webkit-scrollbar {
+    width: 9px;
+  }
+
+  .modal-panel::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 24px 0;
+  }
+
+  .modal-panel::-webkit-scrollbar-thumb {
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.24);
+    background-clip: padding-box;
+  }
+
+  .modal-panel::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,0.34);
+    background-clip: padding-box;
+  }
+
+  .modal-panel::-webkit-scrollbar-button {
+    display: none;
   }
 
   .modal-head {
@@ -3752,6 +3799,7 @@ const adminImportStyles = `
   .edit-field {
     display: grid;
     gap: 8px;
+    min-inline-size: 0;
     padding: 13px;
     border-radius: 18px;
     border: 1px solid rgba(255,255,255,0.10);
@@ -3780,7 +3828,8 @@ const adminImportStyles = `
     font-weight: 800;
   }
 
-  .edit-field span {
+  .edit-field > span,
+  .choice-field legend {
     color: #8f8f8f;
     font-size: 11px;
     font-weight: 1000;
@@ -3789,7 +3838,6 @@ const adminImportStyles = `
   }
 
   .edit-field input,
-  .edit-field select,
   .edit-field textarea {
     width: 100%;
     border: 0;
@@ -3803,19 +3851,61 @@ const adminImportStyles = `
     font-weight: 800;
   }
 
-  .edit-field select {
-    cursor: pointer;
-    appearance: none;
-    background:
-      linear-gradient(45deg, transparent 50%, #ffffff 50%) right 16px center / 7px 7px no-repeat,
-      linear-gradient(135deg, #ffffff 50%, transparent 50%) right 10px center / 7px 7px no-repeat,
-      transparent;
-    padding-right: 34px;
+  .choice-field {
+    margin: 0;
   }
 
-  .edit-field select option {
-    background: #0d0d0d;
+  .choice-field legend {
+    padding: 0;
+  }
+
+  .choice-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .choice-option {
+    min-width: 0;
+    min-height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 14px;
+    background: rgba(255,255,255,0.045);
+    color: rgba(255,255,255,0.78);
+    padding: 0 12px;
+    font: inherit;
+    cursor: pointer;
+    transition: border-color 180ms ease, background 180ms ease, color 180ms ease, transform 180ms ease;
+  }
+
+  .choice-option:hover {
+    border-color: rgba(255,255,255,0.24);
+    background: rgba(255,255,255,0.08);
     color: #ffffff;
+  }
+
+  .choice-option.active {
+    border-color: #ffffff;
+    background: #ffffff;
+    color: #050505;
+    box-shadow: 0 12px 34px rgba(255,255,255,0.08);
+  }
+
+  .choice-option strong {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+    font-weight: 950;
+  }
+
+  .choice-option svg {
+    flex: 0 0 auto;
   }
 
   .edit-field textarea {
@@ -3883,18 +3973,32 @@ const adminImportStyles = `
     align-items: center;
     gap: 12px;
     flex-wrap: wrap;
-    padding: 12px 13px;
+    padding: 14px;
     border: 1px solid rgba(255,255,255,0.10);
     border-radius: 18px;
-    background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(0,0,0,0.28));
+    background:
+      radial-gradient(circle at 12% 0%, rgba(255,255,255,0.14), transparent 30%),
+      linear-gradient(135deg, rgba(255,255,255,0.08), rgba(0,0,0,0.28));
   }
 
   .autofill-panel.wide {
     grid-column: 1 / -1;
   }
 
-  .autofill-panel span {
+  .autofill-panel div {
     flex: 1 1 260px;
+    min-width: 0;
+    display: grid;
+    gap: 4px;
+  }
+
+  .autofill-panel strong {
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 1000;
+  }
+
+  .autofill-panel span {
     color: rgba(255,255,255,0.62);
     font-size: 13px;
     line-height: 1.45;
@@ -3961,6 +4065,7 @@ const adminImportStyles = `
     .candidate-grid,
     .candidate-search-card,
     .edit-grid,
+    .choice-grid,
     .candidate-info,
     .info-grid,
     .run-info {
