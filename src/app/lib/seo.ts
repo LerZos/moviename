@@ -205,6 +205,10 @@ export function getSeoContentKind(movie: Movie) {
 }
 
 export function getMovieSeoTitle(movie: Movie) {
+  if (movie.seoTitle?.trim()) {
+    return trimSeoText(movie.seoTitle, 70);
+  }
+
   const kind = getSeoContentKind(movie);
 
   if (movie.type === "Сериал") {
@@ -245,6 +249,10 @@ export function trimSeoText(text: string, maxLength = 170) {
 }
 
 export function getMovieMetaDescription(movie: Movie) {
+  if (movie.seoDescription?.trim()) {
+    return trimSeoText(movie.seoDescription, 210);
+  }
+
   const kind = getSeoContentKind(movie);
   const country = getFactValue(movie, ["Страна"]);
   const genres = movie.genres.slice(0, 5).join(", ").toLowerCase();
@@ -515,6 +523,25 @@ export function getMovieBreadcrumbJsonLd(movie: Movie) {
 }
 
 export function getMovieFaqJsonLd(movie: Movie) {
+  const customFaqItems = (movie.faq || [])
+    .filter((item) => item.question?.trim() && item.answer?.trim())
+    .slice(0, 6);
+
+  if (customFaqItems.length >= 3) {
+    return {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: customFaqItems.map((item) => ({
+        "@type": "Question",
+        name: item.question,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: item.answer,
+        },
+      })),
+    };
+  }
+
   const kind = getSeoContentKind(movie);
   const rating = movie.rating > 0 ? `${movie.rating.toFixed(1)} из 10` : undefined;
   const budget = getFactValue(movie, ["Бюджет"]);

@@ -560,6 +560,14 @@ export default function MoviePageClient({
   const catalogSlug = getCatalogSlugByMovie(movie);
 
   const faqItems = useMemo(() => {
+    const customFaqItems = (movie.faq || [])
+      .filter((item) => item.question?.trim() && item.answer?.trim())
+      .slice(0, 6);
+
+    if (customFaqItems.length >= 3) {
+      return customFaqItems;
+    }
+
     const kind = getContentKind(movie);
     const titleWithYear = `${movie.title} (${movie.year})`;
     const genres = movie.genres.join(", ");
@@ -2305,7 +2313,7 @@ const moviePageStyles = `
 
   .cast-card {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 14px;
     min-width: 0;
@@ -2327,27 +2335,25 @@ const moviePageStyles = `
 
   .cast-info {
     min-width: 0;
+    flex: 1 1 auto;
   }
 
   .cast-info h3 {
     margin: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
     color: #ffffff;
     font-size: 15px;
-    line-height: 1.15;
+    line-height: 1.2;
     font-weight: 1000;
+    overflow-wrap: anywhere;
   }
 
   .cast-info p {
     margin: 6px 0 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
     color: #858585;
     font-size: 13px;
+    line-height: 1.35;
     font-weight: 750;
+    overflow-wrap: anywhere;
   }
 
   .cast-avatar {
@@ -2359,6 +2365,7 @@ const moviePageStyles = `
     border-radius: 999px;
     background: #ffffff;
     color: #000000;
+    margin-top: 1px;
     font-size: 12px;
     font-weight: 1000;
   }

@@ -5,6 +5,7 @@
 import type { ContentType } from "./movies";
 import { generatedRequestedMovieCardIndex } from "./generatedRequestedMovieCardIndex";
 import { manualGoodPopularMovieCardIndex } from "./manualGoodPopularMovieCardIndex";
+import { manualSeoMovieExpansionCardIndex } from "./manualSeoMovieExpansion";
 
 export type MovieCardIndexItem = {
   id: number;
@@ -21,6 +22,7 @@ export type MovieCardIndexItem = {
 export const movieCardIndex: MovieCardIndexItem[] = [
   ...generatedRequestedMovieCardIndex,
   ...manualGoodPopularMovieCardIndex,
+  ...manualSeoMovieExpansionCardIndex,
   {
     "id": 890000,
     "slug": "godzilla-minus-one-2023",

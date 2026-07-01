@@ -10,6 +10,7 @@ import { manualGoodPopularAdditions } from "./manualGoodPopularAdditions";
 import { manualFreshMovieAdditions } from "./manualFreshMovieAdditions";
 import { manualHundredMovieAdditions } from "./manualHundredMovieAdditions";
 import { manualWorldPopular200Additions } from "./manualWorldPopular200Additions";
+import { manualSeoMovieExpansionAdditions } from "./manualSeoMovieExpansion";
 import {
   IMAGE_LINKS,
   createCartoonPoster,
@@ -28,6 +29,11 @@ export type MovieFact = {
 export type CastMember = {
   name: string;
   role: string;
+};
+
+export type MovieFaqItem = {
+  question: string;
+  answer: string;
 };
 
 export type PlayerProvider = {
@@ -69,8 +75,11 @@ export type Movie = {
   imdbId?: string;
   countries?: string[];
   source?: string;
+  seoTitle?: string;
+  seoDescription?: string;
   longDescription?: string;
   facts?: MovieFact[];
+  faq?: MovieFaqItem[];
   cast?: CastMember[];
   players?: PlayerProvider[];
 };
@@ -279,6 +288,15 @@ function sanitizeMoviePublicFields(movie: Movie) {
       .filter(isPublicMovieFact);
   }
 
+  if (movie.faq?.length) {
+    movie.faq = movie.faq
+      .map((item) => ({
+        question: sanitizePublicMovieText(item.question) || item.question,
+        answer: sanitizePublicMovieText(item.answer) || item.answer,
+      }))
+      .filter((item) => Boolean(item.question && item.answer));
+  }
+
   return movie;
 }
 
@@ -289,6 +307,7 @@ export function sanitizeMovieForPublicDisplay(movie: Movie): Movie {
     searchTitles: [...(movie.searchTitles ?? [])],
     countries: movie.countries ? [...movie.countries] : undefined,
     facts: movie.facts ? movie.facts.map((fact) => ({ ...fact })) : undefined,
+    faq: movie.faq ? movie.faq.map((item) => ({ ...item })) : undefined,
     cast: movie.cast ? movie.cast.map((person) => ({ ...person })) : undefined,
     players: movie.players ? movie.players.map((player) => ({ ...player })) : undefined,
     posterFallbacks: movie.posterFallbacks ? [...movie.posterFallbacks] : undefined,
@@ -362,6 +381,7 @@ const moviesRaw: Movie[] = [
   ...manualGoodPopularAdditions,
   ...manualFreshMovieAdditions,
   ...manualHundredMovieAdditions,
+  ...manualSeoMovieExpansionAdditions,
   {
       id: 1,
       kinopoiskId: 4540126,
