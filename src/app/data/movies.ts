@@ -11,6 +11,7 @@ import { manualFreshMovieAdditions } from "./manualFreshMovieAdditions";
 import { manualHundredMovieAdditions } from "./manualHundredMovieAdditions";
 import { manualWorldPopular200Additions } from "./manualWorldPopular200Additions";
 import { manualSeoMovieExpansionAdditions } from "./manualSeoMovieExpansion";
+import { manualRequestedSeriesAdditions } from "./manualRequestedSeriesAdditions";
 import {
   IMAGE_LINKS,
   createCartoonPoster,
@@ -376,6 +377,7 @@ function hydrateMovieContent(movie: Movie) {
 }
 
 const moviesRaw: Movie[] = [
+  ...manualRequestedSeriesAdditions,
   ...generatedRequestedExpansionMovies,
   ...manualCuratedExpansionPack,
   ...manualGoodPopularAdditions,
