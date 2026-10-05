@@ -15,6 +15,7 @@ type ExpectedReleaseInput = {
   description: string;
   franchise: string;
   director?: string;
+  cast?: Movie["cast"];
 };
 
 function createExpectedRelease(input: ExpectedReleaseInput): Movie {
@@ -58,6 +59,7 @@ function createExpectedRelease(input: ExpectedReleaseInput): Movie {
     longDescription: `${input.description} Карточка добавлена в ручную подборку ожидаемых релизов KinoLuma: без документалок, ток-шоу, концертов и случайных будущих карточек с рейтингом 0. Даты и названия указаны только там, где они уже подтверждены публичными релизными материалами.`,
     trailerUrl: "",
     facts,
+    cast: input.cast,
     source: "kinoluma-curated-expected",
   };
 }
@@ -101,6 +103,16 @@ export const curatedExpectedReleases: Movie[] = [
     description: "Новая сольная глава про Питера Паркера в MCU после событий «Нет пути домой». Упор — на уличного Человека-паука и новый этап героя.",
     franchise: "Spider-Man / Marvel",
     director: "Дестин Дэниел Креттон",
+    cast: [
+      { name: "Tom Holland", role: "Питер Паркер / Человек-паук" },
+      { name: "Zendaya", role: "MJ" },
+      { name: "Sadie Sink", role: "Джин Грей" },
+      { name: "Jacob Batalon", role: "Нед Лидс" },
+      { name: "Jon Bernthal", role: "Фрэнк Касл / Каратель" },
+      { name: "Tramell Tillman", role: "роль уточняется" },
+      { name: "Michael Mando", role: "Мак Гарган / Скорпион" },
+      { name: "Mark Ruffalo", role: "Брюс Бэннер / Халк" },
+    ],
   }),
   createExpectedRelease({
     id: 900004,

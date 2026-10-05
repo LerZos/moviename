@@ -7,7 +7,7 @@ import {
   getDailyFeaturedItems,
 } from "../../../lib/home/dailyFeatured";
 
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   const now = new Date();

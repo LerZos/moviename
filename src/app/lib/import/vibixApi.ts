@@ -69,13 +69,14 @@ function normalizeBaseUrl(value: string) {
 
 export function getVibixConfig() {
   const apiUrl = normalizeBaseUrl(
-    process.env.VIBIX_API_URL ||
+    process.env.EXIIM_API_URL ||
+      process.env.VIBIX_API_URL ||
       process.env.RENDEX_API_URL ||
       process.env.VIBIX_BASE_URL ||
       'https://vibix.org',
   );
 
-  const apiToken = process.env.VIBIX_API_TOKEN || process.env.RENDEX_API_TOKEN || '';
+  const apiToken = process.env.EXIIM_API_TOKEN || process.env.VIBIX_API_TOKEN || process.env.RENDEX_API_TOKEN || '';
   const publisherId = process.env.RENDEX_PUBLISHER_ID || process.env.VIBIX_PUBLISHER_ID || '678053396';
 
   return {

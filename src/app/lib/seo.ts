@@ -2,8 +2,12 @@ import type { Metadata } from "next";
 
 import { movies, type ContentType, type Movie } from "../data/movies";
 
+const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
+
 export const siteUrl = (
-  process.env.NEXT_PUBLIC_SITE_URL || "https://kinoluma.online"
+  process.env.NODE_ENV === "production" && /localhost|127\.0\.0\.1/i.test(configuredSiteUrl)
+    ? "https://kinoluma.online"
+    : configuredSiteUrl || "https://kinoluma.online"
 ).replace(/\/$/, "");
 
 export const catalogRoutes = [

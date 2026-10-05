@@ -148,13 +148,16 @@ function isCollapsePlayer(player: KinoLumaPlayer) {
 function isVibixPlayer(player: KinoLumaPlayer) {
   const record = asRecord(player);
   const type = cleanString(record.type || record.provider).toLowerCase();
+  const provider = cleanString(record.provider).toLowerCase();
   const embedUrl = cleanString(player.embedUrl).toLowerCase();
 
   return (
     type === "vibix" ||
     type === "vibix-iframe" ||
-    record.provider === "vibix" ||
-    embedUrl.includes("vibix")
+    provider === "vibix" ||
+    provider === "exiim" ||
+    embedUrl.includes("vibix") ||
+    embedUrl.includes("exiim.cloud")
   );
 }
 
@@ -218,9 +221,9 @@ function buildVibixPlayer(movie: Movie, video: VibixVideo): KinoLumaPlayer | nul
 
   return {
     id: `vibix-${videoId || kpId || imdbId || movie.slug}`,
-    name: "Vibix",
+    name: "Exiim",
     type: "vibix-iframe",
-    provider: "vibix",
+    provider: "exiim",
     embedUrl: iframeUrl,
     contentKind: contentType,
     contentType,
@@ -251,12 +254,8 @@ function getExistingExtraPlayers(movie: Movie) {
   );
 }
 
-function hasAllThree(players: KinoLumaPlayer[]) {
-  return (
-    players.some(isCollapsePlayer) &&
-    players.some(isVibixPlayer) &&
-    players.some(isFactoriosPlayer)
-  );
+function hasOnlyPreferredPlayer(players: KinoLumaPlayer[]) {
+  return players.length === 1 && players.some(isVibixPlayer);
 }
 
 function summarizePlayers(players: KinoLumaPlayer[]) {
@@ -336,7 +335,7 @@ export async function POST(request: Request) {
 
     for (const movie of movies) {
       try {
-        if (isAnimeMovie(movie)) {
+        if (false && isAnimeMovie(movie)) {
           results.push(createResult(movie, "skipped", { reason: "Аниме временно пропускаем — нужен отдельный аниме-плеер" }));
           continue;
         }
@@ -347,22 +346,15 @@ export async function POST(request: Request) {
         }
 
         const currentPlayers = parsePlayerArray(movie.players || []);
-        if (mode === "missing" && hasAllThree(currentPlayers)) {
+        if (mode === "missing" && hasOnlyPreferredPlayer(currentPlayers)) {
           results.push(createResult(movie, "skipped", { reason: "Три плеера уже есть", ...summarizePlayers(currentPlayers) }));
           continue;
         }
 
-        const { collapse, factorios } = getGeneratedPlayers(movie);
         const vibixLookup = await findVibixVideo(movie);
         const vibixPlayer = vibixLookup.video ? buildVibixPlayer(movie, vibixLookup.video) : null;
-        const existingExtraPlayers = getExistingExtraPlayers(movie);
         const nextPlayers = renamePlayers(
-          dedupePlayers([
-            ...(collapse ? [collapse] : []),
-            ...(vibixPlayer ? [vibixPlayer] : []),
-            ...(factorios ? [factorios] : []),
-            ...existingExtraPlayers,
-          ]),
+          dedupePlayers([...(vibixPlayer ? [vibixPlayer] : [])]),
         );
 
         if (!nextPlayers.length) {
@@ -383,11 +375,9 @@ export async function POST(request: Request) {
         );
         revalidatePath(`/movie/${movie.slug}`);
 
-        const status: SyncMovieResult["status"] = summary.hasCollapse && summary.hasVibix && summary.hasFactorios ? "updated" : "partial";
+        const status: SyncMovieResult["status"] = summary.hasVibix ? "updated" : "partial";
         const missing: string[] = [];
-        if (!summary.hasCollapse) missing.push("Collapse");
-        if (!summary.hasVibix) missing.push("Vibix");
-        if (!summary.hasFactorios) missing.push("Factorios");
+        if (!summary.hasVibix) missing.push("Exiim");
 
         results.push(
           createResult(movie, status, {

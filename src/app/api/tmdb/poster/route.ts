@@ -24,7 +24,13 @@ function redirectTo(url: URL | string) {
 }
 
 function redirectToFallback(request: Request) {
-  return redirectTo(new URL(FALLBACK_POSTER, request.url));
+  const requestUrl = new URL(request.url);
+  const forwardedHost = request.headers.get("x-forwarded-host")?.trim();
+  const host = forwardedHost || request.headers.get("host")?.trim() || requestUrl.host;
+  const forwardedProto = request.headers.get("x-forwarded-proto")?.trim();
+  const protocol = forwardedProto || requestUrl.protocol.replace(":", "");
+
+  return redirectTo(new URL(FALLBACK_POSTER, `${protocol}://${host}`));
 }
 
 async function tmdbApiFetch<T>(path: string, params: Record<string, string> = {}) {

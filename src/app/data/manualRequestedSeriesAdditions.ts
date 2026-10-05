@@ -1,5 +1,5 @@
 import type { CastMember, ContentType, Movie, MovieFaqItem, MovieFact, PlayerProvider } from "./movies";
-import { getKinopoiskPoster, getTmdbPoster } from "../lib/imageLinks";
+import { IMAGE_LINKS, getKinopoiskPoster, getTmdbPoster } from "../lib/imageLinks";
 
 const REQUESTED_SERIES_SOURCE = "kinoluma-requested-animated-series-2026-07";
 
@@ -36,7 +36,7 @@ const requestedSeries: RequestedSeriesEntry[] = [
     kinopoiskId: 685246,
     tmdbId: 60625,
     imdbId: "tt2861424",
-    slug: "rick-and-morty-2013",
+    slug: "rik-i-morti-2013",
     title: "Рик и Морти",
     originalTitle: "Rick and Morty",
     searchTitles: [
@@ -44,7 +44,7 @@ const requestedSeries: RequestedSeriesEntry[] = [
       "Rick and Morty",
       "рик морти",
       "rick morty",
-      "rick-and-morty-2013",
+      "rik-i-morti-2013",
     ],
     type: "Мультфильм",
     year: "2013",
@@ -156,6 +156,10 @@ const requestedSeries: RequestedSeriesEntry[] = [
 ];
 
 function buildPoster(movie: RequestedSeriesEntry) {
+  if (movie.slug === "rik-i-morti-2013") {
+    return IMAGE_LINKS.rickAndMortyPoster;
+  }
+
   return getKinopoiskPoster({
     kinopoiskId: movie.kinopoiskId,
     fallback: getTmdbPoster({
@@ -217,7 +221,7 @@ function buildFaq(movie: RequestedSeriesEntry): MovieFaqItem[] {
     {
       question: `${movie.title} подойдёт для семейного просмотра?`,
       answer:
-        movie.slug === "rick-and-morty-2013"
+        movie.slug === "rik-i-morti-2013"
           ? "Сериал рассчитан на взрослую аудиторию: в нём много чёрного юмора, грубой сатиры и фантастического абсурда."
           : "Да, это семейная анимация, но отдельные шутки и культурные отсылки могут быть интереснее подросткам и взрослым.",
     },

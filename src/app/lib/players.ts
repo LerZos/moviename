@@ -221,9 +221,24 @@ export function buildVibixIframePlayer(
     id: `vibix-iframe-${index + 1}`,
     name,
     type: "vibix-iframe",
-    provider: "vibix",
+    provider: "exiim",
     embedUrl,
   };
+}
+
+function isPreferredIframePlayer(player: KinoLumaPlayer) {
+  const provider = cleanString(player.provider).toLowerCase();
+  const type = cleanString(player.type).toLowerCase();
+  const embedUrl = cleanString(player.embedUrl).toLowerCase();
+
+  return (
+    provider === "exiim" ||
+    provider === "vibix" ||
+    type === "vibix" ||
+    type === "vibix-iframe" ||
+    embedUrl.includes("exiim.cloud") ||
+    embedUrl.includes("vibix")
+  );
 }
 
 function normalizeText(value: unknown) {
@@ -253,8 +268,6 @@ export function isAnimeAutoPlayerInput(
 }
 
 export function canAutoGeneratePlayers(input: AutoPlayerInput) {
-  if (isAnimeAutoPlayerInput(input)) return false;
-
   const type = normalizeText(input.movieType || input.contentType);
 
   if (!type) return true;
@@ -656,6 +669,23 @@ export function buildAutoPlayers(input: AutoPlayerInput): KinoLumaPlayer[] {
   const collapseUrl =
     buildCollapseKinopoiskUrl(kinopoiskId) || buildCollapseImdbUrl(imdbId);
 
+  if (collapseUrl) {
+    return [
+      {
+        id: kinopoiskId
+          ? `collapse-kp-${kinopoiskId}`
+          : `collapse-imdb-${imdbId}`,
+        name: "Collapse",
+        type: "collapse",
+        provider: "collapse",
+        embedUrl: collapseUrl,
+        contentKind: kinopoiskId ? "kp" : "imdb",
+        contentType: kinopoiskId ? "kp" : "imdb",
+        contentId: kinopoiskId || imdbId,
+      },
+    ];
+  }
+
   if (isAnimeAutoPlayerInput(input)) {
     return collapseUrl
       ? [
@@ -755,7 +785,10 @@ export function mergeAutoPlayersIntoRawJson(
   const kinoluma = asRecord(base.kinoluma);
   const existingPlayers = parsePlayerArray(kinoluma.players);
   const generatedPlayers = buildAutoPlayersFromRawJson(base, input);
-  const players = existingPlayers.length ? existingPlayers : generatedPlayers;
+  const preferredPlayers = existingPlayers.filter(isPreferredIframePlayer);
+  const players = preferredPlayers.length
+    ? preferredPlayers.slice(0, 1)
+    : generatedPlayers;
   const rendexVideoId =
     extractRendexVideoId(input.rendexVideoId) ||
     getRendexVideoIdFromRawJson(base);
@@ -832,7 +865,7 @@ function normalizePlayer(
     return player ? { ...player, id: cleanString(item.id) || player.id } : null;
   }
 
-  if (type === "vibix" || type === "vibix-iframe") {
+  if (type === "vibix" || type === "vibix-iframe" || type === "exiim") {
     const player = buildVibixIframePlayer(
       name,
       item.embedUrl || item.embed_url || item.url || item.iframe_url,
@@ -953,7 +986,7 @@ export function parsePlayerText(value: unknown): KinoLumaPlayer[] {
         );
       }
 
-      if (type === "vibix" || type === "vibix-iframe") {
+      if (type === "vibix" || type === "vibix-iframe" || type === "exiim") {
         return buildVibixIframePlayer(
           name,
           parts.slice(2).join("|").trim(),
@@ -1046,7 +1079,11 @@ export function playersToText(players: unknown) {
           : "";
       }
 
-      if (player.type === "vibix-iframe" || player.provider === "vibix") {
+      if (
+        player.type === "vibix-iframe" ||
+        player.provider === "vibix" ||
+        player.provider === "exiim"
+      ) {
         return player.embedUrl
           ? `${player.name} | vibix | ${player.embedUrl}`
           : "";

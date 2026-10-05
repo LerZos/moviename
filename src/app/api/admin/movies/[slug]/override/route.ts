@@ -119,10 +119,18 @@ function revalidateMoviePage(slug: string) {
   revalidatePath(`/movie/${slug}`);
 }
 
-function revalidateMovieRemovalSurfaces(slug: string) {
+function revalidateMovieUpdateSurfaces(slug: string) {
   revalidateMoviePage(slug);
   revalidatePath('/');
+  revalidatePath('/profile');
+  revalidatePath('/expected');
   revalidatePath('/sitemap.xml');
+  revalidatePath('/catalog/[category]', 'page');
+  revalidatePath('/catalog/[category]/[genre]', 'page');
+}
+
+function revalidateMovieRemovalSurfaces(slug: string) {
+  revalidateMovieUpdateSurfaces(slug);
 
   ['films', 'series', 'anime', 'cartoons', 'documentaries'].forEach((catalogSlug) => {
     revalidatePath(`/catalog/${catalogSlug}`);
@@ -160,7 +168,7 @@ export async function PUT(request: Request, context: RouteContext) {
 
     await saveMovieOverride(slug, overridePayload, adminUser?.email || 'admin');
 
-    revalidateMoviePage(slug);
+    revalidateMovieUpdateSurfaces(slug);
 
     return Response.json({
       ok: true,

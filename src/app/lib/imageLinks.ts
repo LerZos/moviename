@@ -57,6 +57,7 @@ export const IMAGE_LINKS = {
   starTrekStarfleetAcademyPoster: "https://treknews.net/wp-content/uploads/2025/07/SFA_Overhead_PR_Vert_CTA_4x5_1080x1350-819x1024.jpg",
   starTrekStarfleetAcademyPoster2: "https://cdn.mos.cms.futurecdn.net/EYiH8Dr2rgCdRP6VxEJZt4.jpg",
   starTrekStarfleetAcademyPoster3: "https://blog.trekcore.com/wp-content/uploads/2025/12/sfa-key-art-cast.jpg",
+  rickAndMortyPoster: "https://image.tmdb.org/t/p/w500/5qfd0e2uMbVInX3YdeFbDsfxi1t.jpg",
   theLionKing1994Poster: "https://upload.wikimedia.org/wikipedia/ru/thumb/6/62/Lion_king_ver1.jpg/330px-Lion_king_ver1.jpg",
   toyStoryPoster: "https://upload.wikimedia.org/wikipedia/ru/thumb/a/a6/Toy_Story_1995_Poster.jpg/250px-Toy_Story_1995_Poster.jpg",
   wallEPoster: "https://upload.wikimedia.org/wikipedia/ru/c/c4/WALL-E_poster.png",

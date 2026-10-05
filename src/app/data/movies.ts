@@ -12,6 +12,7 @@ import { manualHundredMovieAdditions } from "./manualHundredMovieAdditions";
 import { manualWorldPopular200Additions } from "./manualWorldPopular200Additions";
 import { manualSeoMovieExpansionAdditions } from "./manualSeoMovieExpansion";
 import { manualRequestedSeriesAdditions } from "./manualRequestedSeriesAdditions";
+import { manualUserPinnedAdditions } from "./manualUserPinnedAdditions";
 import {
   IMAGE_LINKS,
   createCartoonPoster,
@@ -340,7 +341,12 @@ function hydrateMovieContent(movie: Movie) {
   appendMovieFact(movie, "Тип", movie.type);
   appendMovieFact(movie, "Жанры", movie.genres.join(", "));
 
-  if (movie.kinopoiskId) {
+  const hasTrustedExternalPoster =
+    !!movie.poster &&
+    !movie.poster.startsWith("data:") &&
+    !movie.poster.includes("/api/");
+
+  if (movie.kinopoiskId && !hasTrustedExternalPoster) {
     const fallbackPoster = getMoviePosterFallback(movie);
     movie.poster = getKinopoiskPoster({
       kinopoiskId: movie.kinopoiskId,
@@ -377,6 +383,7 @@ function hydrateMovieContent(movie: Movie) {
 }
 
 const moviesRaw: Movie[] = [
+  ...manualUserPinnedAdditions,
   ...manualRequestedSeriesAdditions,
   ...generatedRequestedExpansionMovies,
   ...manualCuratedExpansionPack,
@@ -890,6 +897,8 @@ const moviesRaw: Movie[] = [
   {
       id: 13,
       kinopoiskId: 749374,
+      tmdbId: 1429,
+      imdbId: "tt2560140",
       slug: "attack-on-titan",
       title: "Атака титанов",
       originalTitle: "Attack on Titan",
@@ -936,6 +945,8 @@ const moviesRaw: Movie[] = [
   {
       id: 14,
       kinopoiskId: 1220920,
+      tmdbId: 85937,
+      imdbId: "tt9335498",
       slug: "demon-slayer",
       title: "Истребитель демонов",
       originalTitle: "Demon Slayer",
@@ -980,6 +991,8 @@ const moviesRaw: Movie[] = [
   {
       id: 15,
       kinopoiskId: 958722,
+      tmdbId: 372058,
+      imdbId: "tt5311514",
       slug: "your-name",
       title: "Твоё имя",
       originalTitle: "Your Name",
@@ -1019,6 +1032,8 @@ const moviesRaw: Movie[] = [
   {
       id: 16,
       kinopoiskId: 283290,
+      tmdbId: 46260,
+      imdbId: "tt0409591",
       slug: "naruto",
       title: "Наруто",
       originalTitle: "Naruto",
@@ -4393,6 +4408,9 @@ const moviesRaw: Movie[] = [
   },
   {
     "slug": "death-note",
+    "kinopoiskId": 406148,
+    "tmdbId": 13916,
+    "imdbId": "tt0877057",
     "title": "Тетрадь смерти",
     "originalTitle": "Death Note",
     "searchTitles": [
@@ -4492,6 +4510,9 @@ const moviesRaw: Movie[] = [
   },
   {
     "slug": "jujutsu-kaisen",
+    "kinopoiskId": 1381125,
+    "tmdbId": 95479,
+    "imdbId": "tt12343534",
     "title": "Магическая битва",
     "originalTitle": "Jujutsu Kaisen",
     "searchTitles": [
@@ -4591,6 +4612,9 @@ const moviesRaw: Movie[] = [
   },
   {
     "slug": "fullmetal-alchemist-brotherhood",
+    "kinopoiskId": 452838,
+    "tmdbId": 31911,
+    "imdbId": "tt1355642",
     "title": "Стальной алхимик: Братство",
     "originalTitle": "Fullmetal Alchemist: Brotherhood",
     "searchTitles": [
@@ -4689,6 +4713,9 @@ const moviesRaw: Movie[] = [
   },
   {
     "slug": "one-piece",
+    "kinopoiskId": 382731,
+    "tmdbId": 37854,
+    "imdbId": "tt0388629",
     "title": "Ван-Пис",
     "originalTitle": "One Piece",
     "searchTitles": [
@@ -4788,6 +4815,9 @@ const moviesRaw: Movie[] = [
   },
   {
     "slug": "chainsaw-man",
+    "kinopoiskId": 2040161,
+    "tmdbId": 114410,
+    "imdbId": "tt13616990",
     "title": "Человек-бензопила",
     "originalTitle": "Chainsaw Man",
     "searchTitles": [
@@ -4887,6 +4917,9 @@ const moviesRaw: Movie[] = [
   },
   {
     "slug": "cyberpunk-edgerunners",
+    "kinopoiskId": 2000102,
+    "tmdbId": 105248,
+    "imdbId": "tt12590266",
     "title": "Киберпанк: Бегущие по краю",
     "originalTitle": "Cyberpunk: Edgerunners",
     "searchTitles": [
@@ -4985,6 +5018,9 @@ const moviesRaw: Movie[] = [
   },
   {
     "slug": "vinland-saga",
+    "kinopoiskId": 1274280,
+    "tmdbId": 88803,
+    "imdbId": "tt10233448",
     "title": "Сага о Винланде",
     "originalTitle": "Vinland Saga",
     "searchTitles": [
@@ -5083,6 +5119,9 @@ const moviesRaw: Movie[] = [
   },
   {
     "slug": "cowboy-bebop",
+    "kinopoiskId": 229653,
+    "tmdbId": 30991,
+    "imdbId": "tt0213338",
     "title": "Ковбой Бибоп",
     "originalTitle": "Cowboy Bebop",
     "searchTitles": [
@@ -7851,6 +7890,13 @@ const moviesRaw: Movie[] = [
     ],
     cast: [
       { name: "Tom Holland", role: "Питер Паркер" },
+      { name: "Zendaya", role: "MJ" },
+      { name: "Sadie Sink", role: "Джин Грей" },
+      { name: "Jacob Batalon", role: "Нед Лидс" },
+      { name: "Jon Bernthal", role: "Фрэнк Касл / Каратель" },
+      { name: "Tramell Tillman", role: "роль уточняется" },
+      { name: "Michael Mando", role: "Мак Гарган / Скорпион" },
+      { name: "Mark Ruffalo", role: "Брюс Бэннер / Халк" },
     ],
   },
   {
@@ -15758,7 +15804,6 @@ const moviesRaw: Movie[] = [
   ...curatedExpectedReleases,
   ...generatedKinopoiskRequestedMovies,
   ...generatedKinoLumaCartoons,
-  // Этот пакет только дополняет каталог и не заменяет более полные старые карточки.
   ...manualWorldPopular200Additions,
 ];
 

@@ -83,10 +83,10 @@ export async function generateMetadata({ params }: CollectionPageProps): Promise
       images: [imageUrl],
     },
     robots: {
-      index: items.length >= 3,
+      index: true,
       follow: true,
       googleBot: {
-        index: items.length >= 3,
+        index: true,
         follow: true,
         "max-image-preview": "large",
         "max-snippet": -1,

@@ -528,7 +528,9 @@ export default function CatalogCategoryPage({
   }
 
   function openContent(item: Movie) {
-    router.push(`/movie/${item.slug}`);
+    if (!item.slug) return;
+
+    window.location.assign(`/movie/${item.slug}#player`);
   }
 
   function closeDetailsModal() {
@@ -2362,6 +2364,10 @@ const catalogStyles = `
       border-radius: 15px;
     }
 
+    .details-modal-actions > button[title] {
+      order: -1;
+    }
+
     .details-modal-actions > div {
       justify-content: center;
       border-radius: 18px;
@@ -2500,6 +2506,136 @@ const catalogStyles = `
       justify-content: center !important;
       width: 100% !important;
       overflow-x: auto !important;
+    }
+  }
+
+  /* Mobile catalog polish: compact cards instead of one oversized poster */
+  @media (max-width: 640px) {
+    .kinoluma-catalog {
+      background:
+        radial-gradient(circle at 50% -10%, rgba(255,255,255,0.075), transparent 34%),
+        linear-gradient(180deg, #050505, #000000 44%, #050505) !important;
+    }
+
+    .catalog-hero-inner,
+    .catalog-controls-section,
+    .catalog-grid-section,
+    .catalog-faq-section {
+      width: min(100% - 20px, 1320px) !important;
+    }
+
+    .catalog-hero {
+      padding-top: 24px !important;
+      padding-bottom: 20px !important;
+    }
+
+    .catalog-hero h1 {
+      font-size: clamp(32px, 12vw, 48px) !important;
+      letter-spacing: -0.04em !important;
+    }
+
+    .catalog-description {
+      font-size: 13px !important;
+      line-height: 1.55 !important;
+    }
+
+    .catalog-controls {
+      border-radius: 20px !important;
+      padding: 12px !important;
+    }
+
+    .catalog-section-topline {
+      gap: 6px !important;
+      margin-bottom: 16px !important;
+    }
+
+    .catalog-section-topline h3 {
+      font-size: 24px !important;
+      line-height: 1.05 !important;
+    }
+
+    .catalog-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      gap: 12px !important;
+    }
+
+    .catalog-card {
+      border-radius: 18px !important;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0.018)),
+        #050505 !important;
+      box-shadow:
+        0 18px 46px rgba(0,0,0,0.42),
+        inset 0 1px 0 rgba(255,255,255,0.07) !important;
+    }
+
+    .catalog-card-poster {
+      aspect-ratio: 2 / 2.72 !important;
+    }
+
+    .catalog-card-type,
+    .catalog-card-rating {
+      top: 9px !important;
+      min-height: 24px !important;
+      padding: 0 8px !important;
+      font-size: 10px !important;
+    }
+
+    .catalog-card-type {
+      left: 9px !important;
+      max-width: calc(100% - 70px) !important;
+    }
+
+    .catalog-card-rating {
+      right: 9px !important;
+    }
+
+    .catalog-card-body {
+      padding: 10px 10px 12px !important;
+    }
+
+    .catalog-card-meta {
+      font-size: 11px !important;
+    }
+
+    .catalog-card-title {
+      min-height: 35px !important;
+      margin-top: 8px !important;
+      font-size: 14px !important;
+      letter-spacing: 0 !important;
+      line-height: 1.16 !important;
+    }
+
+    .catalog-card-original {
+      margin-top: 5px !important;
+      font-size: 11px !important;
+    }
+
+    .catalog-card-description {
+      min-height: 0 !important;
+      margin-top: 8px !important;
+      -webkit-line-clamp: 2 !important;
+      font-size: 11px !important;
+      line-height: 1.45 !important;
+    }
+
+    .catalog-card-tags,
+    .catalog-card-actions {
+      display: none !important;
+    }
+  }
+
+  @media (max-width: 380px) {
+    .catalog-grid {
+      gap: 10px !important;
+    }
+
+    .catalog-card-title {
+      font-size: 13px !important;
+    }
+
+    .catalog-card-description {
+      display: none !important;
     }
   }
 

@@ -36,16 +36,27 @@ function isSafeHttpUrl(value: string) {
   return /^https?:\/\//i.test(value);
 }
 
-function normalizeFallbackUrl(value: string, requestUrl: string) {
+function getPublicRequestOrigin(request: Request) {
+  const requestUrl = new URL(request.url);
+  const forwardedHost = request.headers.get("x-forwarded-host")?.trim();
+  const host = forwardedHost || request.headers.get("host")?.trim() || requestUrl.host;
+  const forwardedProto = request.headers.get("x-forwarded-proto")?.trim();
+  const protocol = forwardedProto || requestUrl.protocol.replace(":", "");
+
+  return `${protocol}://${host}`;
+}
+
+function normalizeFallbackUrl(value: string, request: Request) {
   const fallback = cleanString(value);
+  const publicOrigin = getPublicRequestOrigin(request);
 
   if (!fallback || fallback.startsWith("data:")) {
-    return new URL(DEFAULT_FALLBACK, requestUrl).toString();
+    return new URL(DEFAULT_FALLBACK, publicOrigin).toString();
   }
 
-  if (fallback.startsWith("/")) return new URL(fallback, requestUrl).toString();
+  if (fallback.startsWith("/")) return new URL(fallback, publicOrigin).toString();
 
-  return new URL(DEFAULT_FALLBACK, requestUrl).toString();
+  return new URL(DEFAULT_FALLBACK, publicOrigin).toString();
 }
 
 function normalizePosterUrl(value: unknown) {
@@ -92,7 +103,7 @@ export async function GET(request: Request) {
   const kinopoiskId = cleanKinopoiskId(requestUrl.searchParams.get("kpId"));
   const fallbackUrl = normalizeFallbackUrl(
     requestUrl.searchParams.get("fallback") || "",
-    request.url,
+    request,
   );
 
   if (!kinopoiskId) {
