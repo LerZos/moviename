@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { Analytics } from "@vercel/analytics/next";
 
 import "./globals.css";
 import {
@@ -125,7 +124,6 @@ export default function RootLayout({
         <footer className="border-t border-white/10 bg-black px-6 pb-28 pt-8 text-center text-xs font-semibold uppercase tracking-[0.24em] text-neutral-500 md:pb-8">
           KinoLuma © 2026. Все права защищены.
         </footer>
-        <Analytics />
       </body>
     </html>
   );
