@@ -17,7 +17,6 @@ import {
   buildAutoPlayers,
   COLLAPSE_ACTUALIZE_SCRIPT_SRC,
   getFallbackKinopoiskIdBySlug,
-  isAnimeAutoPlayerInput,
 } from "../../lib/players";
 
 type MoviePageClientProps = {
@@ -306,6 +305,11 @@ function saveNumberArrayToStorage(key: string, ids: number[]) {
 type VibixRendexResponse = {
   ok?: boolean;
   player?: {
+    id?: string;
+    name?: string;
+    type?: string;
+    provider?: string;
+    embedUrl?: string;
     contentId?: string;
     contentType?: string;
     publisherId?: string;
@@ -315,6 +319,11 @@ type VibixRendexResponse = {
 type VibixRendexPlayerData = {
   contentId: string;
   contentType: string;
+  embedUrl?: string;
+  id?: string;
+  name?: string;
+  provider?: string;
+  type?: string;
   publisherId?: string;
 };
 
@@ -499,35 +508,44 @@ export default function MoviePageClient({
     ],
   );
 
-  const isAnimePlayerUnavailable = useMemo(
-    () =>
-      isAnimeAutoPlayerInput({
-        movieType: movie.type,
-        genres: movie.genres,
-      }),
-    [movie.genres, movie.type],
-  );
-
   const players = useMemo(() => {
-    if (isAnimePlayerUnavailable) {
-      return DEFAULT_PLAYERS;
-    }
-
+    const vibixPlayer =
+      vibixRendexData?.contentId?.trim()
+        ? ([
+            {
+              id: vibixRendexData.id || `vibix-${vibixRendexData.contentId}`,
+              name: vibixRendexData.name || "Vibix",
+              type:
+                vibixRendexData.type ||
+                (vibixRendexData.embedUrl ? "vibix-iframe" : "rendex"),
+              provider:
+                vibixRendexData.provider ||
+                (vibixRendexData.embedUrl ? "exiim" : "rendex"),
+              embedUrl: vibixRendexData.embedUrl || "",
+              contentType: vibixRendexData.contentType,
+              contentId: vibixRendexData.contentId,
+              publisherId: vibixRendexData.publisherId,
+            } as PlayerProvider,
+          ])
+        : [];
     const realPlayers = (movie.players || [])
       .filter(hasPlayablePlayer)
       .filter((player) => !isLegacyStandaloneVibixPlayer(player));
 
     const mergedPlayers =
       realPlayers.length > 0
-        ? mergeGeneratedAndManualPlayers(generatedPlayers, realPlayers)
-        : generatedPlayers;
+        ? mergeGeneratedAndManualPlayers(
+            generatedPlayers,
+            mergeGeneratedAndManualPlayers(vibixPlayer, realPlayers),
+          )
+        : mergeGeneratedAndManualPlayers(generatedPlayers, vibixPlayer);
 
     if (mergedPlayers.length > 0) {
-      return normalizePlayerButtonNames(mergedPlayers).slice(0, 3);
+      return normalizePlayerButtonNames(mergedPlayers).slice(0, 2);
     }
 
     return DEFAULT_PLAYERS;
-  }, [generatedPlayers, isAnimePlayerUnavailable, movie.players]);
+  }, [generatedPlayers, movie.players, vibixRendexData]);
 
   const facts = useMemo(
     () =>
@@ -692,7 +710,7 @@ export default function MoviePageClient({
       const fallbackKinopoiskId =
         movie.kinopoiskId || getFallbackKinopoiskIdBySlug(movie.slug);
 
-      if (isAnimePlayerUnavailable || (!fallbackKinopoiskId && !movie.imdbId)) {
+      if (!fallbackKinopoiskId && !movie.imdbId) {
         return;
       }
 
@@ -731,6 +749,11 @@ export default function MoviePageClient({
             contentType:
               payload?.player?.contentType?.trim() ||
               (movie.type === "Сериал" ? "series" : "movie"),
+            embedUrl: payload?.player?.embedUrl?.trim(),
+            id: payload?.player?.id?.trim(),
+            name: payload?.player?.name?.trim(),
+            provider: payload?.player?.provider?.trim(),
+            type: payload?.player?.type?.trim(),
             publisherId: payload?.player?.publisherId?.trim(),
           });
         }
@@ -748,7 +771,6 @@ export default function MoviePageClient({
       controller.abort();
     };
   }, [
-    isAnimePlayerUnavailable,
     movie.imdbId,
     movie.kinopoiskId,
     movie.slug,
@@ -1295,21 +1317,6 @@ export default function MoviePageClient({
                   }}
                 />
               </>
-            ) : isAnimePlayerUnavailable ? (
-              <div className="player-placeholder">
-                <div className="play-icon">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M9 7.5V16.5L16.2 12L9 7.5Z" />
-                  </svg>
-                </div>
-
-                <h3>Аниме временно недоступно</h3>
-
-                <p>
-                  Просмотр аниме сейчас временно недоступен из-за недостатка
-                  плеера.
-                </p>
-              </div>
             ) : (
               <div className="player-placeholder">
                 <div className="play-icon">

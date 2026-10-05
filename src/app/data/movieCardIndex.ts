@@ -24,6 +24,79 @@ export const movieCardIndex: MovieCardIndexItem[] = [
   ...manualGoodPopularMovieCardIndex,
   ...manualSeoMovieExpansionCardIndex,
   {
+    "id": 940112,
+    "slug": "crank-2006",
+    "title": "Адреналин",
+    "type": "Фильм",
+    "year": "2006",
+    "rating": 7.1,
+    "genres": [
+      "Фильм",
+      "Боевик",
+      "Триллер",
+      "Криминал"
+    ],
+    "poster": "/api/tmdb/poster?tmdbId=1948&imdbId=tt0479884&kpId=180609&title=Адреналин&originalTitle=Crank&year=2006&type=Фильм&quality=high&v=crank-1",
+    "posterFallbacks": [
+      "/api/tmdb/poster?tmdbId=1948&imdbId=tt0479884&title=Адреналин&originalTitle=Crank&year=2006&type=Фильм&quality=high&v=crank-1"
+    ]
+  },
+  {
+    "id": 940113,
+    "slug": "crank-high-voltage-2009",
+    "title": "Адреналин 2: Высокое напряжение",
+    "type": "Фильм",
+    "year": "2009",
+    "rating": 6.5,
+    "genres": [
+      "Фильм",
+      "Боевик",
+      "Триллер",
+      "Криминал",
+      "Комедия"
+    ],
+    "poster": "/api/tmdb/poster?tmdbId=15092&imdbId=tt1121931&kpId=397541&title=Адреналин+2%3A+Высокое+напряжение&originalTitle=Crank%3A+High+Voltage&year=2009&type=Фильм&quality=high&v=crank2-1",
+    "posterFallbacks": [
+      "/api/tmdb/poster?tmdbId=15092&imdbId=tt1121931&title=Адреналин+2%3A+Высокое+напряжение&originalTitle=Crank%3A+High+Voltage&year=2009&type=Фильм&quality=high&v=crank2-1"
+    ]
+  },
+  {
+    "id": 940110,
+    "slug": "the-mentalist-2008",
+    "title": "Менталист",
+    "type": "Сериал",
+    "year": "2008",
+    "rating": 8.1,
+    "genres": [
+      "Сериал",
+      "Детектив",
+      "Криминал",
+      "Драма"
+    ],
+    "poster": "/api/tmdb/poster?tmdbId=5920&imdbId=tt1196946&kpId=412344&title=Менталист&originalTitle=The+Mentalist&year=2008&type=Сериал&quality=high&v=mentalist-1",
+    "posterFallbacks": [
+      "/api/tmdb/poster?tmdbId=5920&imdbId=tt1196946&title=Менталист&originalTitle=The+Mentalist&year=2008&type=Сериал&quality=high&v=mentalist-1"
+    ]
+  },
+  {
+    "id": 940111,
+    "slug": "wayne-2019",
+    "title": "Уэйн",
+    "type": "Сериал",
+    "year": "2019",
+    "rating": 8.3,
+    "genres": [
+      "Сериал",
+      "Боевик",
+      "Комедия",
+      "Драма"
+    ],
+    "poster": "/api/tmdb/poster?tmdbId=84231&imdbId=tt7765404&kpId=1167154&title=Уэйн&originalTitle=Wayne&year=2019&type=Сериал&quality=high&v=wayne-1",
+    "posterFallbacks": [
+      "/api/tmdb/poster?tmdbId=84231&imdbId=tt7765404&title=Уэйн&originalTitle=Wayne&year=2019&type=Сериал&quality=high&v=wayne-1"
+    ]
+  },
+  {
     "id": 890000,
     "slug": "godzilla-minus-one-2023",
     "title": "Годзилла: Минус один",
@@ -22950,7 +23023,7 @@ export const movieCardIndex: MovieCardIndexItem[] = [
   },
   {
     "id": 200292,
-    "slug": "rick-and-morty-2013",
+    "slug": "rik-i-morti-2013",
     "title": "Рик и Морти",
     "type": "Мультфильм",
     "year": "2013",
@@ -22961,7 +23034,7 @@ export const movieCardIndex: MovieCardIndexItem[] = [
       "фантастика",
       "приключения"
     ],
-    "poster": "/api/kinopoisk/poster?kpId=685246&v=kp-2&fallback=%2Fapi%2Ftmdb%2Fposter%3FtmdbId%3D60625%26imdbId%3Dtt2861424%26title%3D%25D0%25A0%25D0%25B8%25D0%25BA%2B%25D0%25B8%2B%25D0%259C%25D0%25BE%25D1%2580%25D1%2582%25D0%25B8%26originalTitle%3DRick%2Band%2BMorty%26year%3D2013%26type%3D%25D0%259C%25D1%2583%25D0%25BB%25D1%258C%25D1%2582%25D1%2584%25D0%25B8%25D0%25BB%25D1%258C%25D0%25BC%26quality%3Dhigh%26v%3Dgenerated-cartoons",
+    "poster": "https://image.tmdb.org/t/p/w500/5qfd0e2uMbVInX3YdeFbDsfxi1t.jpg",
     "posterFallbacks": [
       "/api/tmdb/poster?tmdbId=60625&imdbId=tt2861424&title=%D0%A0%D0%B8%D0%BA+%D0%B8+%D0%9C%D0%BE%D1%80%D1%82%D0%B8&originalTitle=Rick+and+Morty&year=2013&type=%D0%9C%D1%83%D0%BB%D1%8C%D1%82%D1%84%D0%B8%D0%BB%D1%8C%D0%BC&quality=high&v=generated-cartoons"
     ]

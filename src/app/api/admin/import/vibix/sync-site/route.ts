@@ -107,10 +107,12 @@ function isVibixPlayer(player: KinoLumaPlayer) {
   const embedUrl = cleanString(player.embedUrl).toLowerCase();
 
   return (
+    provider === "exiim" ||
     provider === "vibix" ||
     type === "vibix" ||
     type === "vibix-iframe" ||
-    embedUrl.includes("vibix")
+    embedUrl.includes("vibix") ||
+    embedUrl.includes("exiim.cloud")
   );
 }
 
@@ -170,9 +172,9 @@ function buildVibixPlayer(movie: Movie, video: VibixVideo): KinoLumaPlayer | nul
 
   return {
     id: `vibix-${videoId || kpId || imdbId || movie.slug}`,
-    name: "Vibix",
+    name: "Exiim",
     type: "vibix-iframe",
-    provider: "vibix",
+    provider: "exiim",
     embedUrl: iframeUrl,
     contentKind: rawType === "serial" || rawType === "series" ? "series" : "movie",
     contentType: rawType === "serial" || rawType === "series" ? "series" : "movie",
@@ -290,7 +292,7 @@ export async function POST(request: Request) {
 
     for (const movie of movies) {
       try {
-        if (isAnimeMovie(movie)) {
+        if (false && isAnimeMovie(movie)) {
           results.push(createResult(movie, "skipped", { reason: "Аниме временно пропускаем" }));
           continue;
         }
@@ -302,7 +304,7 @@ export async function POST(request: Request) {
 
         const basePlayers = buildBasePlayers(movie);
 
-        if (mode === "missing" && basePlayers.some(isVibixPlayer)) {
+        if (mode === "missing" && basePlayers.length === 1 && basePlayers.some(isVibixPlayer)) {
           results.push(createResult(movie, "skipped", { reason: "Vibix уже есть" }));
           continue;
         }
@@ -323,7 +325,7 @@ export async function POST(request: Request) {
         }
 
         const overrideData = ((await getMovieOverrideData(movie.slug)) || {}) as MovieOverrideData;
-        const players = insertVibixPlayer(basePlayers, vibixPlayer, makePrimary);
+        const players = normalizePlayerNames([vibixPlayer]);
 
         await saveMovieOverride(
           movie.slug,

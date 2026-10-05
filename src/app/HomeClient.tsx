@@ -977,15 +977,19 @@ function MovieShelf({
     >
       <div className="mb-6 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-sm font-bold uppercase tracking-[0.35em] text-neutral-500">
-            {label}
-          </p>
+          {label ? (
+            <p className="text-sm font-bold uppercase tracking-[0.35em] text-neutral-500">
+              {label}
+            </p>
+          ) : null}
 
           <h3 className="mt-2 text-2xl font-bold">{title}</h3>
 
-          <p className="mt-2 max-w-2xl text-sm text-neutral-500">
-            {description}
-          </p>
+          {description ? (
+            <p className="mt-2 max-w-2xl text-sm text-neutral-500">
+              {description}
+            </p>
+          ) : null}
         </div>
 
         {onOpenAll && openAllLabel && (
@@ -1151,6 +1155,8 @@ export default function Home({
   const animeSectionRef = useRef<HTMLElement | null>(null);
 
   const [search, setSearch] = useState("");
+  const [serverSearchResults, setServerSearchResults] = useState<ContentItem[]>([]);
+  const [serverSearchQuery, setServerSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [selectedType, setSelectedType] = useState("Все");
   const [selectedGenre, setSelectedGenre] = useState("Все");
@@ -1163,8 +1169,6 @@ export default function Home({
   const [likedItemIds, setLikedItemIds] = useState<number[]>([]);
   const [dislikedItemIds, setDislikedItemIds] = useState<number[]>([]);
   const [isReactionsLoaded, setIsReactionsLoaded] = useState(false);
-  const [popularVisibleRows, setPopularVisibleRows] = useState(4);
-  const [popularGridColumns, setPopularGridColumns] = useState(6);
   const [dailyFeaturedIds, setDailyFeaturedIds] = useState<number[]>(
     () => initialFeaturedIds ?? [],
   );
@@ -1325,7 +1329,51 @@ export default function Home({
     return content.filter((item) => watchLaterIds.includes(item.id));
   }, [content, watchLaterIds]);
 
+  const normalizedSearch = useMemo(() => normalizeText(search), [search]);
+  const activeSearchContent =
+    normalizedSearch &&
+    serverSearchQuery === normalizedSearch &&
+    serverSearchResults.length > 0
+      ? serverSearchResults
+      : content;
+
+  useEffect(() => {
+    if (normalizedSearch.length < 2) {
+      setServerSearchResults([]);
+      setServerSearchQuery("");
+      return;
+    }
+
+    const controller = new AbortController();
+
+    fetch(`/api/search?q=${encodeURIComponent(search.trim())}`, {
+      signal: controller.signal,
+    })
+      .then((response) => (response.ok ? response.json() : { items: [] }))
+      .then((data: { items?: ContentItem[] }) => {
+        if (controller.signal.aborted) return;
+
+        setServerSearchResults(Array.isArray(data.items) ? data.items : []);
+        setServerSearchQuery(normalizedSearch);
+      })
+      .catch((error) => {
+        if (controller.signal.aborted) return;
+
+        console.error("Search request failed", error);
+        setServerSearchResults([]);
+        setServerSearchQuery("");
+      });
+
+    return () => controller.abort();
+  }, [normalizedSearch, search]);
+
   const filteredContent = useMemo(() => {
+    if (normalizedSearch) {
+      return activeSearchContent.filter((item) =>
+        getSearchText(item).includes(normalizedSearch),
+      );
+    }
+
     return content.filter((item) => {
       const matchesType = selectedType === "Все" || item.type === selectedType;
 
@@ -1334,35 +1382,48 @@ export default function Home({
 
       return matchesType && matchesGenre;
     });
-  }, [content, selectedType, selectedGenre]);
+  }, [activeSearchContent, content, normalizedSearch, selectedType, selectedGenre]);
 
-  const popularVisibleCount = popularVisibleRows * popularGridColumns;
-  const popularContent = filteredContent.slice(0, popularVisibleCount);
-  const hasMorePopularContent = popularVisibleCount < filteredContent.length;
+  const popularShelfContent = useMemo(() => {
+    return filteredContent.slice(0, 18);
+  }, [filteredContent]);
 
   const searchSuggestions = useMemo(() => {
-    const normalizedSearch = normalizeText(search);
-
     if (!normalizedSearch) {
       return [];
     }
 
-    return content
+    return activeSearchContent
       .map((item) => {
         const normalizedTitle = normalizeText(item.title);
         const normalizedOriginalTitle = normalizeText(item.originalTitle);
+        const normalizedSearchTitles = item.searchTitles.map((title) =>
+          normalizeText(title),
+        );
+        const exactTitle =
+          normalizedTitle === normalizedSearch ||
+          normalizedOriginalTitle === normalizedSearch ||
+          normalizedSearchTitles.includes(normalizedSearch);
         const startsWithTitle =
           normalizedTitle.startsWith(normalizedSearch) ||
-          normalizedOriginalTitle.startsWith(normalizedSearch);
+          normalizedOriginalTitle.startsWith(normalizedSearch) ||
+          normalizedSearchTitles.some((title) =>
+            title.startsWith(normalizedSearch),
+          );
 
         return {
           item,
+          exactTitle,
           startsWithTitle,
           searchText: getSearchText(item),
         };
       })
       .filter(({ searchText }) => searchText.includes(normalizedSearch))
       .sort((firstItem, secondItem) => {
+        if (firstItem.exactTitle !== secondItem.exactTitle) {
+          return Number(secondItem.exactTitle) - Number(firstItem.exactTitle);
+        }
+
         if (firstItem.startsWithTitle !== secondItem.startsWithTitle) {
           return (
             Number(secondItem.startsWithTitle) -
@@ -1374,12 +1435,11 @@ export default function Home({
       })
       .slice(0, 7)
       .map(({ item }) => item);
-  }, [search]);
+  }, [activeSearchContent, normalizedSearch]);
 
   const shouldShowSearchSuggestions =
-    isSearchFocused &&
     searchSuggestions.length > 0 &&
-    normalizeText(search).length > 0;
+    normalizedSearch.length > 0;
 
   const [displayedSearchSuggestions, setDisplayedSearchSuggestions] = useState<
     ContentItem[]
@@ -1919,7 +1979,9 @@ export default function Home({
   }
 
   function openContent(item: ContentItem) {
-    router.push(`/movie/${item.slug}`);
+    if (!item.slug) return;
+
+    window.location.assign(`/movie/${item.slug}#player`);
   }
 
   async function openTrailer(item: ContentItem) {
@@ -1998,36 +2060,6 @@ export default function Home({
   }
 
   useEffect(() => {
-    function updatePopularGridColumns() {
-      const width = window.innerWidth;
-
-      if (width >= 1280) {
-        setPopularGridColumns(6);
-        return;
-      }
-
-      if (width >= 1024) {
-        setPopularGridColumns(3);
-        return;
-      }
-
-      if (width >= 640) {
-        setPopularGridColumns(2);
-        return;
-      }
-
-      setPopularGridColumns(1);
-    }
-
-    updatePopularGridColumns();
-    window.addEventListener("resize", updatePopularGridColumns);
-
-    return () => {
-      window.removeEventListener("resize", updatePopularGridColumns);
-    };
-  }, []);
-
-  useEffect(() => {
     let isCancelled = false;
 
     async function loadDailyFeatured() {
@@ -2094,10 +2126,6 @@ export default function Home({
       behavior: "smooth",
     });
   }, [featuredIndex, featuredContentPoolKey]);
-
-  useEffect(() => {
-    setPopularVisibleRows(4);
-  }, [search, selectedType, selectedGenre]);
 
   useEffect(() => {
     if (
@@ -4366,6 +4394,10 @@ export default function Home({
             border-radius: 15px;
           }
 
+          .details-modal-actions > button[title] {
+            order: -1;
+          }
+
           .details-modal-actions > div {
             justify-content: center;
             border-radius: 18px;
@@ -5636,6 +5668,126 @@ export default function Home({
           }
         }
 
+        /* Mobile polish: keep current layout, but make the side shelves readable */
+        @media (max-width: 768px) {
+          .featured-side-rail.hidden,
+          .featured-side-rail {
+            width: min(100% - 28px, 430px) !important;
+            max-width: 430px !important;
+            gap: 14px !important;
+            margin-top: 20px !important;
+          }
+
+          .featured-roulette,
+          .featured-roulette.is-recent {
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            border-radius: 22px !important;
+            border-color: rgba(255,255,255,0.14) !important;
+            background:
+              linear-gradient(180deg, rgba(255,255,255,0.072), rgba(255,255,255,0.024)),
+              rgba(9,9,9,0.94) !important;
+            box-shadow:
+              0 20px 48px rgba(0,0,0,0.52),
+              inset 0 1px 0 rgba(255,255,255,0.10) !important;
+          }
+
+          .featured-roulette-head {
+            min-height: 48px !important;
+            padding: 12px 16px 10px !important;
+          }
+
+          .featured-roulette-title {
+            max-width: 260px !important;
+            font-size: 10px !important;
+            letter-spacing: 0.30em !important;
+          }
+
+          .featured-roulette-count {
+            padding: 6px 11px !important;
+            font-size: 11px !important;
+          }
+
+          .featured-roulette-track,
+          .featured-roulette.is-recent .featured-roulette-track {
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: 162px !important;
+            gap: 8px !important;
+            padding: 11px 12px !important;
+          }
+
+          .featured-roulette-item,
+          .featured-roulette.is-recent .featured-roulette-item {
+            grid-template-columns: 46px minmax(0, 1fr) !important;
+            min-height: 58px !important;
+            height: 58px !important;
+            gap: 11px !important;
+            padding: 7px 10px !important;
+            border-radius: 15px !important;
+          }
+
+          .featured-roulette-poster,
+          .featured-roulette.is-recent .featured-roulette-poster {
+            width: 46px !important;
+            height: 46px !important;
+            border-radius: 11px !important;
+          }
+
+          .featured-roulette-number {
+            width: 18px !important;
+            height: 18px !important;
+            font-size: 8px !important;
+          }
+
+          .featured-roulette-name strong,
+          .featured-roulette.is-recent .featured-roulette-name strong {
+            font-size: 12px !important;
+            line-height: 1.12 !important;
+          }
+
+          .featured-roulette-name span,
+          .featured-roulette.is-recent .featured-roulette-name span {
+            gap: 5px !important;
+            margin-top: 4px !important;
+            font-size: 9px !important;
+          }
+
+          .featured-roulette-foot {
+            min-height: 48px !important;
+            grid-template-columns: 36px minmax(0, 1fr) 36px !important;
+            padding: 8px 14px 10px !important;
+          }
+
+          .featured-roulette-arrow {
+            width: 34px !important;
+            height: 34px !important;
+            font-size: 18px !important;
+          }
+
+          .featured-roulette-hint {
+            font-size: 9px !important;
+            letter-spacing: 0.02em !important;
+          }
+        }
+
+        @media (max-width: 420px) {
+          .featured-side-rail.hidden,
+          .featured-side-rail {
+            width: calc(100vw - 24px) !important;
+          }
+        }
+
+        .featured-side-rail.hidden,
+        .featured-side-rail {
+          display: none !important;
+        }
+
+        .featured-roulette-hint {
+          display: none !important;
+        }
+
 
       `}</style>
 
@@ -6185,10 +6337,6 @@ export default function Home({
             Новинки 2026
           </h3>
 
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-neutral-500">
-            Оригинальные обложки, ровная лента и компактная карточка: описание,
-            жанры и кнопки теперь держат одну визуальную линию.
-          </p>
         </div>
 
         <div className="movie-row-area relative">
@@ -6227,83 +6375,26 @@ export default function Home({
         </div>
       </section>
 
-      <section className="mobile-section px-8 py-12">
-        <div className="mobile-section-head mb-6 flex items-end justify-between gap-4">
-          <div>
-            <h3 className="text-2xl font-bold">Популярное сейчас</h3>
-            <p className="mt-2 text-sm text-neutral-500">
-              Найдено: {filteredContent.length}
-            </p>
-          </div>
-
-          {(selectedType !== "Все" || selectedGenre !== "Все") && (
-            <button
-              onClick={() => {
-                setSelectedType("Все");
-                setSelectedGenre("Все");
-              }}
-              className="rounded border border-white/10 px-4 py-2 text-sm font-bold text-neutral-300 transition duration-200 hover:bg-white hover:text-black"
-            >
-              Сбросить
-            </button>
-          )}
-        </div>
-
-        {filteredContent.length > 0 ? (
-          <>
-            <div className="mobile-grid grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-              {popularContent.map((item, index) => (
-                <MovieCard
-                  key={item.id}
-                  item={item}
-                  index={index}
-                  isWatchLater={watchLaterIds.includes(item.id)}
-                  onOpenDetails={openDetails}
-                  onOpenTrailer={openTrailer}
-                />
-              ))}
-            </div>
-
-            {hasMorePopularContent && (
-              <div className="kinoluma-more-button-wrap">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setPopularVisibleRows((currentRows) => currentRows + 4)
-                  }
-                  className="kinoluma-more-button"
-                >
-                  <span>Ещё</span>
-
-                  <span
-                    className="kinoluma-more-button-icon"
-                    aria-hidden="true"
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      className="h-4 w-4"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M7 10L12 15L17 10" />
-                    </svg>
-                  </span>
-                </button>
-              </div>
-            )}
-          </>
-        ) : (
+      {popularShelfContent.length > 0 ? (
+        <MovieShelf
+          label=""
+          title={normalizedSearch ? "Результаты поиска" : "Популярное сейчас"}
+          description=""
+          items={popularShelfContent}
+          watchLaterIds={watchLaterIds}
+          onOpenDetails={openDetails}
+          onOpenTrailer={openTrailer}
+        />
+      ) : (
+        <section className="mobile-section px-8 py-12">
           <div className="rounded-xl border border-white/10 bg-neutral-950 p-10 text-center">
             <h4 className="text-xl font-bold">Ничего не найдено</h4>
             <p className="mt-2 text-neutral-500">
               Попробуй написать название на русском или английском.
             </p>
           </div>
-        )}
-      </section>
+        </section>
+      )}
 
       <section className="mobile-section px-8 pb-16">
         <div className="mb-6">

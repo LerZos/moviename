@@ -9,7 +9,7 @@ import {
   type MovieFact,
   type PlayerProvider,
 } from "../../data/movies";
-import { supabaseAdmin } from "../supabase/admin";
+import { hasRealSupabaseAdminCredentials, supabaseAdmin } from "../supabase/admin";
 
 export type MovieOverrideData = Partial<Movie> & Record<string, unknown>;
 
@@ -87,6 +87,10 @@ function getErrorMessage(error: unknown) {
 
 function warnSupabaseReadFallback(scope: string, error: unknown) {
   console.warn(`${scope}: ${getErrorMessage(error)}. Используем данные из movies.ts без Supabase-overrides.`);
+}
+
+function shouldDisableSupabaseReadsDuringBuild() {
+  return process.env.KINOLUMA_DISABLE_SUPABASE_DURING_BUILD === "true";
 }
 
 function shouldLoadPublishedDraftMovies() {
@@ -463,11 +467,15 @@ function draftToMovie(draft: MovieDraftRow): Movie | null {
     longDescription: cleanString(draft.long_description) || undefined,
     facts: getDraftFacts(draft),
     cast: getDraftCast(draft),
-    players: players.length ? players : DEFAULT_PLAYERS,
+    players: players.length ? players : undefined,
   } as Movie & Record<string, unknown>;
 }
 
 async function getPublishedDraftMovies() {
+  if (!hasRealSupabaseAdminCredentials()) {
+    return [];
+  }
+
   if (!shouldLoadPublishedDraftMovies()) {
     return [];
   }
@@ -502,6 +510,10 @@ async function getPublishedDraftMovies() {
 }
 
 async function getMovieOverridesBySlugs(slugs: string[]) {
+  if (!hasRealSupabaseAdminCredentials() || shouldDisableSupabaseReadsDuringBuild()) {
+    return new Map<string, MovieOverrideData>();
+  }
+
   if (!slugs.length) return new Map<string, MovieOverrideData>();
 
   const result = new Map<string, MovieOverrideData>();
@@ -658,6 +670,10 @@ export async function getPublicBaseMovieBySlug(
 export async function getMovieOverrideData(
   slug: string,
 ): Promise<MovieOverrideData | null> {
+  if (!hasRealSupabaseAdminCredentials() || shouldDisableSupabaseReadsDuringBuild()) {
+    return null;
+  }
+
   try {
     const { data, error } = await supabaseAdmin
       .from("movie_overrides")

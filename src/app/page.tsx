@@ -11,6 +11,55 @@ import { getDailyFeaturedDateKey, getDailyFeaturedItems } from "./lib/home/daily
 // точечно через существующие серверные маршруты.
 export const revalidate = 86400;
 
+const HOME_MOVIES_PER_TYPE = 90;
+const HOME_TOP_RATED_LIMIT = 180;
+const HOME_NEW_RELEASES_LIMIT = 70;
+
+function compactHomeText(text: string, maxLength = 190) {
+  const normalized = text.replace(/\s+/g, " ").trim();
+  if (normalized.length <= maxLength) return normalized;
+
+  return `${normalized.slice(0, maxLength).replace(/\s+\S*$/, "")}...`;
+}
+
+function getMovieYear(movie: Movie) {
+  const match = String(movie.year || "").match(/\d{4}/);
+  return match ? Number(match[0]) : 0;
+}
+
+function pushUniqueMovie(target: Movie[], seenIds: Set<number>, movie: Movie) {
+  if (seenIds.has(movie.id)) return;
+
+  seenIds.add(movie.id);
+  target.push(movie);
+}
+
+function getHomeMoviePool(movies: Movie[], featured: Movie[]) {
+  const selected: Movie[] = [];
+  const seenIds = new Set<number>();
+
+  featured.forEach((movie) => pushUniqueMovie(selected, seenIds, movie));
+
+  movies
+    .filter((movie) => getMovieYear(movie) === 2026)
+    .slice(0, HOME_NEW_RELEASES_LIMIT)
+    .forEach((movie) => pushUniqueMovie(selected, seenIds, movie));
+
+  movies
+    .filter((movie) => movie.rating > 0)
+    .sort((first, second) => second.rating - first.rating)
+    .slice(0, HOME_TOP_RATED_LIMIT)
+    .forEach((movie) => pushUniqueMovie(selected, seenIds, movie));
+
+  ["Фильм", "Сериал", "Аниме", "Мультфильм"].forEach((type) => {
+    movies
+      .filter((movie) => movie.type === type)
+      .slice(0, HOME_MOVIES_PER_TYPE)
+      .forEach((movie) => pushUniqueMovie(selected, seenIds, movie));
+  });
+
+  return selected;
+}
 
 function getHomeClientContent(movies: Movie[]) {
   return movies.map((movie) => ({
@@ -18,7 +67,7 @@ function getHomeClientContent(movies: Movie[]) {
     slug: movie.slug,
     title: movie.title,
     originalTitle: movie.originalTitle,
-    searchTitles: movie.searchTitles,
+    searchTitles: movie.searchTitles.slice(0, 8),
     type: movie.type,
     year: movie.year,
     rating: movie.rating,
@@ -26,13 +75,12 @@ function getHomeClientContent(movies: Movie[]) {
     poster: movie.poster,
     backdrop: movie.backdrop,
     posterFallbacks: movie.posterFallbacks,
-    description: movie.description,
+    description: compactHomeText(movie.description),
     trailerUrl: movie.trailerUrl,
     tmdbId: movie.tmdbId,
     imdbId: movie.imdbId,
     kinopoiskId: movie.kinopoiskId,
     source: movie.source,
-    facts: movie.facts,
   }));
 }
 
@@ -85,8 +133,10 @@ export const metadata: Metadata = {
 
 export default async function Page() {
   const publicMovies = await getCachedPublicMovies();
-  const homeClientContent = getHomeClientContent(publicMovies);
   const dailyFeatured = getDailyFeaturedItems(publicMovies);
+  const homeClientContent = getHomeClientContent(
+    getHomeMoviePool(publicMovies, dailyFeatured),
+  );
   const dailyFeaturedDateKey = getDailyFeaturedDateKey();
 
   return (

@@ -52,7 +52,10 @@ function normalizeImdbId(value: unknown) {
 }
 
 function getSafeApiBaseUrl() {
-  const rawUrl = cleanText(process.env.VIBIX_API_URL) || "https://vibix.org";
+  const rawUrl =
+    cleanText(process.env.EXIIM_API_URL) ||
+    cleanText(process.env.VIBIX_API_URL) ||
+    "https://vibix.org";
   return rawUrl.replace(/\/+$/, "");
 }
 
@@ -145,7 +148,9 @@ function normalizeRendexContentType(
 
 async function fetchVibixVideo(path: string) {
   const token = cleanText(
-    process.env.VIBIX_API_TOKEN || process.env.RENDEX_API_TOKEN,
+    process.env.EXIIM_API_TOKEN ||
+      process.env.VIBIX_API_TOKEN ||
+      process.env.RENDEX_API_TOKEN,
   );
 
   if (!token) {
@@ -172,6 +177,25 @@ function buildRendexPlayer(
   video: VibixVideo | null,
   fallbackMovieType: unknown,
 ) {
+  const rawIframeUrl = cleanText(video?.iframe_url || video?.iframeUrl);
+  if (rawIframeUrl) {
+    const iframeUrl = `${rawIframeUrl}${rawIframeUrl.includes("?") ? "&" : "?"}sharing=false&episodesOpen=false`;
+    const contentId =
+      getRendexDataId(video) ||
+      cleanNumberId(video?.kp_id || video?.kinopoisk_id) ||
+      cleanText(video?.imdb_id);
+
+    return {
+      id: `exiim-${contentId}`,
+      name: "Exiim",
+      type: "vibix-iframe",
+      provider: "exiim",
+      embedUrl: iframeUrl,
+      contentType: normalizeRendexContentType(video?.type, fallbackMovieType),
+      contentId,
+    };
+  }
+
   const contentId = getRendexDataId(video);
   if (!contentId) return null;
 
@@ -193,7 +217,7 @@ export async function GET(request: Request) {
   const imdbId = normalizeImdbId(url.searchParams.get("imdbId"));
   const movieType = cleanText(url.searchParams.get("movieType"));
 
-  if (!process.env.VIBIX_API_TOKEN && !process.env.RENDEX_API_TOKEN) {
+  if (!process.env.EXIIM_API_TOKEN && !process.env.VIBIX_API_TOKEN && !process.env.RENDEX_API_TOKEN) {
     return NextResponse.json(
       { ok: false, error: "VIBIX_API_TOKEN не задан на сервере" },
       { status: 503 },
