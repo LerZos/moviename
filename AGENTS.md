@@ -2,6 +2,10 @@
 
 These instructions apply to the entire repository. Detailed context lives in docs/ARCHITECTURE.md, docs/PRODUCTION.md, and docs/DESIGN_SYSTEM.md.
 
+## AI team routing
+
+Project-wide role selection and handoff rules live in `docs/AI_TEAM.md`. When the active role is DEV or a task changes this repository, every rule below remains mandatory. MARKETING and SHORTS may inspect technical context but must not change production code; implementation is handed to DEV only after explicit user permission.
+
 ## Working rules
 
 - Inspect relevant code and Git state before editing. Preserve user changes.
