@@ -20,6 +20,11 @@ import {
   getKinopoiskPoster,
   getTmdbPoster,
 } from "../lib/imageLinks";
+import {
+  requireCanonicalMovieIdBySlug,
+  type CanonicalMovieId,
+} from "./canonicalIdentity";
+import { applyCanonicalMovieMetadata } from "./canonicalMovieMetadata";
 
 export type ContentType = "Фильм" | "Сериал" | "Аниме" | "Мультфильм" | "Документальный";
 
@@ -59,7 +64,9 @@ export type PlayerProvider = {
 
 export type Movie = {
   id: number;
+  canonicalMovieId?: CanonicalMovieId;
   kinopoiskId?: number;
+  tmdbNamespace?: "movie" | "tv";
   slug: string;
   title: string;
   originalTitle: string;
@@ -76,6 +83,11 @@ export type Movie = {
   tmdbId?: number;
   imdbId?: string;
   countries?: string[];
+  runtime?: number;
+  releaseDate?: string;
+  releaseStatus?: string;
+  seasons?: number;
+  episodes?: number;
   source?: string;
   seoTitle?: string;
   seoDescription?: string;
@@ -85,6 +97,8 @@ export type Movie = {
   cast?: CastMember[];
   players?: PlayerProvider[];
 };
+
+export type CanonicalMovie = Movie & { canonicalMovieId: CanonicalMovieId };
 
 function createKinopoiskPlayers(kinopoiskId: number): PlayerProvider[] {
   const id = String(kinopoiskId);
@@ -133,6 +147,29 @@ function appendMovieFact(movie: Movie, label: string, value?: string | number | 
   }
 
   movie.facts.push({ label, value: textValue });
+}
+
+function formatCanonicalReleaseDate(value?: string) {
+  const match = value?.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return match ? `${match[3]}.${match[2]}.${match[1]}` : value;
+}
+
+function formatCanonicalReleaseStatus(value?: string) {
+  if (!value) return value;
+
+  const labels: Record<string, string> = {
+    released: "Релиз состоялся",
+    ended: "Завершён",
+    canceled: "Закрыт",
+    cancelled: "Закрыт",
+    returning: "Продолжается",
+    upcoming: "Ожидается",
+    planned: "Запланирован",
+    "in production": "В производстве",
+    "post-production": "Постпродакшен",
+  };
+
+  return labels[value.trim().toLowerCase()] ?? value;
 }
 
 function getReadableContentType(movie: Movie) {
@@ -340,6 +377,12 @@ function hydrateMovieContent(movie: Movie) {
   appendMovieFact(movie, "Год", movie.year);
   appendMovieFact(movie, "Тип", movie.type);
   appendMovieFact(movie, "Жанры", movie.genres.join(", "));
+  appendMovieFact(movie, "Страна", movie.countries?.join(", "));
+  appendMovieFact(movie, "Длительность", movie.runtime ? `${movie.runtime} мин` : null);
+  appendMovieFact(movie, "Дата выхода", formatCanonicalReleaseDate(movie.releaseDate));
+  appendMovieFact(movie, "Статус", formatCanonicalReleaseStatus(movie.releaseStatus));
+  appendMovieFact(movie, "Сезоны", movie.seasons);
+  appendMovieFact(movie, "Эпизоды", movie.episodes);
 
   const hasTrustedExternalPoster =
     !!movie.poster &&
@@ -992,6 +1035,7 @@ const moviesRaw: Movie[] = [
       id: 15,
       kinopoiskId: 958722,
       tmdbId: 372058,
+      tmdbNamespace: "movie",
       imdbId: "tt5311514",
       slug: "your-name",
       title: "Твоё имя",
@@ -2722,6 +2766,9 @@ const moviesRaw: Movie[] = [
   {
       id: 55,
       kinopoiskId: 963343,
+      tmdbId: 378064,
+      tmdbNamespace: "movie",
+      imdbId: "tt5323662",
       slug: "a-silent-voice",
       title: "Форма голоса",
       originalTitle: "A Silent Voice",
@@ -2760,6 +2807,9 @@ const moviesRaw: Movie[] = [
   {
       id: 56,
       kinopoiskId: 370,
+      tmdbId: 129,
+      tmdbNamespace: "movie",
+      imdbId: "tt0245429",
       slug: "spirited-away",
       title: "Унесённые призраками",
       originalTitle: "Spirited Away",
@@ -9479,7 +9529,8 @@ const moviesRaw: Movie[] = [
   },
   {
     id: 207,
-    tmdbId: 755898,
+    tmdbId: 1242898,
+    tmdbNamespace: "movie",
     imdbId: "tt31227572",
     slug: "predator-badlands",
     title: "Хищник: Планета смерти",
@@ -9490,7 +9541,7 @@ const moviesRaw: Movie[] = [
     rating: 0.0,
     genres: ["Фантастика", "Боевик", "Триллер"],
     countries: ["США"],
-    poster: getTmdbPoster({ tmdbId: 755898, imdbId: "tt31227572", title: "Хищник: Планета смерти", originalTitle: "Predator: Badlands", year: "2025", type: "Фильм" }),
+    poster: getTmdbPoster({ tmdbId: 1242898, imdbId: "tt31227572", title: "Хищник: Планета смерти", originalTitle: "Predator: Badlands", year: "2025", type: "Фильм" }),
     description: "Новая история во вселенной «Хищника», действие которой переносит охоту на другую планету.",
     trailerUrl: "",
     longDescription: "«Хищник: Планета смерти» — фильм 2025 года. Новая история во вселенной «Хищника», действие которой переносит охоту на другую планету. Карточка добавлена в KinoLuma как часть расширения франшиз: постер и варианты просмотра подключаются через внутренний каталог без лишних технических деталей для зрителя.",
@@ -15903,9 +15954,19 @@ function isUniquePublicMovie(movie: Movie) {
   return true;
 }
 
-export const movies: Movie[] = moviesRaw
+const canonicalBaseMovies: CanonicalMovie[] = moviesRaw
   .filter(isPublicCatalogMovie)
-  .filter(isUniquePublicMovie);
+  .filter(isUniquePublicMovie)
+  .map((movie) => ({
+    ...movie,
+    canonicalMovieId: requireCanonicalMovieIdBySlug(movie.slug),
+  }));
+
+export function getCanonicalBaseMoviesForMetadataGeneration(): readonly CanonicalMovie[] {
+  return canonicalBaseMovies;
+}
+
+export const movies: Movie[] = canonicalBaseMovies.map(applyCanonicalMovieMetadata);
 
 
 movies.forEach((movie) => {

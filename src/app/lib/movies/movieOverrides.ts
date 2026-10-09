@@ -569,6 +569,24 @@ function getSafeOverrideRating(baseRating: number, overrideRating: unknown) {
   return roundRating(normalizedRating);
 }
 
+function replaceManualMetadataFact(
+  movie: Movie,
+  labels: string[],
+  label: string,
+  value: string | number | null | undefined,
+) {
+  const normalizedLabels = new Set(labels.map((item) => item.toLocaleLowerCase("ru")));
+  const facts = (movie.facts ?? []).filter(
+    (fact) => !normalizedLabels.has(fact.label.toLocaleLowerCase("ru")),
+  );
+
+  if (value !== undefined && value !== null && value !== "") {
+    facts.push({ label, value: String(value) });
+  }
+
+  movie.facts = facts;
+}
+
 function applyOverride(
   movie: Movie,
   override: MovieOverrideData | null | undefined,
@@ -580,10 +598,61 @@ function applyOverride(
     ...override,
     id: movie.id,
     slug: movie.slug,
+    canonicalMovieId: movie.canonicalMovieId,
   } as Movie;
 
   if (Object.prototype.hasOwnProperty.call(override, "rating")) {
     mergedMovie.rating = getSafeOverrideRating(movie.rating, override.rating);
+  }
+
+  if (Object.prototype.hasOwnProperty.call(override, "runtime")) {
+    const runtime = getNumber(override.runtime);
+    replaceManualMetadataFact(
+      mergedMovie,
+      ["Длительность", "Хронометраж", "Время"],
+      "Длительность",
+      runtime && runtime > 0 ? `${Math.round(runtime)} мин` : null,
+    );
+  }
+  if (Object.prototype.hasOwnProperty.call(override, "releaseDate")) {
+    replaceManualMetadataFact(
+      mergedMovie,
+      ["Дата выхода", "Дата релиза", "Премьера"],
+      "Дата выхода",
+      cleanString(override.releaseDate) || null,
+    );
+  }
+  if (Object.prototype.hasOwnProperty.call(override, "releaseStatus")) {
+    replaceManualMetadataFact(
+      mergedMovie,
+      ["Статус", "Статус релиза"],
+      "Статус",
+      cleanString(override.releaseStatus) || null,
+    );
+  }
+  if (Object.prototype.hasOwnProperty.call(override, "countries")) {
+    replaceManualMetadataFact(
+      mergedMovie,
+      ["Страна", "Страны"],
+      "Страна",
+      cleanStringArray(override.countries).join(", ") || null,
+    );
+  }
+  if (Object.prototype.hasOwnProperty.call(override, "seasons")) {
+    replaceManualMetadataFact(
+      mergedMovie,
+      ["Сезоны", "Количество сезонов"],
+      "Сезоны",
+      getNumber(override.seasons),
+    );
+  }
+  if (Object.prototype.hasOwnProperty.call(override, "episodes")) {
+    replaceManualMetadataFact(
+      mergedMovie,
+      ["Эпизоды", "Серии", "Количество эпизодов"],
+      "Эпизоды",
+      getNumber(override.episodes),
+    );
   }
 
   return mergedMovie;
