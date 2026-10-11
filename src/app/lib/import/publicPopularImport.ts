@@ -1,6 +1,6 @@
 import { movies } from "../../data/movies";
 import { mergeAutoPlayersIntoRawJson } from "../players";
-import { supabaseAdmin } from "../supabase/admin";
+import { getSupabaseAdmin } from "../supabase/admin";
 import { generateSlug } from "./generateSlug";
 import type { MovieType } from "./types";
 
@@ -313,7 +313,7 @@ async function loadExisting() {
   const imdbIds = new Set<string>();
 
   for (let from = 0; from < 5000; from += 1000) {
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await getSupabaseAdmin()
       .from("movie_drafts")
       .select("slug,title,year,kinopoisk_id,imdb_id")
       .range(from, from + 999);
@@ -452,13 +452,13 @@ async function insertMovies(moviesToInsert: PreparedMovie[]) {
     moderation_notes: "Быстрая автопубликация из Kinopoisk.dev. Плееры Collapse + Factorios по Kinopoisk ID. Vibix/Rendex не добавлялся.",
   }));
 
-  const { error } = await supabaseAdmin.from("movie_drafts").insert(rows);
+  const { error } = await getSupabaseAdmin().from("movie_drafts").insert(rows);
   if (error) throw error;
 }
 
 export async function publishPopularMovies(options: PublishPopularOptions = {}) {
   const normalizedOptions = normalizeOptions(options);
-  const runInsert = await supabaseAdmin
+  const runInsert = await getSupabaseAdmin()
     .from("movie_import_runs")
     .insert({
       status: "running",
@@ -536,7 +536,7 @@ export async function publishPopularMovies(options: PublishPopularOptions = {}) 
       rating: movie.rating,
     }));
 
-    await supabaseAdmin
+    await getSupabaseAdmin()
       .from("movie_import_runs")
       .update({
         status: "finished",
@@ -557,7 +557,7 @@ export async function publishPopularMovies(options: PublishPopularOptions = {}) 
 
     return { runId, ...normalizedOptions, ...stats };
   } catch (error) {
-    await supabaseAdmin
+    await getSupabaseAdmin()
       .from("movie_import_runs")
       .update({
         status: "failed",

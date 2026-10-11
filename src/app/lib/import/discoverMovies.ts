@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '../supabase/admin';
+import { getSupabaseAdmin } from '../supabase/admin';
 import { buildCandidateDuplicateInput, findDuplicateMovie, serializeDuplicateMatch } from './duplicateGuard';
 import { tmdbFetch } from './tmdb';
 import type { MovieType } from './types';
@@ -131,7 +131,7 @@ function buildEndpoints() {
 }
 
 async function refreshNewCandidateRawJson(candidate: NormalizedCandidate) {
-  const { error } = await supabaseAdmin
+  const { error } = await getSupabaseAdmin()
     .from('import_candidates')
     .update({
       title: candidate.title,
@@ -153,7 +153,7 @@ async function markExistingCandidateAsDuplicate(candidate: NormalizedCandidate, 
     ? candidate.raw_json
     : {};
 
-  const { error } = await supabaseAdmin
+  const { error } = await getSupabaseAdmin()
     .from('import_candidates')
     .update({
       status: 'duplicate',
@@ -171,7 +171,7 @@ async function markExistingCandidateAsDuplicate(candidate: NormalizedCandidate, 
 }
 
 export async function discoverMovies() {
-  const runInsert = await supabaseAdmin
+  const runInsert = await getSupabaseAdmin()
     .from('movie_import_runs')
     .insert({ status: 'running', log: [{ message: 'TMDB discovery started', at: new Date().toISOString() }] })
     .select('id')
@@ -224,7 +224,7 @@ export async function discoverMovies() {
     }
 
     if (freshCandidates.length > 0) {
-      const { error } = await supabaseAdmin
+      const { error } = await getSupabaseAdmin()
         .from('import_candidates')
         .upsert(freshCandidates, {
           onConflict: 'source,source_id',
@@ -236,7 +236,7 @@ export async function discoverMovies() {
       await Promise.all(freshCandidates.map((candidate) => refreshNewCandidateRawJson(candidate)));
     }
 
-    await supabaseAdmin
+    await getSupabaseAdmin()
       .from('movie_import_runs')
       .update({
         status: 'finished',
@@ -264,7 +264,7 @@ export async function discoverMovies() {
       skippedUnsafeCount,
     };
   } catch (error) {
-    await supabaseAdmin
+    await getSupabaseAdmin()
       .from('movie_import_runs')
       .update({
         status: 'failed',

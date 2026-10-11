@@ -1,4 +1,4 @@
-import { supabaseAdmin } from "../supabase/admin";
+import { getSupabaseAdmin } from "../supabase/admin";
 import { checkDuplicates } from "./checkDuplicates";
 import { fetchMovieFacts } from "./fetchMovieFacts";
 import { findTrailer } from "./findTrailer";
@@ -12,7 +12,7 @@ function asRecord(value: unknown): Record<string, unknown> {
 }
 
 export async function createMovieDraft(candidate: ImportCandidate) {
-  await supabaseAdmin
+  await getSupabaseAdmin()
     .from("import_candidates")
     .update({ status: "processing" })
     .eq("id", candidate.id);
@@ -20,7 +20,7 @@ export async function createMovieDraft(candidate: ImportCandidate) {
   const facts = await fetchMovieFacts(candidate);
 
   if (!facts.kinopoiskId) {
-    await supabaseAdmin
+    await getSupabaseAdmin()
       .from("import_candidates")
       .delete()
       .eq("id", candidate.id);
@@ -46,7 +46,7 @@ export async function createMovieDraft(candidate: ImportCandidate) {
   });
 
   if (duplicate.isDuplicate) {
-    await supabaseAdmin
+    await getSupabaseAdmin()
       .from("import_candidates")
       .update({
         status: "duplicate",
@@ -71,7 +71,7 @@ export async function createMovieDraft(candidate: ImportCandidate) {
     movieType: facts.type,
   });
 
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await getSupabaseAdmin()
     .from("movie_drafts")
     .insert({
       title: facts.title,
@@ -110,7 +110,7 @@ export async function createMovieDraft(candidate: ImportCandidate) {
     .single();
 
   if (error) {
-    await supabaseAdmin
+    await getSupabaseAdmin()
       .from("import_candidates")
       .update({ status: "failed", updated_at: new Date().toISOString() })
       .eq("id", candidate.id);
@@ -118,7 +118,7 @@ export async function createMovieDraft(candidate: ImportCandidate) {
     throw error;
   }
 
-  await supabaseAdmin
+  await getSupabaseAdmin()
     .from("import_candidates")
     .update({ status: "drafted", updated_at: new Date().toISOString() })
     .eq("id", candidate.id);

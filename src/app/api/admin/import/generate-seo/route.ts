@@ -1,6 +1,6 @@
 import { assertAdminSecret } from '../../../../lib/import/adminAuth';
 import { generateMovieSeo } from '../../../../lib/ai/generateMovieSeo';
-import { supabaseAdmin } from '../../../../lib/supabase/admin';
+import { getSupabaseAdmin } from '../../../../lib/supabase/admin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { data: draft, error: draftError } = await supabaseAdmin
+    const { data: draft, error: draftError } = await getSupabaseAdmin()
       .from('movie_drafts')
       .select('*')
       .eq('id', draftId)
@@ -78,7 +78,7 @@ export async function POST(request: Request) {
       updated_at: new Date().toISOString(),
     };
 
-    const { data: updatedDraft, error: updateError } = await supabaseAdmin
+    const { data: updatedDraft, error: updateError } = await getSupabaseAdmin()
       .from('movie_drafts')
       .update(update)
       .eq('id', draftId)
@@ -87,7 +87,7 @@ export async function POST(request: Request) {
 
     if (updateError) throw updateError;
 
-    const { error: feedbackError } = await supabaseAdmin.from('agent_feedback').insert({
+    const { error: feedbackError } = await getSupabaseAdmin().from('agent_feedback').insert({
       draft_id: draftId,
       agent_name: 'openai_seo_agent',
       decision: 'generated_seo',

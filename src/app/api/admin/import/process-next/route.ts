@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '../../../../lib/supabase/admin';
+import { getSupabaseAdmin } from '../../../../lib/supabase/admin';
 import { assertAdminSecret } from '../../../../lib/import/adminAuth';
 import { createMovieDraft } from '../../../../lib/import/createMovieDraft';
 import type { ImportCandidate } from '../../../../lib/import/types';
@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     const body = await request.json().catch(() => ({}));
     const candidateId = typeof body.candidateId === 'string' ? body.candidateId : null;
 
-    let query = supabaseAdmin
+    let query = getSupabaseAdmin()
       .from('import_candidates')
       .select('*')
       .order('created_at', { ascending: true })

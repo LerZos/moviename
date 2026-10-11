@@ -11,7 +11,13 @@ function cleanText(value: string | null | undefined) {
   return (value || "").trim();
 }
 
-function getMediaType(type: string | null | undefined) {
+function getMediaType(
+  mediaType: string | null | undefined,
+  type: string | null | undefined,
+) {
+  const explicitMediaType = cleanText(mediaType).toLowerCase();
+  if (explicitMediaType === "movie" || explicitMediaType === "tv") return explicitMediaType;
+
   const value = cleanText(type).toLowerCase();
   if (value.includes("сериал") || value === "tv" || value === "series") return "tv";
   return "movie";
@@ -392,7 +398,10 @@ export async function GET(request: Request) {
   const directPoster = cleanText(searchParams.get("posterUrl"));
   if (isSafeExternalPosterUrl(directPoster)) return redirectTo(directPoster);
 
-  const mediaType = getMediaType(searchParams.get("type")) as "movie" | "tv";
+  const mediaType = getMediaType(
+    searchParams.get("mediaType"),
+    searchParams.get("type"),
+  ) as "movie" | "tv";
   const input = {
     mediaType,
     tmdbId: cleanText(searchParams.get("tmdbId")),

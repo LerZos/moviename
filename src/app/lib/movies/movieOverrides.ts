@@ -9,7 +9,7 @@ import {
   type MovieFact,
   type PlayerProvider,
 } from "../../data/movies";
-import { hasRealSupabaseAdminCredentials, supabaseAdmin } from "../supabase/admin";
+import { hasRealSupabaseAdminCredentials, getSupabaseAdmin } from "../supabase/admin";
 
 export type MovieOverrideData = Partial<Movie> & Record<string, unknown>;
 
@@ -481,7 +481,7 @@ async function getPublishedDraftMovies() {
   }
 
   try {
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await getSupabaseAdmin()
       .from("movie_drafts")
       .select(
         "id, title, original_title, slug, year, type, genres, poster_url, backdrop_url, tmdb_id, kinopoisk_id, imdb_id, actors, directors, description, long_description, trailer_url, trailer_embed_url, quality_score, raw_json, status, created_at, updated_at",
@@ -524,7 +524,7 @@ async function getMovieOverridesBySlugs(slugs: string[]) {
   // Поэтому грузим overrides маленькими пачками и не роняем публичный каталог.
   for (const slugChunk of chunkArray(uniqueSlugs, 80)) {
     try {
-      const { data, error } = await supabaseAdmin
+      const { data, error } = await getSupabaseAdmin()
         .from("movie_overrides")
         .select("slug, data")
         .in("slug", slugChunk);
@@ -704,7 +704,7 @@ export async function getPublicBaseMovieBySlug(
   }
 
   try {
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await getSupabaseAdmin()
       .from("movie_drafts")
       .select(
         "id, title, original_title, slug, year, type, genres, poster_url, backdrop_url, tmdb_id, kinopoisk_id, imdb_id, actors, directors, description, long_description, trailer_url, trailer_embed_url, quality_score, raw_json, status, created_at, updated_at",
@@ -744,7 +744,7 @@ export async function getMovieOverrideData(
   }
 
   try {
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await getSupabaseAdmin()
       .from("movie_overrides")
       .select("data")
       .eq("slug", slug)
@@ -796,7 +796,7 @@ export async function saveMovieOverride(
   data: MovieOverrideData,
   updatedBy: string,
 ) {
-  const { error } = await supabaseAdmin.from("movie_overrides").upsert(
+  const { error } = await getSupabaseAdmin().from("movie_overrides").upsert(
     {
       slug,
       data,

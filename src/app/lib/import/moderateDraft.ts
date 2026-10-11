@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '../supabase/admin';
+import { getSupabaseAdmin } from '../supabase/admin';
 import { checkDuplicates } from './checkDuplicates';
 
 type DraftRow = {
@@ -25,7 +25,7 @@ function jsonArrayLength(value: unknown): number {
 }
 
 export async function moderateDraft(draftId: string) {
-  const { data: draft, error } = await supabaseAdmin
+  const { data: draft, error } = await getSupabaseAdmin()
     .from('movie_drafts')
     .select('*')
     .eq('id', draftId)
@@ -84,7 +84,7 @@ export async function moderateDraft(draftId: string) {
   const qualityScore = Math.max(0, Math.min(100, score));
   const status = qualityScore >= 90 ? 'ready' : qualityScore >= 70 ? 'needs_review' : 'rejected';
 
-  const { data: updated, error: updateError } = await supabaseAdmin
+  const { data: updated, error: updateError } = await getSupabaseAdmin()
     .from('movie_drafts')
     .update({
       status,

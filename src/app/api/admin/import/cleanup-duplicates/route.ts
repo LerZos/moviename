@@ -4,7 +4,7 @@ import {
   findDuplicateMovie,
   serializeDuplicateMatch,
 } from '../../../../lib/import/duplicateGuard';
-import { supabaseAdmin } from '../../../../lib/supabase/admin';
+import { getSupabaseAdmin } from '../../../../lib/supabase/admin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -48,7 +48,7 @@ function readBoolean(value: unknown) {
 async function markCandidateDuplicate(candidate: CandidateRow, duplicate: unknown) {
   const rawJson = asRecord(candidate.raw_json);
 
-  const { error } = await supabaseAdmin
+  const { error } = await getSupabaseAdmin()
     .from('import_candidates')
     .update({
       status: 'duplicate',
@@ -65,7 +65,7 @@ async function markCandidateDuplicate(candidate: CandidateRow, duplicate: unknow
 }
 
 async function hardDeleteCandidate(candidateId: string) {
-  const { error } = await supabaseAdmin
+  const { error } = await getSupabaseAdmin()
     .from('import_candidates')
     .delete()
     .eq('id', candidateId);
@@ -80,7 +80,7 @@ async function softDeleteDraft(
 ) {
   const rawJson = asRecord(draft.raw_json);
 
-  const { error } = await supabaseAdmin
+  const { error } = await getSupabaseAdmin()
     .from('movie_drafts')
     .update({
       status: 'deleted',
@@ -101,7 +101,7 @@ async function cleanupCandidateDuplicates(options: {
   includeAllCandidateStatuses: boolean;
   deleteCandidateDuplicates: boolean;
 }) {
-  let query = supabaseAdmin
+  let query = getSupabaseAdmin()
     .from('import_candidates')
     .select('id, source_id, title, original_title, year, status, raw_json')
     .order('created_at', { ascending: true })
@@ -153,7 +153,7 @@ async function cleanupCandidateDuplicates(options: {
 }
 
 async function cleanupDraftDuplicatesAgainstStaticMovies() {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await getSupabaseAdmin()
     .from('movie_drafts')
     .select('id, title, original_title, slug, year, tmdb_id, kinopoisk_id, imdb_id, status, raw_json')
     .neq('status', 'deleted')
@@ -208,7 +208,7 @@ async function cleanupDraftDuplicatesAgainstStaticMovies() {
 async function hardDeleteCandidatesByStatus(statuses: string[]) {
   if (!statuses.length) return { deleted: 0 };
 
-  const { data, error: readError } = await supabaseAdmin
+  const { data, error: readError } = await getSupabaseAdmin()
     .from('import_candidates')
     .select('id')
     .in('status', statuses)
@@ -222,7 +222,7 @@ async function hardDeleteCandidatesByStatus(statuses: string[]) {
 
   if (!ids.length) return { deleted: 0 };
 
-  const { error: deleteError } = await supabaseAdmin
+  const { error: deleteError } = await getSupabaseAdmin()
     .from('import_candidates')
     .delete()
     .in('id', ids);
@@ -233,7 +233,7 @@ async function hardDeleteCandidatesByStatus(statuses: string[]) {
 }
 
 async function cleanupDraftsWithoutKinopoisk() {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await getSupabaseAdmin()
     .from('movie_drafts')
     .select('id, title, original_title, slug, year, tmdb_id, kinopoisk_id, imdb_id, status, raw_json')
     .neq('status', 'deleted')
@@ -271,7 +271,7 @@ async function cleanupDraftsWithoutKinopoisk() {
 }
 
 async function cleanupRejectedDrafts() {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await getSupabaseAdmin()
     .from('movie_drafts')
     .select('id, title, original_title, slug, year, tmdb_id, kinopoisk_id, imdb_id, status, raw_json')
     .eq('status', 'rejected')

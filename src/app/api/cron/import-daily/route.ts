@@ -4,7 +4,7 @@ import { discoverMovies } from '../../../lib/import/discoverMovies';
 import { moderateDraft } from '../../../lib/import/moderateDraft';
 import type { ImportCandidate } from '../../../lib/import/types';
 import { generateTemplateMovieSeo } from '../../../lib/seo/generateTemplateMovieSeo';
-import { supabaseAdmin } from '../../../lib/supabase/admin';
+import { getSupabaseAdmin } from '../../../lib/supabase/admin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -68,7 +68,7 @@ function getCandidateSkipReason(candidate: ImportCandidate) {
 async function rejectUnsafeCandidate(candidate: ImportCandidate, reason: string) {
   const raw = asRecord(candidate.raw_json);
 
-  await supabaseAdmin
+  await getSupabaseAdmin()
     .from('import_candidates')
     .update({
       status: 'rejected',
@@ -102,7 +102,7 @@ function mergeTemplateSeoIntoRawJson(rawJson: unknown, templateSeo: unknown) {
 }
 
 async function generateFreeTemplateSeoForDraft(draftId: string) {
-  const { data: draft, error: draftError } = await supabaseAdmin
+  const { data: draft, error: draftError } = await getSupabaseAdmin()
     .from('movie_drafts')
     .select('*')
     .eq('id', draftId)
@@ -127,7 +127,7 @@ async function generateFreeTemplateSeoForDraft(draftId: string) {
     updated_at: nowIso(),
   };
 
-  const { data: updatedDraft, error: updateError } = await supabaseAdmin
+  const { data: updatedDraft, error: updateError } = await getSupabaseAdmin()
     .from('movie_drafts')
     .update(update)
     .eq('id', draftId)
@@ -136,7 +136,7 @@ async function generateFreeTemplateSeoForDraft(draftId: string) {
 
   if (updateError) throw updateError;
 
-  const { error: feedbackError } = await supabaseAdmin.from('agent_feedback').insert({
+  const { error: feedbackError } = await getSupabaseAdmin().from('agent_feedback').insert({
     draft_id: draftId,
     agent_name: 'daily_import_template_seo_agent',
     decision: 'generated_template_seo',
@@ -157,7 +157,7 @@ async function generateFreeTemplateSeoForDraft(draftId: string) {
 }
 
 async function getNewCandidates(limit: number, log: DailyImportLogItem[]) {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await getSupabaseAdmin()
     .from('import_candidates')
     .select('*')
     .eq('status', 'new')
@@ -194,7 +194,7 @@ async function getNewCandidates(limit: number, log: DailyImportLogItem[]) {
 }
 
 async function createDailyRun(limit: number) {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await getSupabaseAdmin()
     .from('movie_import_runs')
     .insert({
       status: 'running',
@@ -222,7 +222,7 @@ async function finishDailyRun(
   createdDraftsCount: number,
   failedCount: number,
 ) {
-  const { error } = await supabaseAdmin
+  const { error } = await getSupabaseAdmin()
     .from('movie_import_runs')
     .update({
       status,

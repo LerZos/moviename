@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { UserRound } from "lucide-react";
 
 import MobileBottomNav from "./components/MobileBottomNav";
 import type { Movie } from "./data/movies";
 import { supabase } from "./lib/supabase";
 import { canResolveTrailerUrl, resolveTrailerUrl } from "./lib/trailers";
+import { getHomeCatalogPathWithType, homeGenreRoutes } from "./lib/home/homeCatalogRoutes";
 import {
   emptyMovieActionState,
   getCurrentSupabaseUser,
@@ -24,6 +25,7 @@ import {
 } from "./lib/home/dailyFeatured";
 
 import {
+  Fragment,
   type Dispatch,
   type FormEvent,
   type ReactNode,
@@ -60,6 +62,9 @@ type HomeProps = {
   initialContent?: ContentItem[];
   initialFeaturedIds?: number[];
   initialFeaturedDateKey?: string;
+  initialGenre?: string;
+  initialPage?: number;
+  initialType?: string;
 };
 
 type MovieCardProps = {
@@ -1146,8 +1151,10 @@ export default function Home({
   initialContent,
   initialFeaturedIds,
   initialFeaturedDateKey,
+  initialGenre = "Все",
+  initialPage = 1,
+  initialType = "Все",
 }: HomeProps) {
-  const router = useRouter();
   const content = useMemo(() => initialContent ?? [], [initialContent]);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const filmsSectionRef = useRef<HTMLElement | null>(null);
@@ -1158,8 +1165,11 @@ export default function Home({
   const [serverSearchResults, setServerSearchResults] = useState<ContentItem[]>([]);
   const [serverSearchQuery, setServerSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [selectedType, setSelectedType] = useState("Все");
-  const [selectedGenre, setSelectedGenre] = useState("Все");
+  const [selectedType, setSelectedType] = useState(initialType);
+  const [selectedGenre, setSelectedGenre] = useState(initialGenre);
+  const [pressedGenre, setPressedGenre] = useState<string | null>(null);
+  const [pressedType, setPressedType] = useState<string | null>(null);
+  const [desktopCatalogPage, setDesktopCatalogPage] = useState(Math.max(1, initialPage));
   const [selectedItem, setSelectedItem] = useState<ContentItem | null>(null);
   const [trailerItem, setTrailerItem] = useState<ContentItem | null>(null);
   const [isDetailsClosing, setIsDetailsClosing] = useState(false);
@@ -1212,6 +1222,8 @@ export default function Home({
   const activeMovieRowRef = useRef<HTMLDivElement | null>(null);
   const featuredRouletteRef = useRef<HTMLDivElement | null>(null);
   const recentRouletteRef = useRef<HTMLDivElement | null>(null);
+  const desktopWatchRailRef = useRef<HTMLDivElement | null>(null);
+  const desktopRailFrameRef = useRef<number | null>(null);
 
   const featuredContentPool = useMemo(() => {
     const featuredFromServer = dailyFeaturedIds
@@ -1244,6 +1256,7 @@ export default function Home({
   }, [content, featuredContentPoolKey]);
 
   const [featuredIndex, setFeaturedIndex] = useState(0);
+  const [desktopRailProgressKey, setDesktopRailProgressKey] = useState(0);
 
   const featuredContent =
     featuredContentPool[
@@ -1387,6 +1400,202 @@ export default function Home({
   const popularShelfContent = useMemo(() => {
     return filteredContent.slice(0, 18);
   }, [filteredContent]);
+
+  const desktopWatchingContent = useMemo(() => {
+    const uniqueItems: ContentItem[] = [];
+    const seenIds = new Set<ContentItem["id"]>();
+    const sourceItems = [
+      ...featuredContentPool,
+      ...recentlyUpdatedPool,
+      ...content,
+    ];
+
+    sourceItems.forEach((item) => {
+      if (seenIds.has(item.id)) {
+        return;
+      }
+
+      seenIds.add(item.id);
+      uniqueItems.push(item);
+    });
+
+    return uniqueItems.slice(0, 24);
+  }, [content, featuredContentPool, recentlyUpdatedPool]);
+
+  const desktopRailItems = useMemo(() => {
+    return [...desktopWatchingContent, ...desktopWatchingContent];
+  }, [desktopWatchingContent]);
+  const desktopCatalogPageSize = 9;
+  const desktopCatalogTotalPages = Math.max(
+    1,
+    Math.ceil(filteredContent.length / desktopCatalogPageSize),
+  );
+  const desktopCatalogSafePage = Math.min(
+    desktopCatalogPage,
+    desktopCatalogTotalPages,
+  );
+  const desktopCatalogPageItems = useMemo(() => {
+    const start = (desktopCatalogSafePage - 1) * desktopCatalogPageSize;
+    return filteredContent.slice(start, start + desktopCatalogPageSize);
+  }, [desktopCatalogSafePage, filteredContent]);
+  const desktopCatalogSignature = useMemo(() => {
+    return desktopCatalogPageItems.map((item) => item.id).join("-");
+  }, [desktopCatalogPageItems]);
+  const [displayedDesktopCatalogItems, setDisplayedDesktopCatalogItems] =
+    useState<ContentItem[]>(() => desktopCatalogPageItems);
+  const [isDesktopCatalogSwitching, setIsDesktopCatalogSwitching] = useState(false);
+
+  useEffect(() => {
+    const currentSignature = displayedDesktopCatalogItems.map((item) => item.id).join("-");
+
+    if (currentSignature === desktopCatalogSignature) {
+      setIsDesktopCatalogSwitching(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setDisplayedDesktopCatalogItems(desktopCatalogPageItems);
+      window.requestAnimationFrame(() => setIsDesktopCatalogSwitching(false));
+    }, 90);
+
+    return () => window.clearTimeout(timer);
+  }, [desktopCatalogPageItems, desktopCatalogSignature, displayedDesktopCatalogItems]);
+  const desktopCatalogPageNumbers = useMemo(() => {
+    const pages = new Set<number>([1, desktopCatalogTotalPages]);
+    for (let page = desktopCatalogSafePage - 2; page <= desktopCatalogSafePage + 2; page += 1) {
+      if (page >= 1 && page <= desktopCatalogTotalPages) {
+        pages.add(page);
+      }
+    }
+    return Array.from(pages).sort((a, b) => a - b);
+  }, [desktopCatalogSafePage, desktopCatalogTotalPages]);
+
+  useEffect(() => {
+    if (!normalizedSearch) {
+      return;
+    }
+
+    setDesktopCatalogPage(1);
+  }, [normalizedSearch]);
+  const smoothScrollDesktopRail = (direction: -1 | 1) => {
+    const rail = desktopWatchRailRef.current;
+
+    if (!rail || desktopRailItems.length <= 1) {
+      return;
+    }
+
+    if (desktopRailFrameRef.current !== null) {
+      window.cancelAnimationFrame(desktopRailFrameRef.current);
+      desktopRailFrameRef.current = null;
+    }
+
+    const loopWidth = rail.scrollWidth / 2;
+    const canLoop = loopWidth > rail.clientWidth + 12;
+
+    if (canLoop && direction < 0 && rail.scrollLeft <= 4) {
+      rail.scrollLeft += loopWidth;
+    }
+
+    if (canLoop && direction > 0 && rail.scrollLeft >= loopWidth - 4) {
+      rail.scrollLeft -= loopWidth;
+    }
+
+    const card = rail.querySelector<HTMLElement>(".desktop-mock-rail-card");
+    const cardWidth = card ? card.getBoundingClientRect().width : 156;
+    const stepWidth = Math.max(cardWidth * 2.5, rail.clientWidth * 0.64);
+    const startLeft = rail.scrollLeft;
+    const rawTarget = startLeft + direction * stepWidth;
+    const maxLeft = Math.max(0, rail.scrollWidth - rail.clientWidth);
+    const targetLeft = canLoop ? rawTarget : Math.min(maxLeft, Math.max(0, rawTarget));
+    const distance = targetLeft - startLeft;
+    const duration = 1120;
+    const startTime = window.performance.now();
+
+    if (Math.abs(distance) < 2) {
+      return;
+    }
+
+    setDesktopRailProgressKey((key) => key + 1);
+
+    const easeInOut = (progress: number) =>
+      progress < 0.5
+        ? 4 * progress * progress * progress
+        : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+
+    const step = (currentTime: number) => {
+      const progress = Math.min((currentTime - startTime) / duration, 1);
+      rail.scrollLeft = startLeft + distance * easeInOut(progress);
+
+      if (progress < 1) {
+        desktopRailFrameRef.current = window.requestAnimationFrame(step);
+        return;
+      }
+
+      if (canLoop && rail.scrollLeft >= loopWidth) {
+        rail.scrollLeft -= loopWidth;
+      }
+
+      if (canLoop && rail.scrollLeft < 0) {
+        rail.scrollLeft += loopWidth;
+      }
+
+      desktopRailFrameRef.current = null;
+    };
+
+    desktopRailFrameRef.current = window.requestAnimationFrame(step);
+  };
+
+  useEffect(() => {
+    const rail = desktopWatchRailRef.current;
+
+    if (rail) {
+      rail.scrollLeft = 0;
+    }
+
+    setDesktopRailProgressKey((key) => key + 1);
+
+    const timer = window.setInterval(() => {
+      smoothScrollDesktopRail(1);
+    }, 8000);
+
+    return () => {
+      window.clearInterval(timer);
+
+      if (desktopRailFrameRef.current !== null) {
+        window.cancelAnimationFrame(desktopRailFrameRef.current);
+        desktopRailFrameRef.current = null;
+      }
+    };
+  }, [desktopRailItems.length]);
+
+  const updateHomeCatalogAddress = (genre: string, page: number, type: string) => {
+    const nextPath = getHomeCatalogPathWithType(genre, page, type);
+
+    if (window.location.pathname + window.location.search !== nextPath) {
+      window.history.pushState(null, "", nextPath);
+    }
+  };
+
+  const changeDesktopCatalogPage = (nextPage: number | ((page: number) => number)) => {
+    const resolvedPage = typeof nextPage === "function" ? nextPage(desktopCatalogSafePage) : nextPage;
+    const safePage = Math.min(desktopCatalogTotalPages, Math.max(1, resolvedPage));
+
+    setDesktopCatalogPage(safePage);
+    updateHomeCatalogAddress(selectedGenre, safePage, selectedType);
+    window.setTimeout(() => {
+      const mobileCatalog = document.querySelector(".mobile-v2-catalog-section");
+      const desktopCatalog = document.querySelector(".desktop-mock-layout");
+      const catalog = window.matchMedia("(max-width: 1180px)").matches ? mobileCatalog : desktopCatalog;
+
+      if (!catalog) {
+        return;
+      }
+
+      const offset = window.matchMedia("(max-width: 520px)").matches ? 96 : 118;
+      const targetTop = catalog.getBoundingClientRect().top + window.scrollY - offset;
+      window.scrollTo({ top: Math.max(0, targetTop), behavior: "smooth" });
+    }, 30);
+  };
 
   const searchSuggestions = useMemo(() => {
     if (!normalizedSearch) {
@@ -1599,7 +1808,7 @@ export default function Home({
     const cleanPassword = authPassword.trim();
 
     if (!cleanEmail.includes("@") || !cleanEmail.includes(".")) {
-      setAuthError("Введите нормальный email. Роботы тоже любят порядок.");
+      setAuthError("Введите нормальный email.");
       return;
     }
 
@@ -1616,15 +1825,25 @@ export default function Home({
         return;
       }
 
-      const { data, error } = await supabase.auth.signUp({
-        email: cleanEmail,
-        password: cleanPassword,
-        options: {
-          data: {
-            name: cleanName,
+      let data;
+      let error;
+
+      try {
+        const result = await supabase.auth.signUp({
+          email: cleanEmail,
+          password: cleanPassword,
+          options: {
+            data: {
+              name: cleanName,
+            },
           },
-        },
-      });
+        });
+        data = result.data;
+        error = result.error;
+      } catch {
+        setAuthError("Не удалось подключиться к Supabase. Попробуй ещё раз через пару секунд.");
+        return;
+      }
 
       if (error) {
         setAuthError(error.message);
@@ -1649,10 +1868,20 @@ export default function Home({
       return;
     }
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: cleanEmail,
-      password: cleanPassword,
-    });
+    let data;
+    let error;
+
+    try {
+      const result = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password: cleanPassword,
+      });
+      data = result.data;
+      error = result.error;
+    } catch {
+      setAuthError("Не удалось подключиться к Supabase. Попробуй ещё раз через пару секунд.");
+      return;
+    }
 
     if (error || !data.user) {
       setAuthError(error?.message || "Неверный email или пароль.");
@@ -1847,9 +2076,48 @@ export default function Home({
     rowScrollAnimationFrameRef.current = window.requestAnimationFrame(animate);
   }
 
+  function handleGenreClick(genre: string) {
+    setPressedGenre(genre);
+
+    if (genre === selectedGenre) {
+      window.setTimeout(() => {
+        setPressedGenre((current) => (current === genre ? null : current));
+      }, 180);
+      return;
+    }
+
+    setIsDesktopCatalogSwitching(true);
+    setSelectedGenre(genre);
+    setDesktopCatalogPage(1);
+    updateHomeCatalogAddress(genre, 1, selectedType);
+
+    window.setTimeout(() => {
+      setPressedGenre((current) => (current === genre ? null : current));
+    }, 180);
+  }
+
   function handleTypeClick(type: string) {
+    const availableGenres = getGenresForType(type, content);
+    const nextGenre = availableGenres.includes(selectedGenre) ? selectedGenre : "Все";
+
+    setPressedType(type);
+
+    if (type === selectedType) {
+      window.setTimeout(() => {
+        setPressedType((current) => (current === type ? null : current));
+      }, 180);
+      return;
+    }
+
+    setIsDesktopCatalogSwitching(true);
     setSelectedType(type);
-    setSelectedGenre("Все");
+    setSelectedGenre(nextGenre);
+    setDesktopCatalogPage(1);
+    updateHomeCatalogAddress(nextGenre, 1, type);
+
+    window.setTimeout(() => {
+      setPressedType((current) => (current === type ? null : current));
+    }, 180);
   }
 
   function highlightCategorySection(section: HTMLElement | null) {
@@ -1950,13 +2218,10 @@ export default function Home({
   }
 
   function openCatalogPage(type: string) {
-    const slug = catalogSlugByType[type];
-
-    if (!slug) {
-      return;
-    }
-
-    router.push(`/catalog/${slug}`);
+    setSelectedType(type);
+    setSelectedGenre("Все");
+    setDesktopCatalogPage(1);
+    updateHomeCatalogAddress("Все", 1, type);
   }
 
   function openDetails(item: ContentItem) {
@@ -1981,7 +2246,7 @@ export default function Home({
   function openContent(item: ContentItem) {
     if (!item.slug) return;
 
-    window.location.assign(`/movie/${item.slug}#player`);
+    window.location.assign(`/movie/${item.slug}`);
   }
 
   async function openTrailer(item: ContentItem) {
@@ -2537,7 +2802,7 @@ export default function Home({
           content: "";
           position: absolute;
           inset: 1px;
-          z-index: -1;
+          z-index: 0;
           border-radius: inherit;
           background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0));
           pointer-events: none;
@@ -5788,6 +6053,1352 @@ export default function Home({
           display: none !important;
         }
 
+        /* Desktop mockup transfer: mockup structure with KinoLuma skin */
+        .desktop-mock-home { display: none; }
+
+        @media (min-width: 1181px) {
+          .kinoluma-home > .mobile-hero,
+          .kinoluma-home > .mobile-filters-section,
+          .kinoluma-home > .mobile-section { display: none !important; }
+          .desktop-mock-home {
+            display: block;
+            padding: 116px clamp(32px, 4.5vw, 72px) 72px;
+            background:
+              radial-gradient(900px 520px at 18% 0%, rgba(255,255,255,0.075), transparent 58%),
+              radial-gradient(760px 460px at 86% 12%, rgba(170,176,190,0.08), transparent 62%),
+              linear-gradient(180deg, #040404 0%, #09090a 42%, #030303 100%);
+          }
+          .desktop-mock-shell { width: min(1320px, 100%); margin: 0 auto; }
+          .desktop-mock-section-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 22px; margin: 24px 0 13px; }
+          .desktop-watch-section { position: relative; }
+          .desktop-mock-section-head-tight { margin-top: 0; padding-right: 0; }
+          .desktop-mock-eyebrow { color: rgba(255,255,255,0.44); font-size: 10px; font-weight: 900; letter-spacing: 0.32em; text-transform: uppercase; }
+          .desktop-mock-title { margin-top: 7px; color: #fff; font-size: 27px; font-weight: 1000; letter-spacing: -0.052em; line-height: 1; }
+          .desktop-mock-count { margin-top: 8px; color: rgba(255,255,255,0.46); font-size: 13px; font-weight: 800; }
+          .desktop-mock-panel { border: 1px solid rgba(255,255,255,0.115); border-radius: 28px; background: radial-gradient(circle at 18% 0%, rgba(255,255,255,0.085), transparent 38%), linear-gradient(180deg, rgba(255,255,255,0.052), rgba(255,255,255,0.018)), rgba(8,8,9,0.88); box-shadow: 0 28px 86px rgba(0,0,0,0.50), inset 0 1px 0 rgba(255,255,255,0.085); backdrop-filter: blur(18px); }
+
+          .desktop-mock-rail-controls { position: absolute; z-index: 8; inset: 58px 16px 13px; display: flex; align-items: center; justify-content: space-between; gap: 10px; opacity: 0; pointer-events: none; transition: opacity 220ms ease; }
+          .desktop-watch-section:hover .desktop-mock-rail-controls { opacity: 1; }
+          .desktop-mock-rail-controls button { display: grid; width: 46px; height: 46px; place-items: center; border: 1px solid rgba(255,255,255,0.15); border-radius: 999px; background: rgba(8,8,9,0.72); color: #fff; font-size: 18px; font-weight: 900; box-shadow: 0 18px 46px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.10); backdrop-filter: blur(14px); pointer-events: auto; transition: transform 180ms ease, background 180ms ease, color 180ms ease, border-color 180ms ease; }
+          .desktop-mock-rail-controls button:hover { transform: scale(1.06); border-color: #fff; background: #fff; color: #050505; }
+          .desktop-mock-rail-progress { position: absolute; left: 28px; right: 28px; bottom: 0; display: block; height: 4px; overflow: hidden; border-radius: 999px; background: rgba(255,255,255,0.08); opacity: 0.78; }
+          .desktop-mock-rail-progress i { position: absolute; inset: 0 auto 0 0; width: 100%; transform-origin: left center; border-radius: inherit; background: #fff; box-shadow: 0 0 14px rgba(255,255,255,0.22); animation: kinolumaDesktopRailProgress 8s linear infinite; }
+          @keyframes kinolumaDesktopRailProgress { 0% { transform: scaleX(0); opacity: 0.68; } 12% { opacity: 1; } 100% { transform: scaleX(1); opacity: 1; } }
+          .desktop-mock-rail { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(158px, 176px); grid-template-columns: none; gap: 12px; overflow-x: auto; overscroll-behavior-x: contain; scroll-behavior: smooth; scroll-snap-type: x mandatory; padding: 16px 16px 22px; scrollbar-width: none; }
+          .desktop-mock-rail::-webkit-scrollbar { display: none; }
+          .desktop-mock-rail-card { position: relative; min-width: 158px; overflow: hidden; scroll-snap-align: start; border: 1px solid rgba(255,255,255,0.12); border-radius: 19px; background: #0f1012; color: #fff; text-align: left; box-shadow: 0 18px 44px rgba(0,0,0,0.34); transition: transform 190ms ease, border-color 190ms ease, box-shadow 190ms ease; }
+          .desktop-mock-rail-card:hover { transform: translateY(-4px); border-color: rgba(255,255,255,0.30); box-shadow: 0 26px 66px rgba(0,0,0,0.50); }
+          .desktop-mock-rail-card img { display: block; width: 100%; aspect-ratio: 2 / 2.78; object-fit: cover; filter: saturate(0.9) contrast(1.04); transition: transform 240ms ease; }
+          .desktop-mock-rail-card:hover img { transform: scale(1.035); }
+          .desktop-mock-rail-card span { position: absolute; inset: auto 0 0; padding: 54px 12px 12px; background: linear-gradient(transparent, rgba(0,0,0,0.94)); }
+          .desktop-mock-rail-card strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 1000; }
+          .desktop-mock-rail-card em { display: block; margin-top: 4px; color: rgba(255,255,255,0.58); font-size: 11px; font-style: normal; font-weight: 850; }
+
+          .desktop-mock-genres { display: flex; flex-wrap: wrap; justify-content: center; max-width: 940px; margin: 0 auto; gap: 8px; padding: 13px; }
+          .desktop-mock-genre { min-height: 42px; border: 1px solid rgba(255,255,255,0.12); border-radius: 999px; background: linear-gradient(180deg, rgba(255,255,255,0.060), rgba(255,255,255,0.020)); padding: 0 18px; color: rgba(255,255,255,0.70); font-size: 12px; font-weight: 950; transition: transform 170ms ease, background 170ms ease, color 170ms ease, border-color 170ms ease, box-shadow 170ms ease; }
+          .desktop-mock-genre:hover, .desktop-mock-genre.is-active { transform: translateY(-2px); border-color: #fff; background: #fff; color: #050505; box-shadow: 0 16px 38px rgba(255,255,255,0.08); }
+
+          .desktop-mock-layout { display: grid; grid-template-columns: minmax(0, 940px) 330px; justify-content: center; gap: 18px; align-items: start; margin-top: 22px; }
+          .desktop-mock-content { width: 100%; max-width: 940px; justify-self: center; padding: 14px; }
+          .desktop-mock-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 5px 4px 15px; margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.075); }
+          .desktop-mock-tabs { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+          .desktop-mock-tab { min-height: 36px; border: 1px solid rgba(255,255,255,0.12); border-radius: 999px; background: rgba(255,255,255,0.035); padding: 0 15px; color: rgba(255,255,255,0.62); font-size: 12px; font-weight: 950; transition: transform 170ms ease, background 170ms ease, color 170ms ease, border-color 170ms ease; }
+          .desktop-mock-tab:hover, .desktop-mock-tab.is-active { transform: translateY(-1px); border-color: rgba(255,255,255,0.96); background: #fff; color: #050505; }
+          .desktop-mock-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 258px)); justify-content: center; gap: 14px; animation: kinolumaCatalogFade 360ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+          .desktop-mock-card { width: 100%; max-width: 258px; min-width: 0; justify-self: center; overflow: hidden; border: 1px solid rgba(255,255,255,0.12); border-radius: 22px; background: linear-gradient(180deg, rgba(255,255,255,0.040), rgba(255,255,255,0.014)), #080809; color: inherit; text-align: left; box-shadow: 0 18px 52px rgba(0,0,0,0.38), inset 0 1px 0 rgba(255,255,255,0.06); animation: kinolumaCardIn 420ms cubic-bezier(0.22, 1, 0.36, 1) both; transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1), border-color 210ms ease, box-shadow 210ms ease, background 210ms ease; }
+          .desktop-mock-card:hover { transform: translateY(-6px); border-color: rgba(255,255,255,0.30); background: linear-gradient(180deg, rgba(255,255,255,0.066), rgba(255,255,255,0.018)), #09090a; box-shadow: 0 28px 78px rgba(0,0,0,0.58), inset 0 1px 0 rgba(255,255,255,0.11); }
+          .desktop-mock-card:nth-child(2) { animation-delay: 35ms; }
+          .desktop-mock-card:nth-child(3) { animation-delay: 70ms; }
+          .desktop-mock-card:nth-child(4) { animation-delay: 95ms; }
+          .desktop-mock-card:nth-child(5) { animation-delay: 120ms; }
+          .desktop-mock-card:nth-child(6) { animation-delay: 145ms; }
+          .desktop-mock-card:nth-child(7) { animation-delay: 165ms; }
+          .desktop-mock-card:nth-child(8) { animation-delay: 185ms; }
+          .desktop-mock-card:nth-child(9) { animation-delay: 205ms; }
+          @keyframes kinolumaCatalogFade { from { opacity: 0; transform: translateY(12px); filter: blur(8px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
+          @keyframes kinolumaCardIn { from { opacity: 0; transform: translateY(16px) scale(0.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+          .desktop-mock-card-poster { position: relative; overflow: hidden; background: #111; }
+          .desktop-mock-card-poster::after { content: ""; position: absolute; inset: auto 0 0; height: 34%; background: linear-gradient(180deg, transparent, rgba(0,0,0,0.76)); pointer-events: none; }
+          .desktop-mock-card-poster img { display: block; width: 100%; aspect-ratio: 2 / 3; object-fit: cover; filter: saturate(0.90) contrast(1.04); transition: transform 260ms ease, filter 260ms ease; }
+          .desktop-mock-card:hover .desktop-mock-card-poster img { transform: scale(1.035); filter: saturate(1) contrast(1.08); }
+          .desktop-mock-card-type, .desktop-mock-card-rating { position: absolute; z-index: 3; top: 12px; border-radius: 999px; padding: 8px 11px; font-size: 11px; font-weight: 1000; line-height: 1; letter-spacing: -0.01em; }
+          .desktop-mock-card-type { left: 12px; background: rgba(3,3,3,0.74); color: #fff; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12); backdrop-filter: blur(12px); }
+          .desktop-mock-card-rating { right: 12px; min-width: 48px; text-align: center; background: rgba(3,3,3,0.74); color: #ffd76a; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12), 0 12px 30px rgba(0,0,0,0.32); backdrop-filter: blur(12px); font-size: 12px; }
+          .desktop-mock-card-body { display: grid; gap: 9px; padding: 16px 15px 18px; border-top: 1px solid rgba(255,255,255,0.08); background: linear-gradient(180deg, rgba(255,255,255,0.018), rgba(255,255,255,0.006)); }
+          .desktop-mock-card h3 { display: -webkit-box; min-height: 38px; margin: 0; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; color: #fff; font-size: 17px; font-weight: 1000; letter-spacing: -0.025em; line-height: 1.08; }
+          .desktop-mock-card-body p { margin: -2px 0 0; overflow: hidden; color: rgba(255,255,255,0.42); font-size: 12px; font-weight: 850; text-overflow: ellipsis; white-space: nowrap; }
+          .desktop-mock-meta { display: flex; justify-content: space-between; gap: 12px; color: rgba(255,255,255,0.50); font-size: 12px; font-weight: 950; }
+          .desktop-mock-meta span:last-child { overflow: hidden; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
+          .desktop-mock-pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 7px; width: fit-content; max-width: 100%; margin: 18px auto 0; padding: 12px 14px 2px; }
+          .desktop-mock-pagination button, .desktop-mock-page-gap { min-width: 36px; height: 36px; display: inline-grid; place-items: center; border: 1px solid rgba(255,255,255,0.14); border-radius: 9px; background: rgba(255,255,255,0.040); padding: 0 10px; color: rgba(255,255,255,0.78); font-size: 12px; font-weight: 950; }
+          .desktop-mock-pagination button:hover:not(:disabled), .desktop-mock-pagination button.is-active { border-color: #fff; background: #fff; color: #050505; }
+          .desktop-mock-pagination button:disabled { cursor: not-allowed; opacity: 0.35; }
+          .desktop-mock-page-gap { color: rgba(255,255,255,0.42); }
+
+          .desktop-mock-sidebar { display: flex; flex-direction: column; gap: 14px; }
+          .desktop-mock-side-panel { padding: 16px; }
+          .desktop-mock-side-panel { background: radial-gradient(circle at 74% 0%, rgba(255,255,255,0.13), transparent 36%), linear-gradient(180deg, rgba(255,255,255,0.060), rgba(255,255,255,0.018)), rgba(8,8,9,0.88); }
+          .desktop-mock-side-featured { background: radial-gradient(circle at 74% 0%, rgba(255,255,255,0.13), transparent 36%), linear-gradient(180deg, rgba(255,255,255,0.060), rgba(255,255,255,0.018)), rgba(8,8,9,0.88); }
+          .desktop-mock-side-title { margin: 5px 0 13px; color: #fff; font-size: 20px; font-weight: 1000; letter-spacing: -0.04em; }
+          .desktop-mock-side-item { display: grid; grid-template-columns: 32px 64px minmax(0, 1fr); gap: 12px; align-items: center; width: 100%; border: 1px solid transparent; border-top-color: rgba(255,255,255,0.075); border-radius: 15px; background: transparent; padding: 10px 8px; color: #fff; text-align: left; transition: background 170ms ease, border-color 170ms ease, transform 170ms ease; }
+          .desktop-mock-side-item:first-of-type { border-top-color: transparent; }
+          .desktop-mock-side-item:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.14); background: rgba(255,255,255,0.050); }
+          .desktop-mock-rank { display: grid; width: 30px; height: 30px; place-items: center; border: 1px solid rgba(255,255,255,0.14); border-radius: 999px; background: rgba(255,255,255,0.045); font-size: 11px; font-weight: 1000; }
+          .desktop-mock-side-item img { width: 64px; height: 88px; border-radius: 12px; object-fit: cover; box-shadow: 0 14px 28px rgba(0,0,0,0.36); }
+          .desktop-mock-side-item strong { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; font-size: 13px; font-weight: 1000; line-height: 1.2; }
+          .desktop-mock-side-item small { display: block; margin-top: 6px; color: rgba(255,255,255,0.50); font-size: 11px; font-weight: 850; }
+          .desktop-mock-collection-item { grid-template-columns: 32px 58px minmax(0, 1fr); text-decoration: none; }
+          .desktop-mock-collection-mark { position: relative; display: grid; width: 58px; height: 58px; place-items: center; overflow: hidden; border: 1px solid rgba(255,255,255,0.11); border-radius: 16px; background: radial-gradient(circle at 34% 22%, rgba(255,255,255,0.14), transparent 38%), linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02)); color: #fff; font-size: 12px; font-weight: 1000; box-shadow: 0 16px 34px rgba(0,0,0,0.30); }
+          .desktop-mock-collection-mark img { width: 32px; height: 32px; object-fit: contain; opacity: 0.92; filter: drop-shadow(0 8px 18px rgba(255,255,255,0.10)); }
+          .desktop-mock-collection-mark em { position: absolute; right: 5px; bottom: 4px; max-width: 48px; overflow: hidden; color: rgba(255,255,255,0.72); font-size: 8px; font-style: normal; font-weight: 1000; letter-spacing: -0.02em; text-overflow: ellipsis; white-space: nowrap; }
+          .desktop-mock-side-link { display: inline-flex; align-items: center; gap: 7px; margin-top: 12px; border: 1px solid rgba(255,255,255,0.12); border-radius: 999px; padding: 9px 12px; color: rgba(255,255,255,0.82); font-size: 12px; font-weight: 950; text-decoration: none; transition: transform 180ms ease, border-color 180ms ease, background 180ms ease, color 180ms ease; }
+          .desktop-mock-side-link:hover { transform: translateY(-1px); border-color: rgba(255,255,255,0.24); background: rgba(255,255,255,0.06); color: #fff; }
+          .desktop-mock-telegram-banner { position: relative; display: grid; grid-template-columns: 54px minmax(0, 1fr) 36px; align-items: center; gap: 13px; overflow: hidden; padding: 16px; color: #fff; text-decoration: none; isolation: isolate; transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1), border-color 220ms ease, box-shadow 220ms ease, background 220ms ease; }
+          .desktop-mock-telegram-banner::before { content: ""; position: absolute; inset: 0; z-index: 0; background: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.16), transparent 32%), radial-gradient(circle at 82% 0%, rgba(127,139,170,0.22), transparent 40%), linear-gradient(135deg, rgba(255,255,255,0.075), rgba(255,255,255,0.018)); opacity: 0.9; transition: opacity 220ms ease, transform 420ms cubic-bezier(0.22, 1, 0.36, 1); }
+          .desktop-mock-telegram-banner:hover { transform: translateY(-3px); border-color: rgba(255,255,255,0.22); box-shadow: 0 28px 76px rgba(0,0,0,0.56), 0 0 30px rgba(255,255,255,0.045), inset 0 1px 0 rgba(255,255,255,0.12); }
+          .desktop-mock-telegram-banner:hover::before { opacity: 1; transform: scale(1.04); }
+          .desktop-mock-telegram-orbit { position: absolute; right: -34px; top: -44px; width: 124px; height: 124px; border: 1px solid rgba(255,255,255,0.10); border-radius: 999px; box-shadow: inset 0 0 34px rgba(255,255,255,0.035); opacity: 0.74; }
+          .desktop-mock-telegram-mark { display: grid; width: 54px; height: 54px; place-items: center; border: 1px solid rgba(255,255,255,0.13); border-radius: 17px; background: radial-gradient(circle at 32% 18%, rgba(255,255,255,0.22), transparent 38%), linear-gradient(145deg, rgba(255,255,255,0.10), rgba(255,255,255,0.025)); font-size: 13px; font-weight: 1000; box-shadow: 0 18px 42px rgba(0,0,0,0.36); }
+          .desktop-mock-telegram-mark img { width: 36px; height: 36px; object-fit: contain; filter: drop-shadow(0 10px 20px rgba(255,255,255,0.12)); }
+          .desktop-mock-telegram-copy { display: grid; gap: 5px; min-width: 0; }
+          .desktop-mock-telegram-copy .desktop-mock-eyebrow { font-size: 9px; letter-spacing: 0.28em; }
+          .desktop-mock-telegram-copy strong { font-size: 18px; font-weight: 1000; letter-spacing: -0.035em; }
+          .desktop-mock-telegram-copy small { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; color: rgba(255,255,255,0.52); font-size: 11px; font-weight: 800; line-height: 1.35; }
+          .desktop-mock-telegram-arrow { display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid rgba(255,255,255,0.13); border-radius: 999px; background: rgba(255,255,255,0.055); font-size: 18px; font-weight: 950; transition: transform 220ms ease, background 220ms ease, color 220ms ease; }
+          .desktop-mock-telegram-banner:hover .desktop-mock-telegram-arrow { transform: translateX(2px); background: #fff; color: #050505; }}        /* Desktop home polish based on the balanced catalog mockup */
+        @media (min-width: 1181px) {
+          .kinoluma-home {
+            background:
+              radial-gradient(circle at 18% 0%, rgba(255,255,255,0.075), transparent 30%),
+              radial-gradient(circle at 86% 16%, rgba(140,148,170,0.10), transparent 34%),
+              linear-gradient(180deg, #050505 0%, #000000 42%, #050505 100%) !important;
+          }
+
+          .mobile-header {
+            min-height: 84px;
+            padding-inline: clamp(28px, 4vw, 64px);
+            background:
+              linear-gradient(180deg, rgba(9,9,10,0.84), rgba(5,5,5,0.70)),
+              rgba(0,0,0,0.76) !important;
+            border-bottom-color: rgba(255,255,255,0.075) !important;
+            box-shadow: 0 22px 70px rgba(0,0,0,0.42);
+          }
+
+          .desktop-nav {
+            gap: clamp(18px, 1.9vw, 30px);
+          }
+
+          .desktop-nav a,
+          .desktop-nav button {
+            min-height: 42px;
+            color: rgba(255,255,255,0.60);
+            transition: color 180ms ease, transform 180ms ease;
+          }
+
+          .desktop-nav a:hover,
+          .desktop-nav button:hover {
+            color: #ffffff;
+            transform: translateY(-1px);
+          }
+
+          .desktop-header-search-inner {
+            max-width: 520px !important;
+          }
+
+          .desktop-header-search-input {
+            min-height: 46px;
+            border-radius: 999px;
+            border-color: rgba(255,255,255,0.12) !important;
+            background:
+              linear-gradient(180deg, rgba(255,255,255,0.080), rgba(255,255,255,0.028)),
+              rgba(11,12,15,0.88) !important;
+            box-shadow:
+              inset 0 1px 0 rgba(255,255,255,0.10),
+              0 18px 56px rgba(0,0,0,0.34) !important;
+          }
+
+          .mobile-hero {
+            min-height: min(760px, 100vh);
+            align-items: center;
+            gap: clamp(30px, 4vw, 68px);
+            padding: 118px clamp(32px, 5vw, 82px) 52px !important;
+            background:
+              radial-gradient(circle at 72% 18%, rgba(255,255,255,0.12), transparent 24%),
+              radial-gradient(circle at 18% 42%, rgba(255,255,255,0.055), transparent 26%),
+              linear-gradient(115deg, rgba(255,255,255,0.030) 0 1px, transparent 1px),
+              linear-gradient(135deg, #050505 0%, #101012 46%, #050505 100%) !important;
+            background-size: auto, auto, 74px 74px, auto !important;
+            border-bottom: 1px solid rgba(255,255,255,0.075);
+          }
+
+          .mobile-hero::before {
+            content: "";
+            position: absolute;
+            inset: 86px clamp(28px, 5vw, 82px) 38px;
+            border-radius: 42px;
+            background:
+              radial-gradient(circle at 70% 18%, rgba(255,255,255,0.10), transparent 32%),
+              linear-gradient(180deg, rgba(255,255,255,0.040), rgba(255,255,255,0.010));
+            filter: blur(0);
+            opacity: 1;
+            pointer-events: none;
+          }
+
+          .mobile-featured-poster-card {
+            width: clamp(205px, 15vw, 282px);
+            border-radius: 26px;
+            border-color: rgba(255,255,255,0.18);
+            box-shadow:
+              0 34px 110px rgba(0,0,0,0.68),
+              0 0 0 1px rgba(255,255,255,0.055) inset;
+          }
+
+          .mobile-hero-copy {
+            max-width: min(46vw, 760px) !important;
+          }
+
+          .mobile-hero-title {
+            max-width: 760px;
+            font-size: clamp(54px, 5.2vw, 94px) !important;
+            line-height: 0.92 !important;
+            letter-spacing: -0.075em;
+            text-wrap: balance;
+          }
+
+          .mobile-hero-original {
+            font-size: clamp(20px, 1.45vw, 28px) !important;
+            color: rgba(255,255,255,0.42) !important;
+          }
+
+          .mobile-hero-description {
+            max-width: 680px !important;
+            color: rgba(255,255,255,0.72) !important;
+            line-height: 1.72 !important;
+          }
+
+          .mobile-hero-actions button,
+          .mobile-hero-actions span {
+            min-height: 52px;
+            border-radius: 14px !important;
+            padding-inline: 26px !important;
+          }
+
+          .featured-side-rail.hidden,
+          .featured-side-rail {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr);
+            align-self: stretch;
+            width: clamp(360px, 28vw, 500px) !important;
+            flex: 0 0 clamp(360px, 28vw, 500px) !important;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            margin-left: auto;
+            gap: 16px;
+          }
+
+          .featured-roulette,
+          .featured-roulette.is-recent {
+            height: auto !important;
+            min-height: 0 !important;
+            border-radius: 26px !important;
+            border-color: rgba(255,255,255,0.14) !important;
+            background:
+              radial-gradient(circle at 12% 0%, rgba(255,255,255,0.13), transparent 36%),
+              linear-gradient(180deg, rgba(255,255,255,0.075), rgba(255,255,255,0.025)),
+              rgba(9,9,10,0.80) !important;
+            box-shadow:
+              0 28px 86px rgba(0,0,0,0.54),
+              inset 0 1px 0 rgba(255,255,255,0.11) !important;
+            backdrop-filter: blur(22px);
+            -webkit-backdrop-filter: blur(22px);
+          }
+
+          .featured-roulette::before,
+          .featured-roulette::after {
+            display: none !important;
+          }
+
+          .featured-roulette-head {
+            min-height: 58px;
+            padding: 16px 18px 10px !important;
+            border-bottom-color: rgba(255,255,255,0.08) !important;
+          }
+
+          .featured-roulette-title {
+            color: rgba(255,255,255,0.78) !important;
+            font-size: 11px !important;
+            letter-spacing: 0.32em !important;
+          }
+
+          .featured-roulette-count {
+            padding: 7px 12px !important;
+            background: rgba(255,255,255,0.09) !important;
+          }
+
+          .featured-roulette-track,
+          .featured-roulette.is-recent .featured-roulette-track {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow-y: auto;
+            padding: 12px !important;
+          }
+
+          .featured-roulette:first-child .featured-roulette-track {
+            max-height: 286px;
+          }
+
+          .featured-roulette.is-recent .featured-roulette-track {
+            max-height: 220px;
+          }
+
+          .featured-roulette-item,
+          .featured-roulette.is-recent .featured-roulette-item {
+            grid-template-columns: 64px minmax(0, 1fr) !important;
+            min-height: 82px !important;
+            border-radius: 18px !important;
+            padding: 9px 11px !important;
+            opacity: 0.82 !important;
+            transform: translateY(0) scale(1) !important;
+            background: rgba(255,255,255,0.025);
+          }
+
+          .featured-roulette-item:hover,
+          .featured-roulette-item.is-active {
+            opacity: 1 !important;
+            border-color: rgba(255,255,255,0.24) !important;
+            background:
+              linear-gradient(180deg, rgba(255,255,255,0.13), rgba(255,255,255,0.045)),
+              rgba(24,24,25,0.94) !important;
+            box-shadow:
+              0 18px 48px rgba(0,0,0,0.42),
+              inset 0 1px 0 rgba(255,255,255,0.14) !important;
+          }
+
+          .featured-roulette-poster,
+          .featured-roulette.is-recent .featured-roulette-poster {
+            width: 64px !important;
+            height: 64px !important;
+            border-radius: 14px !important;
+          }
+
+          .featured-roulette-name strong {
+            font-size: 14px !important;
+            line-height: 1.16 !important;
+          }
+
+          .featured-roulette-name span {
+            gap: 7px !important;
+            color: rgba(255,255,255,0.56) !important;
+          }
+
+          .featured-roulette-foot {
+            display: none !important;
+          }
+
+          .mobile-filters-section {
+            border-color: rgba(255,255,255,0.075) !important;
+            background:
+              linear-gradient(180deg, rgba(15,15,16,0.94), rgba(5,5,5,0.96)) !important;
+            padding: 26px clamp(32px, 5vw, 82px) !important;
+          }
+
+          .mobile-filters-section > div {
+            display: grid !important;
+            grid-template-columns: minmax(260px, 0.42fr) minmax(0, 1fr);
+            gap: 24px !important;
+            align-items: start;
+          }
+
+          .mobile-chip-row {
+            gap: 10px !important;
+          }
+
+          .mobile-chip-row button {
+            min-height: 40px;
+            border-radius: 999px;
+            background:
+              linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0.018)),
+              rgba(0,0,0,0.36);
+          }
+
+          .mobile-section {
+            padding-left: clamp(32px, 5vw, 82px) !important;
+            padding-right: clamp(32px, 5vw, 82px) !important;
+          }
+
+          .movie-row-track {
+            gap: 18px !important;
+          }
+
+          .movie-card-row {
+            --row-card-width: clamp(218px, 13.2vw, 252px) !important;
+            height: 520px !important;
+            border-radius: 20px !important;
+            background:
+              linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.012)),
+              rgba(8,8,8,0.96) !important;
+          }
+
+          .movie-poster-row {
+            height: 300px !important;
+          }
+
+          .movie-card:hover {
+            transform: translateY(-7px) scale(1.01);
+            border-color: rgba(255,255,255,0.24);
+            box-shadow:
+              0 26px 76px rgba(0,0,0,0.58),
+              0 0 32px rgba(255,255,255,0.045);
+          }
+
+          .home-search-hub-head p:not(.home-search-hub-kicker),
+          .mobile-section h3 + p {
+            display: none !important;
+          }
+
+          .home-search-hub-panel {
+            border-radius: 28px !important;
+          }
+        }
+
+
+
+          /* Local desktop alignment pass */
+          .desktop-mock-shell { width: min(1194px, 100%) !important; }
+          .desktop-watch-section,
+          .desktop-genres-section { width: 100% !important; max-width: 1194px !important; margin-left: 0 !important; margin-right: auto !important; }
+          .desktop-watch-section { position: relative !important; }
+          .desktop-genres-section .desktop-mock-section-head { margin-left: 0 !important; margin-right: 0 !important; }
+          .desktop-mock-rail { grid-auto-columns: 156px !important; gap: 12px !important; padding: 16px 18px 24px !important; scroll-behavior: auto !important; scroll-snap-type: none !important; }
+          .desktop-mock-rail-card { min-width: 156px !important; border-radius: 18px !important; scroll-snap-align: none !important; }
+          .desktop-mock-rail-progress { position: absolute !important; z-index: 9 !important; left: 30px !important; right: 30px !important; bottom: 12px !important; display: block !important; height: 3px !important; overflow: hidden !important; border-radius: 999px !important; background: rgba(255,255,255,0.10) !important; opacity: 1 !important; pointer-events: none !important; }
+          .desktop-mock-rail-progress i { position: absolute !important; inset: 0 auto 0 0 !important; width: 100% !important; transform-origin: left center !important; border-radius: inherit !important; background: linear-gradient(90deg, rgba(255,255,255,0.72), #fff) !important; box-shadow: none !important; animation: kinolumaDesktopRailProgress 8s linear infinite !important; }
+          .desktop-mock-rail-controls .desktop-mock-rail-progress { display: none !important; }
+          .desktop-mock-rail-controls { inset: 58px -4px 15px !important; opacity: 0 !important; pointer-events: none !important; transition: opacity 260ms ease !important; }
+          .desktop-watch-section:hover .desktop-mock-rail-controls { opacity: 1 !important; }
+          .desktop-watch-section::before,
+          .desktop-watch-section::after { content: ""; position: absolute; z-index: 7; top: 58px; bottom: 15px; width: 168px; opacity: 0; pointer-events: none; transition: opacity 520ms cubic-bezier(0.22, 1, 0.36, 1), transform 520ms cubic-bezier(0.22, 1, 0.36, 1); }
+          .desktop-watch-section::before { left: -2px; transform-origin: left center; border-radius: 28px 0 0 28px; background: linear-gradient(90deg, rgba(0,0,0,0.50) 0%, rgba(0,0,0,0.30) 34%, rgba(0,0,0,0.12) 68%, transparent 100%); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); transform: translateX(-18px); }
+          .desktop-watch-section::after { right: -2px; transform-origin: right center; border-radius: 0 28px 28px 0; background: linear-gradient(270deg, rgba(0,0,0,0.50) 0%, rgba(0,0,0,0.30) 34%, rgba(0,0,0,0.12) 68%, transparent 100%); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); transform: translateX(18px); }
+          .desktop-watch-section:has(.desktop-rail-arrow-prev:hover)::before,
+          .desktop-watch-section:has(.desktop-rail-arrow-next:hover)::after { opacity: 0.62; transform: translateX(0); }
+          .desktop-rail-arrow { width: 46px !important; height: 46px !important; border-color: rgba(255,255,255,0.18) !important; background: radial-gradient(circle at 35% 20%, rgba(255,255,255,0.15), transparent 42%), rgba(7,7,8,0.70) !important; color: rgba(255,255,255,0.92) !important; font-size: 20px !important; box-shadow: 0 16px 42px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.14) !important; backdrop-filter: blur(16px) !important; }
+          .desktop-rail-arrow:hover { transform: scale(1.06) !important; border-color: rgba(255,255,255,0.52) !important; background: rgba(255,255,255,0.94) !important; color: #050505 !important; box-shadow: 0 22px 62px rgba(0,0,0,0.54), 0 0 20px rgba(255,255,255,0.10) !important; }
+          .header-login-button {
+            position: relative;
+            display: inline-flex;
+            width: 46px;
+            height: 46px;
+            flex: 0 0 46px;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.24);
+            border-radius: 999px;
+            background:
+              radial-gradient(circle at 32% 18%, rgba(255,255,255,0.20), transparent 38%),
+              linear-gradient(145deg, #19191b, #070708);
+            color: #fff;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.13);
+            transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1), border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+          }
+          .header-login-button::before {
+            content: "";
+            position: absolute;
+            inset: 5px;
+            border: 1px solid rgba(255,255,255,0.09);
+            border-radius: inherit;
+            pointer-events: none;
+          }
+          .header-login-button svg { position: relative; z-index: 1; }
+          .header-login-button:hover { transform: translateY(-2px) scale(1.035); border-color: rgba(255,255,255,0.54); background: linear-gradient(145deg, #242426, #0b0b0c); box-shadow: 0 17px 38px rgba(0,0,0,0.52), 0 0 0 4px rgba(255,255,255,0.045), inset 0 1px 0 rgba(255,255,255,0.18); }
+          .header-login-button:active { transform: translateY(0) scale(0.93); }
+          .header-login-button:focus-visible { outline: 2px solid #fff; outline-offset: 4px; }
+          .desktop-mock-layout { grid-template-columns: minmax(0, 846px) 330px !important; justify-content: start !important; }
+          .desktop-mock-content { max-width: 846px !important; }
+          .desktop-mock-grid { grid-template-columns: repeat(3, minmax(0, 258px)) !important; justify-content: center !important; opacity: 1; transform: translateY(0); contain: layout paint; transition: opacity 180ms ease, transform 220ms cubic-bezier(0.22, 1, 0.36, 1) !important; }
+          .desktop-mock-grid.is-switching { opacity: 0.52; transform: translateY(5px) scale(0.997); pointer-events: none; }
+          .desktop-mock-grid:not(.is-switching) .desktop-mock-card { animation-duration: 320ms !important; }
+          .desktop-mock-card { justify-self: center !important; }
+          .desktop-mock-genres { width: 100% !important; max-width: 1194px !important; }
+          .desktop-mock-genre { min-height: 42px !important; padding: 0 18px !important; font-size: 12px !important; transform: translateY(0) scale(1) !important; transform-origin: center !important; outline: none !important; background: linear-gradient(180deg, rgba(255,255,255,0.060), rgba(255,255,255,0.020)) !important; will-change: transform; transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1), color 220ms ease, border-color 220ms ease, box-shadow 220ms ease !important; }
+          .desktop-mock-genre:hover { transform: translateY(-1px) scale(1.015) !important; border-color: rgba(255,255,255,0.24) !important; box-shadow: inset 0 1px 0 rgba(255,255,255,0.13), 0 10px 24px rgba(0,0,0,0.28) !important; }
+          .desktop-mock-genre.is-active { transform: translateY(0) scale(1) !important; border-color: rgba(255,255,255,0.64) !important; color: #050505 !important; box-shadow: 0 9px 24px rgba(255,255,255,0.08) !important; animation: none !important; }
+          .desktop-mock-genre.is-pressed, .desktop-mock-tab.is-pressed, .mobile-v2-chip.is-pressed {
+            transform: translateY(1px) scale(0.955) !important;
+            border-color: rgba(255,255,255,0.50) !important;
+            box-shadow: 0 8px 22px rgba(255,255,255,0.09) !important;
+          }
+          .desktop-mock-genre:active { transform: translateY(1px) scale(0.965) !important; filter: brightness(1.12) !important; box-shadow: inset 0 8px 18px rgba(0,0,0,0.18), 0 8px 20px rgba(255,255,255,0.10) !important; }
+          .desktop-mock-genre,
+          .desktop-mock-tab,
+          .mobile-v2-chip {
+            position: relative !important;
+            overflow: hidden !important;
+            isolation: isolate;
+          }
+
+          .desktop-mock-genre::before,
+          .desktop-mock-tab::before,
+          .mobile-v2-chip::before {
+            content: "";
+            position: absolute;
+            inset: 2px;
+            z-index: 0;
+            border-radius: inherit;
+            background: linear-gradient(180deg, #ffffff, #e9e9e9);
+            opacity: 0;
+            transform: scale(0.72);
+            transition: opacity 220ms ease, transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+            pointer-events: none;
+          }
+
+          .desktop-mock-genre.is-active::before,
+          .desktop-mock-tab.is-active::before,
+          .mobile-v2-chip.is-active::before {
+            opacity: 1;
+            transform: scale(1);
+          }
+
+          .desktop-mock-genre > span,
+          .desktop-mock-tab > span,
+          .mobile-v2-chip > span {
+            position: relative;
+            z-index: 1;
+          }
+
+          .desktop-mock-tab,
+          .mobile-v2-chip {
+            background: linear-gradient(180deg, rgba(255,255,255,0.052), rgba(255,255,255,0.018)) !important;
+            transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1), color 220ms ease, border-color 220ms ease, box-shadow 220ms ease !important;
+          }
+
+          .desktop-mock-tab.is-active,
+          .mobile-v2-chip.is-active {
+            background: transparent !important;
+            animation: none !important;
+          }
+
+          .desktop-mock-card-body { position: relative !important; gap: 7px !important; padding: 15px 15px 17px !important; }
+          .desktop-mock-card h3 { min-height: auto !important; margin-bottom: 3px !important; }
+          .desktop-mock-card h3::after { content: ""; display: block; width: 88%; height: 1px; margin: 11px auto 0; background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.16) 16%, rgba(255,255,255,0.48) 50%, rgba(255,255,255,0.16) 84%, transparent 100%); opacity: 0.86; }
+          .desktop-mock-card-body p { margin: 0 !important; }
+
+
+
+        /* KinoLuma mobile home v2 */
+        .kinoluma-mobile-home-v2 {
+          display: none;
+        }
+
+        @media (max-width: 1180px) {
+          .kinoluma-home > .mobile-hero,
+          .kinoluma-home > .mobile-filters-section,
+          .kinoluma-home > .mobile-section,
+          .kinoluma-home > .home-search-hub,
+          .kinoluma-home > .desktop-mock-home {
+            display: none !important;
+          }
+
+          .kinoluma-mobile-home-v2 {
+            display: block;
+            position: relative;
+            overflow: hidden;
+            padding: 78px max(14px, env(safe-area-inset-left)) calc(118px + env(safe-area-inset-bottom));
+            background:
+              radial-gradient(520px 340px at 12% 0%, rgba(255,255,255,0.075), transparent 64%),
+              radial-gradient(620px 420px at 94% 8%, rgba(150,156,172,0.10), transparent 66%),
+              linear-gradient(115deg, rgba(255,255,255,0.026) 0 1px, transparent 1px),
+              #020202;
+            background-size: auto, auto, 56px 56px, auto;
+          }
+
+          .kinoluma-mobile-home-v2::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background: linear-gradient(180deg, rgba(0,0,0,0.02), rgba(0,0,0,0.80));
+          }
+
+          .mobile-v2-shell {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            width: min(100%, 780px);
+            margin: 0 auto;
+            gap: 18px;
+          }
+
+          .mobile-v2-panel,
+          .mobile-v2-filter-card {
+            border: 1px solid rgba(255,255,255,0.115);
+            border-radius: 28px;
+            background:
+              radial-gradient(circle at 22% 0%, rgba(255,255,255,0.11), transparent 36%),
+              linear-gradient(180deg, rgba(255,255,255,0.060), rgba(255,255,255,0.018)),
+              rgba(10,10,11,0.88);
+            box-shadow: 0 24px 76px rgba(0,0,0,0.52), inset 0 1px 0 rgba(255,255,255,0.08);
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+          }
+
+          .mobile-login-icon-button {
+            position: relative;
+            display: inline-grid !important;
+            place-items: center !important;
+            width: 46px !important;
+            height: 46px !important;
+            min-width: 46px !important;
+            border-radius: 999px !important;
+            padding: 0 !important;
+            background: #fff !important;
+            color: transparent !important;
+            font-size: 0 !important;
+            box-shadow: 0 16px 36px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.65);
+          }
+          .mobile-login-icon-button::before {
+            display: none !important;
+          }
+
+          .mobile-login-icon-button svg {
+            display: block !important;
+            width: 24px !important;
+            height: 24px !important;
+            color: #050505 !important;
+            opacity: 1 !important;
+          }
+
+          .mobile-v2-filter-card > .mobile-v2-section-head {
+            display: none !important;
+          }
+
+          .mobile-v2-watch-row {
+            margin-inline: 10px;
+            padding-left: 18px !important;
+            scroll-padding-left: 18px;
+          }
+
+          .details-modal-content {
+            display: flex;
+            flex-direction: column;
+          }
+
+          .details-modal-content > p.mt-6.text-lg {
+            order: 7;
+            margin-top: 18px !important;
+          }
+
+          .details-modal-content > .mt-6.flex.flex-wrap.gap-2 {
+            order: 8;
+            margin-top: 18px !important;
+          }
+
+          .details-modal-actions {
+            order: 6;
+            display: grid !important;
+            grid-template-columns: 1fr;
+            gap: 10px !important;
+            margin-top: 18px !important;
+          }
+
+          .details-modal-actions > button[title="Открыть страницу фильма"] {
+            order: 1;
+            font-weight: 1000 !important;
+          }
+
+          .details-modal-actions > button:not([title="Открыть страницу фильма"]),
+          .details-modal-actions > span {
+            order: 2;
+            font-weight: 750 !important;
+          }
+
+          .details-modal-actions > div {
+            order: 3;
+            justify-content: center;
+          }
+
+
+          .mobile-v2-hero {
+            display: grid;
+            grid-template-columns: clamp(112px, 28vw, 172px) minmax(0, 1fr);
+            gap: clamp(14px, 3vw, 24px);
+            align-items: center;
+            padding: clamp(14px, 3vw, 22px);
+            min-height: 250px;
+          }
+
+          .mobile-v2-hero-poster,
+          .mobile-v2-card,
+          .mobile-v2-watch-card,
+          .mobile-v2-list-item {
+            appearance: none;
+            border: 0;
+            font: inherit;
+            color: inherit;
+            text-align: left;
+          }
+
+          .mobile-v2-hero-poster {
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.14);
+            border-radius: 22px;
+            background: #111;
+            box-shadow: 0 22px 54px rgba(0,0,0,0.48);
+            transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1), border-color 220ms ease;
+          }
+
+          .mobile-v2-hero-poster:active,
+          .mobile-v2-card:active,
+          .mobile-v2-watch-card:active,
+          .mobile-v2-list-item:active {
+            transform: scale(0.985);
+          }
+
+          .mobile-v2-hero-poster img {
+            display: block;
+            width: 100%;
+            aspect-ratio: 2 / 3;
+            object-fit: cover;
+          }
+
+          .mobile-v2-pill {
+            position: absolute;
+            z-index: 2;
+            top: 10px;
+            display: inline-flex;
+            align-items: center;
+            min-height: 25px;
+            border-radius: 999px;
+            padding: 0 9px;
+            font-size: 10px;
+            font-weight: 1000;
+            line-height: 1;
+            letter-spacing: -0.01em;
+          }
+
+          .mobile-v2-pill-dark {
+            left: 10px;
+            max-width: calc(100% - 72px);
+            overflow: hidden;
+            background: rgba(4,4,5,0.76);
+            color: #fff;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12);
+            backdrop-filter: blur(10px);
+          }
+
+          .mobile-v2-pill-light {
+            right: 10px;
+            background: rgba(3,3,3,0.74);
+            color: #ffd76a;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12), 0 12px 26px rgba(0,0,0,0.34);
+            backdrop-filter: blur(12px);
+          }
+
+          .mobile-v2-hero-copy {
+            min-width: 0;
+          }
+
+          .mobile-v2-kicker-row,
+          .mobile-v2-section-head-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+          }
+
+          .mobile-v2-kicker,
+          .mobile-v2-section-head span {
+            color: rgba(255,255,255,0.45);
+            font-size: 9px;
+            font-weight: 1000;
+            letter-spacing: 0.28em;
+            text-transform: uppercase;
+          }
+
+          .mobile-v2-counter,
+          .mobile-v2-section-head-row em {
+            flex: 0 0 auto;
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 999px;
+            background: rgba(255,255,255,0.055);
+            padding: 5px 9px;
+            color: rgba(255,255,255,0.68);
+            font-size: 10px;
+            font-style: normal;
+            font-weight: 950;
+          }
+
+          .mobile-v2-hero h1 {
+            margin: 8px 0 0;
+            color: #fff;
+            font-size: clamp(30px, 7vw, 58px);
+            font-weight: 1000;
+            letter-spacing: -0.07em;
+            line-height: 0.94;
+          }
+
+          .mobile-v2-original {
+            margin: 7px 0 0;
+            overflow: hidden;
+            color: rgba(255,255,255,0.42);
+            font-size: clamp(14px, 3.2vw, 20px);
+            font-weight: 900;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+
+          .mobile-v2-meta-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+            margin-top: 12px;
+          }
+
+          .mobile-v2-meta-row span {
+            min-height: 30px;
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 999px;
+            background: rgba(255,255,255,0.035);
+            padding: 7px 10px;
+            color: rgba(255,255,255,0.73);
+            font-size: 11px;
+            font-weight: 900;
+          }
+
+          .mobile-v2-description {
+            display: -webkit-box;
+            margin: 12px 0 0;
+            overflow: hidden;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 3;
+            color: rgba(255,255,255,0.72);
+            font-size: clamp(13px, 3vw, 16px);
+            font-weight: 650;
+            line-height: 1.48;
+          }
+
+          .mobile-v2-actions {
+            display: grid;
+            grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+            gap: 10px;
+            margin-top: 16px;
+          }
+
+          .mobile-v2-primary,
+          .mobile-v2-secondary,
+          .mobile-v2-page-actions button {
+            min-height: 46px;
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,0.13);
+            padding: 0 14px;
+            font-size: 13px;
+            font-weight: 1000;
+            transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1), background 180ms ease, color 180ms ease, border-color 180ms ease;
+          }
+
+          .mobile-v2-primary,
+          .mobile-v2-page-actions button:not(:disabled) {
+            background: #fff;
+            color: #050505;
+          }
+
+          .mobile-v2-secondary,
+          .mobile-v2-page-actions button:disabled {
+            background: rgba(255,255,255,0.035);
+            color: rgba(255,255,255,0.78);
+          }
+
+          .mobile-v2-primary:not(:disabled):active,
+          .mobile-v2-secondary:active,
+          .mobile-v2-page-actions button:not(:disabled):active {
+            transform: scale(0.97);
+          }
+
+          .mobile-v2-primary.is-disabled {
+            cursor: not-allowed;
+            opacity: 0.54;
+          }
+
+          .mobile-v2-section {
+            min-width: 0;
+          }
+
+          .mobile-v2-section-head {
+            margin-bottom: 11px;
+          }
+
+          .mobile-v2-section-head h2 {
+            margin: 5px 0 0;
+            color: #fff;
+            font-size: clamp(24px, 5.8vw, 36px);
+            font-weight: 1000;
+            letter-spacing: -0.055em;
+            line-height: 1;
+          }
+
+          .mobile-v2-watch-row {
+            display: grid;
+            grid-auto-columns: clamp(126px, 31vw, 156px);
+            grid-auto-flow: column;
+            gap: 10px;
+            overflow-x: auto;
+            padding: 14px;
+            border: 1px solid rgba(255,255,255,0.11);
+            border-radius: 25px;
+            background:
+              radial-gradient(circle at 16% 0%, rgba(255,255,255,0.10), transparent 38%),
+              rgba(255,255,255,0.025);
+            scroll-snap-type: x mandatory;
+            scrollbar-width: none;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.055);
+          }
+
+          .mobile-v2-watch-row::-webkit-scrollbar,
+          .mobile-v2-chip-row::-webkit-scrollbar {
+            display: none;
+          }
+
+          .mobile-v2-watch-card {
+            position: relative;
+            min-width: 0;
+            overflow: hidden;
+            scroll-snap-align: start;
+            border-radius: 18px;
+            background: #111;
+            box-shadow: 0 16px 38px rgba(0,0,0,0.34);
+          }
+
+          .mobile-v2-watch-card img {
+            display: block;
+            width: 100%;
+            aspect-ratio: 2 / 2.72;
+            object-fit: cover;
+            filter: saturate(0.92) contrast(1.04);
+          }
+
+          .mobile-v2-watch-card > span {
+            position: absolute;
+            inset: auto 0 0;
+            padding: 54px 10px 10px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.94));
+          }
+
+          .mobile-v2-watch-card strong,
+          .mobile-v2-watch-card em {
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+
+          .mobile-v2-watch-card strong {
+            color: #fff;
+            font-size: 12px;
+            font-weight: 1000;
+          }
+
+          .mobile-v2-watch-card em {
+            margin-top: 4px;
+            color: rgba(255,255,255,0.60);
+            font-size: 10px;
+            font-style: normal;
+            font-weight: 850;
+          }
+
+          .mobile-v2-filter-card {
+            padding: 15px;
+          }
+
+          .mobile-v2-filter-label {
+            margin: 12px 0 8px;
+            color: rgba(255,255,255,0.50);
+            font-size: 12px;
+            font-weight: 900;
+          }
+
+          .mobile-v2-chip-row {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 2px;
+            scroll-snap-type: x proximity;
+            scrollbar-width: none;
+          }
+
+          .mobile-v2-chip-row.is-genres {
+            flex-wrap: wrap;
+            overflow: visible;
+          }
+
+          .mobile-v2-chip {
+            flex: 0 0 auto;
+            min-height: 38px;
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 999px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.052), rgba(255,255,255,0.018));
+            padding: 0 15px;
+            color: rgba(255,255,255,0.74);
+            font-size: 12px;
+            font-weight: 950;
+            transform: translateY(0) scale(1);
+          }
+
+          .mobile-v2-chip.is-active {
+            transform: translateY(-1px);
+            border-color: rgba(255,255,255,0.92);
+            color: #050505;
+            box-shadow: 0 16px 42px rgba(255,255,255,0.08);
+          }
+
+          .mobile-v2-chip:active {
+            transform: scale(0.94);
+          }
+
+          .mobile-v2-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            contain: layout paint;
+            transition: opacity 180ms ease, transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+          }
+
+          .mobile-v2-grid.is-switching {
+            opacity: 0.52;
+            transform: translateY(5px) scale(0.997);
+            pointer-events: none;
+          }
+
+          .mobile-v2-card {
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.115);
+            border-radius: 22px;
+            background: rgba(10,10,11,0.90);
+            box-shadow: 0 20px 58px rgba(0,0,0,0.38), inset 0 1px 0 rgba(255,255,255,0.055);
+            transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1), border-color 220ms ease, box-shadow 220ms ease;
+          }
+
+          .mobile-v2-card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(255,255,255,0.24);
+          }
+
+          .mobile-v2-card-poster {
+            position: relative;
+            overflow: hidden;
+            background: #101010;
+          }
+
+          .mobile-v2-card-poster::after {
+            content: "";
+            position: absolute;
+            inset: auto 0 0;
+            height: 35%;
+            background: linear-gradient(transparent, rgba(0,0,0,0.72));
+          }
+
+          .mobile-v2-card-poster img {
+            display: block;
+            width: 100%;
+            aspect-ratio: 2 / 3;
+            object-fit: cover;
+          }
+
+          .mobile-v2-card-body {
+            display: grid;
+            gap: 7px;
+            min-height: 108px;
+            padding: 13px 12px 15px;
+            border-top: 1px solid rgba(255,255,255,0.075);
+          }
+
+          .mobile-v2-card-meta {
+            display: block;
+            overflow: hidden;
+            color: rgba(255,255,255,0.48);
+            font-size: 11px;
+            font-weight: 900;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+
+          .mobile-v2-card-body strong {
+            display: -webkit-box;
+            overflow: hidden;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            color: #fff;
+            font-size: 15px;
+            font-weight: 1000;
+            letter-spacing: -0.025em;
+            line-height: 1.08;
+          }
+
+          .mobile-v2-card-body strong::after {
+            content: "";
+            display: block;
+            width: 72%;
+            height: 1px;
+            margin: 9px auto 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+          }
+
+          .mobile-v2-card-body em {
+            overflow: hidden;
+            color: rgba(255,255,255,0.42);
+            font-size: 11px;
+            font-style: normal;
+            font-weight: 850;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+
+          .mobile-v2-page-actions {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+          }
+
+          .mobile-v2-page-actions span {
+            color: rgba(255,255,255,0.62);
+            font-size: 12px;
+            font-weight: 950;
+          }
+
+          .mobile-v2-split-list {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+          }
+
+          .mobile-v2-side-list {
+            display: grid;
+            gap: 2px;
+            padding: 15px;
+          }
+
+          .mobile-v2-list-item {
+            display: grid;
+            grid-template-columns: 30px 58px minmax(0, 1fr);
+            gap: 11px;
+            align-items: center;
+            width: 100%;
+            border: 1px solid transparent;
+            border-top-color: rgba(255,255,255,0.075);
+            border-radius: 15px;
+            background: transparent;
+            padding: 10px 7px;
+            text-decoration: none;
+            transition: transform 170ms ease, background 170ms ease, border-color 170ms ease;
+          }
+
+          .mobile-v2-list-item:hover,
+          .mobile-v2-list-item:active {
+            border-color: rgba(255,255,255,0.14);
+            background: rgba(255,255,255,0.045);
+          }
+
+          .mobile-v2-rank {
+            display: grid;
+            width: 28px;
+            height: 28px;
+            place-items: center;
+            border: 1px solid rgba(255,255,255,0.14);
+            border-radius: 999px;
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            font-size: 10px;
+            font-weight: 1000;
+          }
+
+          .mobile-v2-list-item img,
+          .mobile-v2-collection-mark {
+            width: 58px;
+            height: 78px;
+            border-radius: 12px;
+            object-fit: cover;
+            background: rgba(255,255,255,0.05);
+            box-shadow: 0 14px 30px rgba(0,0,0,0.34);
+          }
+
+          .mobile-v2-collection-mark {
+            position: relative;
+            display: grid;
+            height: 58px;
+            place-items: center;
+            color: #fff;
+            font-size: 11px;
+            font-weight: 1000;
+          }
+          .mobile-v2-collection-mark img { width: 32px; height: 32px; object-fit: contain; opacity: 0.92; }
+          .mobile-v2-collection-mark em { position: absolute; right: 5px; bottom: 4px; max-width: 48px; overflow: hidden; color: rgba(255,255,255,0.70); font-size: 8px; font-style: normal; font-weight: 1000; text-overflow: ellipsis; white-space: nowrap; }
+
+          .mobile-v2-list-item strong,
+          .mobile-v2-list-item em {
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+
+          .mobile-v2-list-item strong {
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 1000;
+            line-height: 1.18;
+          }
+
+          .mobile-v2-list-item em {
+            margin-top: 5px;
+            color: rgba(255,255,255,0.48);
+            font-size: 11px;
+            font-style: normal;
+            font-weight: 850;
+            white-space: nowrap;
+          }
+
+          .mobile-v2-telegram {
+            position: relative;
+            display: grid;
+            grid-template-columns: 54px minmax(0, 1fr) 38px;
+            align-items: center;
+            gap: 13px;
+            overflow: hidden;
+            padding: 16px;
+            color: #fff;
+            text-decoration: none;
+          }
+
+          .mobile-v2-telegram::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+              radial-gradient(circle at 20% 16%, rgba(255,255,255,0.18), transparent 35%),
+              radial-gradient(circle at 88% 0%, rgba(134,145,178,0.24), transparent 42%);
+            pointer-events: none;
+          }
+
+          .mobile-v2-telegram-logo,
+          .mobile-v2-telegram b {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            place-items: center;
+            border: 1px solid rgba(255,255,255,0.13);
+            background: rgba(255,255,255,0.065);
+          }
+
+          .mobile-v2-telegram-logo {
+            width: 54px;
+            height: 54px;
+            border-radius: 17px;
+          }
+
+          .mobile-v2-telegram-logo img {
+            width: 36px;
+            height: 36px;
+            object-fit: contain;
+          }
+
+          .mobile-v2-telegram > span:not(.mobile-v2-telegram-logo) {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            gap: 4px;
+            min-width: 0;
+          }
+
+          .mobile-v2-telegram em {
+            color: rgba(255,255,255,0.46);
+            font-size: 9px;
+            font-style: normal;
+            font-weight: 1000;
+            letter-spacing: 0.28em;
+            text-transform: uppercase;
+          }
+
+          .mobile-v2-telegram strong {
+            overflow: hidden;
+            color: #fff;
+            font-size: 18px;
+            font-weight: 1000;
+            letter-spacing: -0.04em;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+
+          .mobile-v2-telegram small {
+            display: -webkit-box;
+            overflow: hidden;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            color: rgba(255,255,255,0.50);
+            font-size: 11px;
+            font-weight: 800;
+            line-height: 1.35;
+          }
+
+          .mobile-v2-telegram b {
+            width: 38px;
+            height: 38px;
+            border-radius: 999px;
+            font-size: 18px;
+          }
+        }
+
+        @media (min-width: 768px) and (max-width: 1180px) {
+          .kinoluma-mobile-home-v2 {
+            padding-inline: clamp(28px, 6vw, 72px);
+          }
+
+          .mobile-v2-shell {
+            width: min(940px, 100%);
+          }
+
+          .mobile-v2-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+          }
+
+          .mobile-v2-split-list {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+        }
+
+        @media (max-width: 520px) {
+          .kinoluma-mobile-home-v2 {
+            padding-top: 68px;
+          }
+
+          .mobile-v2-hero {
+            grid-template-columns: 106px minmax(0, 1fr);
+            border-radius: 0 0 30px 30px;
+            margin-inline: -14px;
+            padding-inline: 14px;
+          }
+
+          .mobile-v2-description {
+            -webkit-line-clamp: 2;
+          }
+
+          .mobile-v2-actions {
+            grid-template-columns: 1fr;
+          }
+
+          .mobile-v2-primary,
+          .mobile-v2-secondary {
+            min-height: 43px;
+          }
+        }
 
       `}</style>
 
@@ -5820,28 +7431,28 @@ export default function Home({
               Главная
             </button>
             <Link
-              href="/catalog/films"
+              href="/"
               className="text-left transition duration-200 hover:text-white"
               draggable={false}
             >
               Фильмы
             </Link>
             <Link
-              href="/catalog/series"
+              href="/"
               className="text-left transition duration-200 hover:text-white"
               draggable={false}
             >
               Сериалы
             </Link>
             <Link
-              href="/catalog/anime"
+              href="/anime"
               className="text-left transition duration-200 hover:text-white"
               draggable={false}
             >
               Аниме
             </Link>
             <Link
-              href="/catalog/cartoons"
+              href="/cartoon"
               className="text-left transition duration-200 hover:text-white"
               draggable={false}
             >
@@ -5990,13 +7601,476 @@ export default function Home({
           </div>
         ) : (
           <button
+            type="button"
             onClick={() => openAuthModal("login")}
-            className="mobile-login-button rounded border border-white/20 bg-white px-4 py-2 text-sm font-bold text-black transition duration-200 hover:bg-black hover:text-white"
+            className="header-login-button"
+            aria-label="Войти в KinoLuma"
+            title="Войти"
           >
-            Войти
+            <UserRound width={22} height={22} strokeWidth={2.05} aria-hidden="true" />
           </button>
         )}
       </header>
+
+      <section className="desktop-mock-home" aria-label="Главная KinoLuma">
+        <div className="desktop-mock-shell">
+          <section className="desktop-watch-section">
+            <div className="desktop-mock-section-head desktop-mock-section-head-tight">
+              <div>
+                <div className="desktop-mock-eyebrow">быстрый выбор</div>
+                <h2 className="desktop-mock-title">Сейчас смотрят</h2>
+              </div>
+              <div className="desktop-mock-rail-controls" aria-label="Листать сейчас смотрят">
+                <button
+                  type="button"
+                  onClick={() => smoothScrollDesktopRail(-1)}
+                  className="desktop-rail-arrow desktop-rail-arrow-prev"
+                  aria-label="Назад"
+                >
+                  ←
+                </button><button
+                  type="button"
+                  onClick={() => smoothScrollDesktopRail(1)}
+                  className="desktop-rail-arrow desktop-rail-arrow-next"
+                  aria-label="Вперед"
+                >
+                  →
+                </button>
+              </div>
+            </div>
+            <span className="desktop-mock-rail-progress"><i key={`desktop-rail-progress-${desktopRailProgressKey}`} /></span>
+
+            <div id="desktop-watch-rail" ref={desktopWatchRailRef} className="desktop-mock-panel desktop-mock-rail">
+              {desktopRailItems.map((item, index) => (
+                <button
+                  key={`desktop-rail-${item.id}-${index}`}
+                  type="button"
+                  className="desktop-mock-rail-card"
+                  onClick={() => openDetails(item)}
+                  aria-label={`Открыть: ${item.title}`}
+                >
+                  <img
+                    src={getFeaturedPosterImage(item)}
+                    alt={item.title}
+                    loading="lazy"
+                    decoding="async"
+                    referrerPolicy="no-referrer"
+                    onError={(event) => {
+                      event.currentTarget.onerror = null;
+                      event.currentTarget.src = getPosterFallback(
+                        item.title,
+                        item.originalTitle,
+                        item.type,
+                      );
+                    }}
+                  />
+                  <span>
+                    <strong>{item.title}</strong>
+                    <em>{item.year} · {getRatingBadgeText(item)}</em>
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <section className="desktop-genres-section">
+            <div className="desktop-mock-section-head">
+              <div>
+                <div className="desktop-mock-eyebrow">жанры</div>
+                <h2 className="desktop-mock-title">Выбери настроение</h2>
+              </div>
+            </div>
+
+            <div className="desktop-mock-panel desktop-mock-genres">
+              {["Все", ...homeGenreRoutes.map((route) => route.genre)].map((genre) => (
+                <button
+                  key={`desktop-genre-${genre}`}
+                  type="button"
+                  onPointerDown={() => setPressedGenre(genre)}
+                  onPointerUp={() => window.setTimeout(() => setPressedGenre(null), 220)}
+                  onPointerLeave={() => setPressedGenre(null)}
+                  onClick={() => handleGenreClick(genre)}
+                  className={`desktop-mock-genre ${selectedGenre === genre ? "is-active" : ""} ${pressedGenre === genre ? "is-pressed" : ""}`}
+                >
+                  <span>{genre}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <section className="desktop-mock-layout">
+            <div className="desktop-mock-panel desktop-mock-content">
+              <div className="desktop-mock-toolbar">
+                <div>
+                  <div className="desktop-mock-eyebrow">топ каталога</div>
+                  <h2 className="desktop-mock-title">
+                    {normalizedSearch ? "Результаты поиска" : "Популярное сейчас"}
+                  </h2>
+                  <p className="desktop-mock-count">Показано {displayedDesktopCatalogItems.length} из {filteredContent.length}</p>
+                </div>
+
+                <div className="desktop-mock-tabs">
+                  {types.slice(0, 5).map((type) => (
+                    <button
+                      key={`desktop-tab-${type}`}
+                      type="button"
+                      onClick={() => handleTypeClick(type)}
+                      className={`desktop-mock-tab ${selectedType === type ? "is-active" : ""} ${pressedType === type ? "is-pressed" : ""}`}
+                    >
+                      <span>{type}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className={`desktop-mock-grid ${isDesktopCatalogSwitching ? "is-switching" : ""}`}>
+                {displayedDesktopCatalogItems.map((item) => (
+                  <button
+                    key={`desktop-card-${item.id}`}
+                    type="button"
+                    className="desktop-mock-card"
+                    onClick={() => openDetails(item)}
+                    aria-label={`Открыть: ${item.title}`}
+                  >
+                    <div className="desktop-mock-card-poster">
+                      <img
+                        src={item.poster}
+                        alt={item.title}
+                        loading="lazy"
+                        decoding="async"
+                        referrerPolicy="no-referrer"
+                        onError={(event) => {
+                          event.currentTarget.onerror = null;
+                          event.currentTarget.src = getPosterFallback(
+                            item.title,
+                            item.originalTitle,
+                            item.type,
+                          );
+                        }}
+                      />
+                      <span className="desktop-mock-card-type">{item.type}</span>
+                      <span className="desktop-mock-card-rating">{getRatingBadgeText(item)}</span>
+                    </div>
+                    <div className="desktop-mock-card-body">
+                      <div className="desktop-mock-meta">
+                        <span>{item.year}</span>
+                        <span>{item.genres[0]}</span>
+                      </div>
+                      <h3>{item.title}</h3>
+                      <p>{item.originalTitle}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              <nav className="desktop-mock-pagination" aria-label="Страницы каталога">
+                <button
+                  type="button"
+                  disabled={desktopCatalogSafePage <= 1}
+                  onClick={() => changeDesktopCatalogPage((page) => Math.max(1, page - 1))}
+                >
+                  Назад
+                </button>
+                {desktopCatalogPageNumbers.map((page, index) => (
+                  <Fragment key={`desktop-page-${page}`}>
+                    {index > 0 && page - desktopCatalogPageNumbers[index - 1] > 1 ? (
+                      <span className="desktop-mock-page-gap">...</span>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => changeDesktopCatalogPage(page)}
+                      className={page === desktopCatalogSafePage ? "is-active" : ""}
+                    >
+                      {page}
+                    </button>
+                  </Fragment>
+                ))}
+                <button
+                  type="button"
+                  disabled={desktopCatalogSafePage >= desktopCatalogTotalPages}
+                  onClick={() => changeDesktopCatalogPage((page) => Math.min(desktopCatalogTotalPages, page + 1))}
+                >
+                  Вперед
+                </button>
+              </nav>
+            </div>
+
+            <aside className="desktop-mock-sidebar" aria-label="Боковые подборки">
+              <section className="desktop-mock-panel desktop-mock-side-panel desktop-mock-side-featured">
+                <div className="desktop-mock-eyebrow">рекомендуем</div>
+                <h3 className="desktop-mock-side-title">Лучшее рядом</h3>
+                {newReleasesContent.slice(0, 4).map((item, index) => (
+                  <button
+                    key={`desktop-side-new-${item.id}`}
+                    type="button"
+                    onClick={() => openDetails(item)}
+                    className="desktop-mock-side-item"
+                  >
+                    <span className="desktop-mock-rank">{index + 1}</span>
+                    <img
+                      src={item.poster}
+                      alt={item.title}
+                      loading="lazy"
+                      decoding="async"
+                      referrerPolicy="no-referrer"
+                      onError={(event) => {
+                        event.currentTarget.onerror = null;
+                        event.currentTarget.src = getPosterFallback(
+                          item.title,
+                          item.originalTitle,
+                          item.type,
+                        );
+                      }}
+                    />
+                    <span>
+                      <strong>{item.title}</strong>
+                      <small>{item.year} · {getRatingBadgeText(item)}</small>
+                    </span>
+                  </button>
+                ))}
+              </section>
+
+              <section className="desktop-mock-panel desktop-mock-side-panel">
+                <div className="desktop-mock-eyebrow">новинки</div>
+                <h3 className="desktop-mock-side-title">Недавно добавлено</h3>
+                {recentlyUpdatedPool.slice(0, 4).map((item, index) => (
+                  <button
+                    key={`desktop-side-recent-${item.id}`}
+                    type="button"
+                    onClick={() => openDetails(item)}
+                    className="desktop-mock-side-item"
+                  >
+                    <span className="desktop-mock-rank">{index + 1}</span>
+                    <img
+                      src={item.poster}
+                      alt={item.title}
+                      loading="lazy"
+                      decoding="async"
+                      referrerPolicy="no-referrer"
+                      onError={(event) => {
+                        event.currentTarget.onerror = null;
+                        event.currentTarget.src = getPosterFallback(
+                          item.title,
+                          item.originalTitle,
+                          item.type,
+                        );
+                      }}
+                    />
+                    <span>
+                      <strong>{item.title}</strong>
+                      <small>{item.year} · {item.type}</small>
+                    </span>
+                  </button>
+                ))}
+              </section>
+
+              <section className="desktop-mock-panel desktop-mock-side-panel desktop-mock-side-collections">
+                <div className="desktop-mock-eyebrow">подборки</div>
+                <h3 className="desktop-mock-side-title">Открыть список</h3>
+                {homeSearchHubCards.slice(0, 4).map((card, index) => (
+                  <Link
+                    key={`desktop-side-collection-${card.href}`}
+                    href={card.href}
+                    className="desktop-mock-side-item desktop-mock-collection-item"
+                    aria-label={`Открыть подборку: ${card.title}`}
+                  >
+                    <span className="desktop-mock-rank">{index + 1}</span>
+                    <span className="desktop-mock-collection-mark"><img src="/kinoluma-icon.png" alt="" /><em>{card.stat}</em></span>
+                    <span>
+                      <strong>{card.title}</strong>
+                      <small>{card.note}</small>
+                    </span>
+                  </Link>
+                ))}
+                <Link href="/collections" className="desktop-mock-side-link">
+                  Все подборки →
+                </Link>
+              </section>
+
+              <a
+                href="https://t.me/kinolumafilm"
+                target="_blank"
+                rel="noreferrer"
+                className="desktop-mock-panel desktop-mock-telegram-banner"
+                aria-label={"\u041e\u0442\u043a\u0440\u044b\u0442\u044c Telegram-\u043a\u0430\u043d\u0430\u043b KinoLuma"}
+              >
+                <span className="desktop-mock-telegram-orbit" aria-hidden="true" />
+                <span className="desktop-mock-telegram-mark" aria-hidden="true"><img src="/kinoluma-icon.png" alt="" /></span>
+                <span className="desktop-mock-telegram-copy">
+                  <span className="desktop-mock-eyebrow">telegram</span>
+                  <strong>KinoLuma Film</strong>
+                  <small>{"\u041d\u043e\u0432\u043e\u0441\u0442\u0438 \u0441\u0430\u0439\u0442\u0430, \u0441\u0432\u0435\u0436\u0438\u0435 \u0444\u0438\u043b\u044c\u043c\u044b \u0438 \u043a\u043e\u0440\u043e\u0442\u043a\u0438\u0435 \u043f\u043e\u0434\u0431\u043e\u0440\u043a\u0438 \u0431\u0435\u0437 \u043b\u0438\u0448\u043d\u0435\u0433\u043e \u0448\u0443\u043c\u0430."}</small>
+                </span>
+                <span className="desktop-mock-telegram-arrow">&rarr;</span>
+              </a>
+            </aside>
+          </section>
+        </div>
+      </section>
+
+      <section className="kinoluma-mobile-home-v2" aria-label={"\u041c\u043e\u0431\u0438\u043b\u044c\u043d\u0430\u044f \u0433\u043b\u0430\u0432\u043d\u0430\u044f KinoLuma"}>
+        <div className="mobile-v2-shell">
+          <section className="mobile-v2-section">
+            <div className="mobile-v2-section-head">
+              <span>{"\u0411\u044b\u0441\u0442\u0440\u044b\u0439 \u0432\u044b\u0431\u043e\u0440"}</span>
+              <h2>{"\u0421\u0435\u0439\u0447\u0430\u0441 \u0441\u043c\u043e\u0442\u0440\u044f\u0442"}</h2>
+            </div>
+            <div className="mobile-v2-watch-row" aria-label={"\u0421\u0435\u0439\u0447\u0430\u0441 \u0441\u043c\u043e\u0442\u0440\u044f\u0442"}>
+              {desktopWatchingContent.slice(0, 14).map((item) => (
+                <button
+                  key={"mobile-v2-watch-" + item.id}
+                  type="button"
+                  className="mobile-v2-watch-card"
+                  onClick={() => openDetails(item)}
+                  aria-label={"\u041e\u0442\u043a\u0440\u044b\u0442\u044c: " + item.title}
+                >
+                  <img
+                    src={getFeaturedPosterImage(item)}
+                    alt={item.title}
+                    loading="lazy"
+                    decoding="async"
+                    referrerPolicy="no-referrer"
+                    onError={(event) => {
+                      event.currentTarget.onerror = null;
+                      event.currentTarget.src = getPosterFallback(item.title, item.originalTitle, item.type);
+                    }}
+                  />
+                  <span>
+                    <strong>{item.title}</strong>
+                    <em>{item.year} · {getRatingBadgeText(item)}</em>
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <section className="mobile-v2-section mobile-v2-filter-card">
+            <div className="mobile-v2-filter-label">{"\u0422\u0438\u043f \u043a\u043e\u043d\u0442\u0435\u043d\u0442\u0430"}</div>
+            <div className="mobile-v2-chip-row" aria-label={"\u0422\u0438\u043f \u043a\u043e\u043d\u0442\u0435\u043d\u0442\u0430"}>
+              {types.slice(0, 5).map((type) => (
+                <button
+                  key={"mobile-v2-type-" + type}
+                  type="button"
+                  onClick={() => handleTypeClick(type)}
+                  className={"mobile-v2-chip " + (selectedType === type ? "is-active " : "") + (pressedType === type ? "is-pressed" : "")}
+                >
+                  <span>{type}</span>
+                </button>
+              ))}
+            </div>
+            <div className="mobile-v2-filter-label">{"\u0416\u0430\u043d\u0440\u044b"}</div>
+            <div className="mobile-v2-chip-row is-genres" aria-label={"\u0416\u0430\u043d\u0440\u044b"}>
+              {["\u0412\u0441\u0435", ...homeGenreRoutes.map((route) => route.genre)].slice(0, 12).map((genre) => (
+                <button
+                  key={"mobile-v2-genre-" + genre}
+                  type="button"
+                  onClick={() => handleGenreClick(genre)}
+                  className={"mobile-v2-chip " + (selectedGenre === genre ? "is-active " : "") + (pressedGenre === genre ? "is-pressed" : "")}
+                >
+                  <span>{genre}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <section className="mobile-v2-section mobile-v2-catalog-section">
+            <div className="mobile-v2-section-head mobile-v2-section-head-row">
+              <div>
+                <span>{"\u041a\u0430\u0442\u0430\u043b\u043e\u0433"}</span>
+                <h2>{normalizedSearch ? "\u0420\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442\u044b" : "\u041f\u043e\u043f\u0443\u043b\u044f\u0440\u043d\u043e\u0435"}</h2>
+              </div>
+              <em>{filteredContent.length}</em>
+            </div>
+            <div className={"mobile-v2-grid " + (isDesktopCatalogSwitching ? "is-switching" : "")}>
+              {displayedDesktopCatalogItems.slice(0, 6).map((item) => (
+                <button
+                  key={"mobile-v2-card-" + item.id}
+                  type="button"
+                  className="mobile-v2-card"
+                  onClick={() => openDetails(item)}
+                  aria-label={"\u041e\u0442\u043a\u0440\u044b\u0442\u044c: " + item.title}
+                >
+                  <div className="mobile-v2-card-poster">
+                    <img
+                      src={item.poster}
+                      alt={item.title}
+                      loading="lazy"
+                      decoding="async"
+                      referrerPolicy="no-referrer"
+                      onError={(event) => {
+                        event.currentTarget.onerror = null;
+                        event.currentTarget.src = getPosterFallback(item.title, item.originalTitle, item.type);
+                      }}
+                    />
+                    <span className="mobile-v2-pill mobile-v2-pill-dark">{item.type}</span>
+                    <span className="mobile-v2-pill mobile-v2-pill-light">{getRatingBadgeText(item)}</span>
+                  </div>
+                  <div className="mobile-v2-card-body">
+                    <span className="mobile-v2-card-meta">{item.year} · {item.genres[0]}</span>
+                    <strong>{item.title}</strong>
+                    <em>{item.originalTitle}</em>
+                  </div>
+                </button>
+              ))}
+            </div>
+            <div className="mobile-v2-page-actions">
+              <button type="button" disabled={desktopCatalogSafePage <= 1} onClick={() => changeDesktopCatalogPage((page) => Math.max(1, page - 1))}>
+                {"\u041d\u0430\u0437\u0430\u0434"}
+              </button>
+              <span>{desktopCatalogSafePage} / {desktopCatalogTotalPages}</span>
+              <button type="button" disabled={desktopCatalogSafePage >= desktopCatalogTotalPages} onClick={() => changeDesktopCatalogPage((page) => Math.min(desktopCatalogTotalPages, page + 1))}>
+                {"\u0412\u043f\u0435\u0440\u0435\u0434"}
+              </button>
+            </div>
+          </section>
+
+          <section className="mobile-v2-section mobile-v2-split-list">
+            <div className="mobile-v2-side-list mobile-v2-panel">
+              <div className="mobile-v2-section-head">
+                <span>{"\u0420\u0435\u043a\u043e\u043c\u0435\u043d\u0434\u0443\u0435\u043c"}</span>
+                <h2>{"\u041b\u0443\u0447\u0448\u0435\u0435 \u0440\u044f\u0434\u043e\u043c"}</h2>
+              </div>
+              {newReleasesContent.slice(0, 4).map((item, index) => (
+                <button key={"mobile-v2-side-" + item.id} type="button" onClick={() => openDetails(item)} className="mobile-v2-list-item">
+                  <span className="mobile-v2-rank">{index + 1}</span>
+                  <img src={item.poster} alt={item.title} loading="lazy" decoding="async" referrerPolicy="no-referrer" />
+                  <span>
+                    <strong>{item.title}</strong>
+                    <em>{item.year} · {getRatingBadgeText(item)}</em>
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            <div className="mobile-v2-side-list mobile-v2-panel">
+              <div className="mobile-v2-section-head">
+                <span>{"\u041f\u043e\u0434\u0431\u043e\u0440\u043a\u0438"}</span>
+                <h2>{"\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u0441\u043f\u0438\u0441\u043e\u043a"}</h2>
+              </div>
+              {homeSearchHubCards.slice(0, 3).map((card, index) => (
+                <Link key={"mobile-v2-collection-" + card.href} href={card.href} className="mobile-v2-list-item mobile-v2-collection-link">
+                  <span className="mobile-v2-rank">{index + 1}</span>
+                  <span className="mobile-v2-collection-mark"><img src="/kinoluma-icon.png" alt="" /><em>{card.stat}</em></span>
+                  <span>
+                    <strong>{card.title}</strong>
+                    <em>{card.note}</em>
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </section>
+
+          <a href="https://t.me/kinolumafilm" target="_blank" rel="noreferrer" className="mobile-v2-telegram mobile-v2-panel">
+            <span className="mobile-v2-telegram-logo"><img src="/kinoluma-icon.png" alt="" /></span>
+            <span>
+              <em>telegram</em>
+              <strong>KinoLuma Film</strong>
+              <small>{"\u041d\u043e\u0432\u043e\u0441\u0442\u0438 \u0441\u0430\u0439\u0442\u0430, \u043f\u043e\u0434\u0431\u043e\u0440\u043a\u0438 \u0438 \u0441\u0432\u0435\u0436\u0438\u0435 \u043a\u0430\u0440\u0442\u043e\u0447\u043a\u0438."}</small>
+            </span>
+            <b>{"\u2192"}</b>
+          </a>
+        </div>
+      </section>
 
       <section className="mobile-hero relative flex min-h-[720px] items-center gap-8 overflow-hidden bg-black px-8 pt-16 lg:gap-10">
         <button
@@ -6312,7 +8386,7 @@ export default function Home({
               {allGenres.map((genre) => (
                 <button
                   key={genre}
-                  onClick={() => setSelectedGenre(genre)}
+                  onClick={() => handleGenreClick(genre)}
                   className={`rounded-full border px-5 py-2 text-sm font-bold transition duration-200 ${
                     selectedGenre === genre
                       ? "border-white bg-white text-black"
@@ -6801,12 +8875,6 @@ export default function Home({
               {authMode === "login" ? "Вход" : "Регистрация"}
             </h3>
 
-            <p className="mt-2 text-sm text-neutral-500">
-              {authMode === "login"
-                ? "Войди, чтобы открыть свои списки, реакции и персональные подборки."
-                : "Создай аккаунт, чтобы сохранять фильмы, реакции и подборки в профиле."}
-            </p>
-
             <form onSubmit={handleAuthSubmit} className="mt-6 space-y-4">
               {authMode === "register" && (
                 <div>
@@ -6842,7 +8910,7 @@ export default function Home({
                 <input
                   value={authPassword}
                   onChange={(event) => setAuthPassword(event.target.value)}
-                  placeholder="Минимум 4 символа"
+                  placeholder="Минимум 6 символов"
                   type="password"
                   className="w-full rounded-xl border border-white/10 bg-black px-4 py-3 text-white outline-none placeholder:text-neutral-700 transition duration-200 focus:border-white/40"
                 />
@@ -6864,32 +8932,33 @@ export default function Home({
 
             <div className="mt-5 border-t border-white/10 pt-5">
               {authMode === "login" ? (
-                <button
-                  onClick={() => {
-                    setAuthMode("register");
-                    setAuthError("");
-                  }}
-                  className="text-sm font-bold text-neutral-300 transition duration-200 hover:text-white"
-                >
-                  Нет аккаунта? Зарегистрироваться
-                </button>
+                <div className="space-y-2">
+                  <p className="text-sm font-bold text-neutral-500">Нет аккаунта?</p>
+                  <button
+                    onClick={() => {
+                      setAuthMode("register");
+                      setAuthError("");
+                    }}
+                    className="block text-sm font-black text-neutral-200 underline-offset-4 transition duration-200 hover:text-sky-300 hover:underline"
+                  >
+                    Зарегистрироваться
+                  </button>
+                </div>
               ) : (
-                <button
-                  onClick={() => {
-                    setAuthMode("login");
-                    setAuthError("");
-                  }}
-                  className="text-sm font-bold text-neutral-300 transition duration-200 hover:text-white"
-                >
-                  Уже есть аккаунт? Войти
-                </button>
+                <div className="space-y-2">
+                  <p className="text-sm font-bold text-neutral-500">Уже есть аккаунт?</p>
+                  <button
+                    onClick={() => {
+                      setAuthMode("login");
+                      setAuthError("");
+                    }}
+                    className="block text-sm font-black text-neutral-200 underline-offset-4 transition duration-200 hover:text-sky-300 hover:underline"
+                  >
+                    Войти
+                  </button>
+                </div>
               )}
             </div>
-
-            <p className="mt-4 text-xs leading-relaxed text-neutral-600">
-              После входа твои списки, реакции и подборки будут доступны в
-              профиле KinoLuma.
-            </p>
           </div>
         </div>
       )}

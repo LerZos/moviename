@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '../../../../lib/supabase/admin';
+import { getSupabaseAdmin } from '../../../../lib/supabase/admin';
 import { assertAdminSecret } from '../../../../lib/import/adminAuth';
 import { tmdbFetch } from '../../../../lib/import/tmdb';
 import { buildTmdbImageUrl } from '../../../../lib/imageLinks';
@@ -357,7 +357,7 @@ async function enrichCandidateImages(candidate: CandidateRow, shouldFetchExterna
       posterUrl = getCandidatePosterUrl(betterPosterRawJson);
       backdropUrl = getCandidateBackdropUrl(betterPosterRawJson);
 
-      await supabaseAdmin
+      await getSupabaseAdmin()
         .from('import_candidates')
         .update({ raw_json: rawObject, updated_at: new Date().toISOString() })
         .eq('id', candidate.id);
@@ -374,7 +374,7 @@ async function enrichCandidateImages(candidate: CandidateRow, shouldFetchExterna
       posterUrl = vibixPosterUrl;
       backdropUrl = vibixBackdropUrl;
 
-      await supabaseAdmin
+      await getSupabaseAdmin()
         .from('import_candidates')
         .update({ raw_json: rawObject, updated_at: new Date().toISOString() })
         .eq('id', candidate.id);
@@ -413,7 +413,7 @@ async function enrichCandidateImages(candidate: CandidateRow, shouldFetchExterna
       admin_image_enriched_at: new Date().toISOString(),
     };
 
-    await supabaseAdmin
+    await getSupabaseAdmin()
       .from('import_candidates')
       .update({ raw_json: enrichedRawJson, updated_at: new Date().toISOString() })
       .eq('id', candidate.id);
@@ -441,7 +441,7 @@ async function enrichCandidateImages(candidate: CandidateRow, shouldFetchExterna
 }
 
 async function countRows(table: string, column?: string, value?: string): Promise<number> {
-  let query = supabaseAdmin.from(table).select('id', { count: 'exact', head: true });
+  let query = getSupabaseAdmin().from(table).select('id', { count: 'exact', head: true });
 
   if (column && value) {
     query = query.eq(column, value);
@@ -479,7 +479,7 @@ export async function GET(request: Request) {
   if (authError) return authError;
 
   try {
-    const { data: candidates, error: candidatesError } = await supabaseAdmin
+    const { data: candidates, error: candidatesError } = await getSupabaseAdmin()
       .from('import_candidates')
       .select('id, source, source_id, title, original_title, year, type, status, raw_json, created_at, updated_at')
       .order('created_at', { ascending: false })
@@ -504,7 +504,7 @@ export async function GET(request: Request) {
       }),
     );
 
-    const { data: drafts, error: draftsError } = await supabaseAdmin
+    const { data: drafts, error: draftsError } = await getSupabaseAdmin()
       .from('movie_drafts')
       .select(
         'id, title, original_title, slug, year, type, genres, poster_url, backdrop_url, tmdb_id, kinopoisk_id, imdb_id, actors, directors, description, long_description, seo_title, seo_description, faq, trailer_provider, trailer_key, trailer_url, trailer_embed_url, trailer_source, trailer_confidence, trailer_status, similar_movie_ids, source, status, quality_score, moderation_notes, raw_json, created_at, updated_at',
@@ -515,7 +515,7 @@ export async function GET(request: Request) {
 
     if (draftsError) throw draftsError;
 
-    const { data: runs, error: runsError } = await supabaseAdmin
+    const { data: runs, error: runsError } = await getSupabaseAdmin()
       .from('movie_import_runs')
       .select('id, started_at, finished_at, status, found_count, created_drafts_count, failed_count, log')
       .order('started_at', { ascending: false })

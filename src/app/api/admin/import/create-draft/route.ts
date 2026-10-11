@@ -1,4 +1,4 @@
-import { supabaseAdmin } from "../../../../lib/supabase/admin";
+import { getSupabaseAdmin } from "../../../../lib/supabase/admin";
 import { assertAdminSecret } from "../../../../lib/import/adminAuth";
 import { checkDuplicates } from "../../../../lib/import/checkDuplicates";
 import { generateSlug } from "../../../../lib/import/generateSlug";
@@ -285,7 +285,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { data: draft, error } = await supabaseAdmin
+    const { data: draft, error } = await getSupabaseAdmin()
       .from("movie_drafts")
       .insert({
         title,
@@ -325,7 +325,7 @@ export async function POST(request: Request) {
 
     if (error) throw error;
 
-    const { error: feedbackError } = await supabaseAdmin
+    const { error: feedbackError } = await getSupabaseAdmin()
       .from("agent_feedback")
       .insert({
         draft_id: draft.id,

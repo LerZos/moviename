@@ -1,11 +1,12 @@
 import 'server-only';
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+let supabaseAdmin: SupabaseClient | null = null;
 
 export function hasRealSupabaseAdminCredentials() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const normalizedUrl = supabaseUrl?.trim().toLowerCase() ?? '';
   const normalizedKey = serviceRoleKey?.trim().toLowerCase() ?? '';
 
@@ -18,22 +19,31 @@ export function hasRealSupabaseAdminCredentials() {
   );
 }
 
-if (!supabaseUrl) {
-  throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL');
-}
+export function getSupabaseAdmin() {
+  if (supabaseAdmin) return supabaseAdmin;
 
-if (!serviceRoleKey) {
-  throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY');
-}
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-export const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
-  auth: {
-    persistSession: false,
-    autoRefreshToken: false,
-  },
-  global: {
-    headers: {
-      'X-Client-Info': 'kinoluma-import-system',
+  if (!supabaseUrl) {
+    throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL');
+  }
+
+  if (!serviceRoleKey) {
+    throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY');
+  }
+
+  supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
     },
-  },
-});
+    global: {
+      headers: {
+        'X-Client-Info': 'kinoluma-import-system',
+      },
+    },
+  });
+
+  return supabaseAdmin;
+}

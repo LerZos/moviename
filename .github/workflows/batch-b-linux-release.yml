@@ -1,0 +1,194 @@
+name: KinoLuma Batch B Linux release candidate
+
+on:
+  push:
+    branches:
+      - release/batch-b-linux-20261011
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kinoluma-batch-b-linux-release
+  cancel-in-progress: false
+
+jobs:
+  build-linux-standalone:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 35
+
+    steps:
+      - name: Check out isolated release branch
+        uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up exact production Node.js version
+        uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 22.23.0
+          cache: npm
+
+      - name: Pin npm and verify toolchain
+        shell: bash
+        run: |
+          npm install --global npm@10.9.8
+          test "$(node --version)" = "v22.23.0"
+          test "$(npm --version)" = "10.9.8"
+
+      - name: Validate approved public build configuration
+        shell: bash
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.KINOLUMA_NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.KINOLUMA_NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          test -n "$NEXT_PUBLIC_SUPABASE_URL"
+          test -n "$NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"
+          test -z "${SUPABASE_SERVICE_ROLE_KEY:-}"
+          test -z "${TMDB_API_KEY:-}"
+          test -z "${TMDB_ACCESS_TOKEN:-}"
+
+      - name: Verify approved recovery source and Batch B scope
+        run: >-
+          node .github/ci/verify-batch-b-source.mjs .
+          batch-b-source-verification.json
+
+      - name: Install Linux dependencies from lockfile
+        run: npm ci --include=optional
+
+      - name: Verify Linux-native Sharp installation
+        shell: bash
+        run: |
+          node -e "require.resolve('@img/sharp-linux-x64/package.json'); require.resolve('@img/sharp-libvips-linux-x64/package.json')"
+          test ! -d node_modules/@img/sharp-win32-x64
+          test ! -d node_modules/@img/sharp-win32-ia32
+          test ! -d node_modules/@img/sharp-win32-arm64
+
+      - name: TypeScript
+        run: npx tsc --noEmit
+
+      - name: Targeted ESLint
+        run: >-
+          npx eslint
+          src/app/lib/supabase/admin.ts
+          scripts/server-only-test-loader.mjs
+          scripts/supabase-admin-lazy.test.mjs
+          src/app/api/tmdb/poster/route.ts
+          src/app/data/manualPopularAnime.ts
+          src/app/lib/imageLinks.ts
+          src/app/lib/home/homeCatalogRoutes.ts
+
+      - name: Supabase Admin lazy initialization tests
+        run: >-
+          node --experimental-strip-types
+          --experimental-loader ./scripts/server-only-test-loader.mjs
+          --test ./scripts/supabase-admin-lazy.test.mjs
+
+      - name: Anime namespace routing tests
+        run: >-
+          node --experimental-strip-types
+          .github/ci/verify-anime-namespace-routing.mjs .
+
+      - name: Build production standalone
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.KINOLUMA_NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.KINOLUMA_NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          KINOLUMA_DISABLE_SUPABASE_DURING_BUILD: "true"
+        run: npm run build
+
+      - name: Scan client bundle for privileged credential markers
+        shell: bash
+        run: |
+          if grep -RIlE 'SUPABASE_SERVICE_ROLE_KEY|TMDB_API_KEY|TMDB_ACCESS_TOKEN|sb_secret_' .next/static >/dev/null; then
+            echo "Privileged credential marker found in client bundle" >&2
+            exit 1
+          fi
+
+      - name: Assemble complete standalone payload
+        shell: bash
+        run: |
+          rm -rf release dist extracted-release
+          mkdir -p release/.next dist
+          cp -a .next/standalone/. release/
+          cp -a .next/static release/.next/static
+          cp -a public release/public
+          cp .next/BUILD_ID release/.next/BUILD_ID
+          test -f release/server.js
+          test -f release/.next/BUILD_ID
+
+      - name: Verify Sharp inside standalone payload
+        run: >-
+          node -e "const path=require('node:path');
+          const roots=[path.resolve('release')];
+          require.resolve('@img/sharp-linux-x64/package.json',{paths:roots});
+          require.resolve('@img/sharp-libvips-linux-x64/package.json',{paths:roots});"
+
+      - name: Linux standalone runtime QA
+        shell: bash
+        run: |
+          export HOSTNAME=127.0.0.1
+          export PORT=3100
+          export KINOLUMA_ADMIN_SECRET="ci-route-guard-${GITHUB_RUN_ID}"
+          export CRON_SECRET="ci-route-guard-${GITHUB_RUN_ID}"
+          unset SUPABASE_SERVICE_ROLE_KEY TMDB_API_KEY TMDB_ACCESS_TOKEN
+          (
+            cd release
+            node server.js > ../server.log 2>&1 &
+            server_pid=$!
+            trap 'kill "$server_pid" 2>/dev/null || true; wait "$server_pid" 2>/dev/null || true' EXIT
+            for attempt in $(seq 1 30); do
+              if curl --fail --silent --show-error http://127.0.0.1:3100/ >/dev/null; then
+                break
+              fi
+              if ! kill -0 "$server_pid" 2>/dev/null; then
+                echo "Standalone server exited before health check" >&2
+                exit 1
+              fi
+              sleep 1
+            done
+            curl --fail --silent --show-error http://127.0.0.1:3100/ >/dev/null
+            cd ..
+            node .github/ci/runtime-qa.mjs http://127.0.0.1:3100 runtime-qa.json
+            node .github/ci/verify-anime-page-wiring.mjs . http://127.0.0.1:3100
+            kill "$server_pid"
+            wait "$server_pid" || true
+            trap - EXIT
+          )
+          if grep -Ei 'uncaught|unhandled rejection|sharp.*(error|failed)' server.log >/dev/null; then
+            echo "Runtime exception marker found in standalone server log" >&2
+            exit 1
+          fi
+
+      - name: Create deterministic release archive and verify extraction
+        shell: bash
+        run: |
+          node .github/ci/release-tree.mjs create release release/release-tree.json
+          build_id="$(tr -d '\r\n' < .next/BUILD_ID)"
+          archive="dist/kinoluma-batch-b-linux-${build_id}.tar"
+          tar --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner -C release -cf "$archive" .
+          gzip -n -9 "$archive"
+          archive="${archive}.gz"
+          archive_name="$(basename "$archive")"
+          (cd dist && sha256sum "$archive_name" > "${archive_name}.sha256")
+          mkdir -p extracted-release
+          tar -xzf "$archive" -C extracted-release
+          node .github/ci/release-tree.mjs verify extracted-release extracted-release/release-tree.json
+          export RELEASE_NPM_VERSION="$(npm --version)"
+          node .github/ci/write-release-manifest.mjs \
+            "$archive" \
+            dist/release-manifest.json \
+            runtime-qa.json \
+            batch-b-source-verification.json \
+            release/release-tree.json
+          cp batch-b-source-verification.json runtime-qa.json dist/
+
+      - name: Upload immutable candidate artifacts
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: kinoluma-batch-b-linux-${{ github.run_id }}
+          path: dist/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7

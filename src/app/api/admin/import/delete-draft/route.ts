@@ -1,6 +1,6 @@
 import { revalidatePath } from 'next/cache';
 
-import { supabaseAdmin } from '../../../../lib/supabase/admin';
+import { getSupabaseAdmin } from '../../../../lib/supabase/admin';
 import { assertAdminSecret } from '../../../../lib/import/adminAuth';
 
 export const runtime = 'nodejs';
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
       return Response.json({ ok: false, error: 'draftId is required' }, { status: 400 });
     }
 
-    const { data: draft, error: draftError } = await supabaseAdmin
+    const { data: draft, error: draftError } = await getSupabaseAdmin()
       .from('movie_drafts')
       .select('id, title, slug, type, status')
       .eq('id', draftId)
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
     const beforeDraft = draft as DraftRow;
     const now = new Date().toISOString();
 
-    const { data: updatedDraft, error: updateError } = await supabaseAdmin
+    const { data: updatedDraft, error: updateError } = await getSupabaseAdmin()
       .from('movie_drafts')
       .update({
         status: 'deleted',
@@ -64,7 +64,7 @@ export async function POST(request: Request) {
 
     if (updateError) throw updateError;
 
-    await supabaseAdmin.from('agent_feedback').insert({
+    await getSupabaseAdmin().from('agent_feedback').insert({
       draft_id: draftId,
       agent_name: 'admin_dashboard',
       decision: 'delete_draft',

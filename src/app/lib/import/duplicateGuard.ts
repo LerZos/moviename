@@ -1,5 +1,5 @@
 import { movies } from '../../data/movies';
-import { supabaseAdmin } from '../supabase/admin';
+import { getSupabaseAdmin } from '../supabase/admin';
 import { generateSlug } from './generateSlug';
 
 type DuplicateSource = 'static_movie' | 'movie_draft';
@@ -345,7 +345,7 @@ async function findDraftByExactField(
 ): Promise<DuplicateMatch | null> {
   if (value === null || value === '') return null;
 
-  let query = supabaseAdmin
+  let query = getSupabaseAdmin()
     .from('movie_drafts')
     .select('id,title,slug,status')
     .eq(column, value)
@@ -378,7 +378,7 @@ async function findDraftBySlugBase(input: DuplicateLookupInput): Promise<Duplica
 
   if (!inputSlugVariants.length) return null;
 
-  let query = supabaseAdmin
+  let query = getSupabaseAdmin()
     .from('movie_drafts')
     .select('id,title,original_title,slug,year,status')
     .neq('status', 'deleted')
@@ -425,7 +425,7 @@ async function findDraftByTitleAndYear(input: DuplicateLookupInput): Promise<Dup
 
   if (!inputTitles.length || !inputYear) return null;
 
-  let query = supabaseAdmin
+  let query = getSupabaseAdmin()
     .from('movie_drafts')
     .select('id,title,original_title,slug,year,status')
     .neq('status', 'deleted')

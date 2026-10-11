@@ -1,4 +1,4 @@
-import { supabaseAdmin } from "../supabase/admin";
+import { getSupabaseAdmin } from "../supabase/admin";
 import {
   buildCandidateDuplicateInput,
   findDuplicateMovie,
@@ -289,7 +289,7 @@ async function normalizeCandidate(video: VibixVideo) {
 }
 
 async function writeRunLog(runId: string, values: Record<string, unknown>) {
-  const { error } = await supabaseAdmin
+  const { error } = await getSupabaseAdmin()
     .from("movie_import_runs")
     .update({
       ...values,
@@ -314,7 +314,7 @@ export async function importVibixCandidates(
   const page = Math.max(1, Math.trunc(options.page || 1));
   const limit = Math.max(1, Math.min(100, Math.trunc(options.limit || 30)));
 
-  const runInsert = await supabaseAdmin
+  const runInsert = await getSupabaseAdmin()
     .from("movie_import_runs")
     .insert({
       status: "running",
@@ -374,7 +374,7 @@ export async function importVibixCandidates(
     }
 
     if (freshCandidates.length > 0) {
-      const { error } = await supabaseAdmin
+      const { error } = await getSupabaseAdmin()
         .from("import_candidates")
         .upsert(freshCandidates, {
           onConflict: "source,source_id",

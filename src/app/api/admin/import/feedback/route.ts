@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '../../../../lib/supabase/admin';
+import { getSupabaseAdmin } from '../../../../lib/supabase/admin';
 import { assertAdminSecret } from '../../../../lib/import/adminAuth';
 
 export const runtime = 'nodejs';
@@ -20,7 +20,7 @@ export async function POST(request: Request) {
       return Response.json({ ok: false, error: 'draftId and decision are required' }, { status: 400 });
     }
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await getSupabaseAdmin()
       .from('agent_feedback')
       .insert({
         draft_id: draftId,

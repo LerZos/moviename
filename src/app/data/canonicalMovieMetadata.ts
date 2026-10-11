@@ -9,6 +9,8 @@ export const CANONICAL_METADATA_FIELDS = [
   "countries",
   "seasons",
   "episodes",
+  "poster",
+  "backdrop",
 ] as const;
 
 export type CanonicalMovieMetadataField = (typeof CANONICAL_METADATA_FIELDS)[number];
@@ -29,6 +31,8 @@ export type CanonicalMovieMetadataEntry = {
   countries?: readonly string[];
   seasons?: number;
   episodes?: number;
+  poster?: string;
+  backdrop?: string;
   sources: readonly CanonicalMovieMetadataProvenance[];
 };
 
@@ -51,6 +55,8 @@ export function applyCanonicalMovieMetadata(movie: Movie): Movie {
     ...(metadata?.countries !== undefined ? { countries: [...metadata.countries] } : {}),
     ...(metadata?.seasons !== undefined ? { seasons: metadata.seasons } : {}),
     ...(metadata?.episodes !== undefined ? { episodes: metadata.episodes } : {}),
+    ...(metadata?.poster !== undefined ? { poster: metadata.poster } : {}),
+    ...(metadata?.backdrop !== undefined ? { backdrop: metadata.backdrop } : {}),
   };
 }
 

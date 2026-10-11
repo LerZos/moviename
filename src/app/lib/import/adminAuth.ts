@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '../supabase/admin';
+import { getSupabaseAdmin } from '../supabase/admin';
 
 export type AdminAccessUser = {
   id: string;
@@ -41,7 +41,7 @@ export async function getAdminUserFromRequest(
     return null;
   }
 
-  const { data, error } = await supabaseAdmin.auth.getUser(token);
+  const { data, error } = await getSupabaseAdmin().auth.getUser(token);
 
   if (error || !data.user?.email) {
     return null;

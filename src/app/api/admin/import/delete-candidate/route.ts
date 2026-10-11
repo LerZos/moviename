@@ -1,5 +1,5 @@
 import { assertAdminSecret } from '../../../../lib/import/adminAuth';
-import { supabaseAdmin } from '../../../../lib/supabase/admin';
+import { getSupabaseAdmin } from '../../../../lib/supabase/admin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { data: candidate, error: readError } = await supabaseAdmin
+    const { data: candidate, error: readError } = await getSupabaseAdmin()
       .from('import_candidates')
       .select('id, title, original_title, source, source_id, status')
       .eq('id', candidateId)
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
       return Response.json({ ok: true, message: 'Кандидат уже удалён.' });
     }
 
-    const { error: deleteError } = await supabaseAdmin
+    const { error: deleteError } = await getSupabaseAdmin()
       .from('import_candidates')
       .delete()
       .eq('id', candidateId);

@@ -1,4 +1,4 @@
-import { supabaseAdmin } from "../../../../lib/supabase/admin";
+import { getSupabaseAdmin } from "../../../../lib/supabase/admin";
 import { assertAdminSecret } from "../../../../lib/import/adminAuth";
 import { normalizeTrailerUrl } from "../../../../lib/trailers";
 
@@ -594,7 +594,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { data: beforeDraft, error: beforeError } = await supabaseAdmin
+    const { data: beforeDraft, error: beforeError } = await getSupabaseAdmin()
       .from("movie_drafts")
       .select("*")
       .eq("id", draftId)
@@ -604,7 +604,7 @@ export async function POST(request: Request) {
 
     const update = buildUpdate(values, beforeDraft as Record<string, unknown>);
 
-    const { data: updatedDraft, error: updateError } = await supabaseAdmin
+    const { data: updatedDraft, error: updateError } = await getSupabaseAdmin()
       .from("movie_drafts")
       .update(update)
       .eq("id", draftId)
@@ -613,7 +613,7 @@ export async function POST(request: Request) {
 
     if (updateError) throw updateError;
 
-    const { error: feedbackError } = await supabaseAdmin
+    const { error: feedbackError } = await getSupabaseAdmin()
       .from("agent_feedback")
       .insert({
         draft_id: draftId,

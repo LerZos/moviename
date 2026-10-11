@@ -1,6 +1,6 @@
 import { assertAdminSecret } from '../../../../lib/import/adminAuth';
 import { generateTemplateMovieSeo } from '../../../../lib/seo/generateTemplateMovieSeo';
-import { supabaseAdmin } from '../../../../lib/supabase/admin';
+import { getSupabaseAdmin } from '../../../../lib/supabase/admin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
       return Response.json({ ok: false, error: 'draftId is required' }, { status: 400 });
     }
 
-    const { data: draft, error: draftError } = await supabaseAdmin
+    const { data: draft, error: draftError } = await getSupabaseAdmin()
       .from('movie_drafts')
       .select('*')
       .eq('id', draftId)
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
       updated_at: new Date().toISOString(),
     };
 
-    const { data: updatedDraft, error: updateError } = await supabaseAdmin
+    const { data: updatedDraft, error: updateError } = await getSupabaseAdmin()
       .from('movie_drafts')
       .update(update)
       .eq('id', draftId)
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
 
     if (updateError) throw updateError;
 
-    const { error: feedbackError } = await supabaseAdmin.from('agent_feedback').insert({
+    const { error: feedbackError } = await getSupabaseAdmin().from('agent_feedback').insert({
       draft_id: draftId,
       agent_name: 'template_seo_agent',
       decision: 'generated_template_seo',

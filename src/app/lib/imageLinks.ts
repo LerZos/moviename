@@ -145,6 +145,7 @@ export type PosterEndpointInput = {
   originalTitle?: string;
   year?: string | number;
   type?: string;
+  tmdbNamespace?: "movie" | "tv";
 };
 
 function buildTmdbPosterEndpoint(input: PosterEndpointInput, version: string) {
@@ -156,6 +157,7 @@ function buildTmdbPosterEndpoint(input: PosterEndpointInput, version: string) {
   if (input.originalTitle) params.set("originalTitle", input.originalTitle);
   if (input.year) params.set("year", String(input.year));
   if (input.type) params.set("type", String(input.type));
+  if (input.tmdbNamespace) params.set("mediaType", input.tmdbNamespace);
   params.set("quality", "high");
   params.set("v", version);
 
@@ -176,7 +178,7 @@ export function getGeneratedCartoonPoster(input: PosterEndpointInput) {
 }
 
 export function getManualAnimePoster(input: PosterEndpointInput) {
-  return buildTmdbPosterEndpoint(input, "manual-anime-2");
+  return buildTmdbPosterEndpoint(input, "manual-anime-3");
 }
 
 export function getManualPremiumPoster(input: PosterEndpointInput) {

@@ -8,7 +8,7 @@ import {
   type CuratedPackQuota,
 } from "../../data/curatedPack300Config";
 import { mergeAutoPlayersIntoRawJson } from "../players";
-import { supabaseAdmin } from "../supabase/admin";
+import { getSupabaseAdmin } from "../supabase/admin";
 import { findDuplicateMovie } from "./duplicateGuard";
 import { generateSlug } from "./generateSlug";
 import { tmdbFetch, tmdbImage } from "./tmdb";
@@ -540,7 +540,7 @@ async function loadExistingKeys(): Promise<ExistingKeys> {
   }
 
   for (let from = 0; from < 10000; from += 1000) {
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await getSupabaseAdmin()
       .from("movie_drafts")
       .select(
         "slug,title,original_title,year,tmdb_id,kinopoisk_id,imdb_id,status",
@@ -1361,11 +1361,11 @@ async function insertPreparedMovies(
       const chunk = prepared
         .slice(index, index + INSERT_CHUNK_SIZE)
         .map((item) => ({ ...item.db, source: sourceTag }));
-      const { error } = await supabaseAdmin.from("movie_drafts").insert(chunk);
+      const { error } = await getSupabaseAdmin().from("movie_drafts").insert(chunk);
       if (error) throw error;
     }
   } catch (error) {
-    const rollback = await supabaseAdmin
+    const rollback = await getSupabaseAdmin()
       .from("movie_drafts")
       .delete()
       .eq("source", sourceTag);
@@ -1386,7 +1386,7 @@ export async function publishCuratedPack300(
   const dryRun = options.dryRun ?? false;
   const quotas = normalizedQuotas(limit, options.quotas);
 
-  const runInsert = await supabaseAdmin
+  const runInsert = await getSupabaseAdmin()
     .from("movie_import_runs")
     .insert({
       status: "running",
@@ -1500,7 +1500,7 @@ export async function publishCuratedPack300(
     }
 
     const manifest = selected.map((item) => item.card);
-    await supabaseAdmin
+    await getSupabaseAdmin()
       .from("movie_import_runs")
       .update({
         status: "finished",
@@ -1542,7 +1542,7 @@ export async function publishCuratedPack300(
     };
   } catch (error) {
     if (!dryRun) {
-      const rollback = await supabaseAdmin
+      const rollback = await getSupabaseAdmin()
         .from("movie_drafts")
         .delete()
         .eq("source", sourceTag);
@@ -1550,7 +1550,7 @@ export async function publishCuratedPack300(
         console.error("[KinoLuma curated-pack-300] rollback failed", rollback.error);
       }
     }
-    await supabaseAdmin
+    await getSupabaseAdmin()
       .from("movie_import_runs")
       .update({
         status: "failed",

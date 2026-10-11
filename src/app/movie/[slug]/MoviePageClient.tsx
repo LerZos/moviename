@@ -37,6 +37,16 @@ const DEFAULT_PLAYERS: PlayerProvider[] = [
 
 const RENDEX_SCRIPT_SRC = "https://graphicslab.io/sdk/v2/rendex-sdk.min.js";
 
+const VIBIX_PLAYER_THEME: Record<string, string> = {
+  design: "1",
+  color1: "#2d3043",
+  color2: "#ffffff",
+  color3: "#0f101a",
+  color4: "#2d3043",
+  color5: "#ffffff",
+};
+
+
 const GENRE_SLUG_MAP: Record<string, string> = {
   а: "a",
   б: "b",
@@ -255,8 +265,36 @@ function getSafePlayerEmbedUrl(value: string) {
   }
 }
 
+function withVibixPlayerTheme(player: PlayerProvider, src: string) {
+  const record = player as PlayerProvider & Record<string, unknown>;
+  const type = String(record.type || "").toLowerCase();
+  const provider = String(record.provider || "").toLowerCase();
+  const looksLikeVibix =
+    type === "vibix" ||
+    type === "vibix-iframe" ||
+    provider === "vibix" ||
+    src.includes("vibix.org") ||
+    src.includes("/room-") ||
+    src.includes("room=");
+
+  if (!looksLikeVibix) return src;
+
+  try {
+    const themedUrl = new URL(src);
+    Object.entries(VIBIX_PLAYER_THEME).forEach(([key, value]) => {
+      themedUrl.searchParams.set(key, value);
+    });
+    themedUrl.searchParams.set("sharing", "false");
+    themedUrl.searchParams.set("episodesOpen", "false");
+    return themedUrl.toString();
+  } catch {
+    return src;
+  }
+}
+
 function buildPlayerIframeHtml(player: PlayerProvider, movie: Movie) {
-  const src = escapeHtmlAttribute(getSafePlayerEmbedUrl(player.embedUrl || ""));
+  const embedSrc = withVibixPlayerTheme(player, getSafePlayerEmbedUrl(player.embedUrl || ""));
+  const src = escapeHtmlAttribute(embedSrc);
   const title = escapeHtmlAttribute(`${player.name} — ${movie.title}`);
   const allow = escapeHtmlAttribute(
     isCollapsePlayer(player)
@@ -520,7 +558,7 @@ export default function MoviePageClient({
                 (vibixRendexData.embedUrl ? "vibix-iframe" : "rendex"),
               provider:
                 vibixRendexData.provider ||
-                (vibixRendexData.embedUrl ? "exiim" : "rendex"),
+                (vibixRendexData.embedUrl ? "vibix" : "rendex"),
               embedUrl: vibixRendexData.embedUrl || "",
               contentType: vibixRendexData.contentType,
               contentId: vibixRendexData.contentId,
@@ -2688,7 +2726,7 @@ const moviePageStyles = `
     }
 
     .poster-footer {
-      grid-template-columns: 1fr;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
     .action-buttons-grid {
@@ -2812,14 +2850,66 @@ const moviePageStyles = `
     }
 
     .poster-card {
-      width: min(100%, 310px);
-      max-width: 310px;
+      width: min(100%, 430px);
+      max-width: 430px;
       margin-inline: auto;
-      box-shadow: 0 28px 80px rgba(0,0,0,0.55);
+      border-color: rgba(255,255,255,0.14);
+      border-radius: 28px;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(255,255,255,0.10), transparent 42%),
+        linear-gradient(155deg, rgba(22,22,23,0.98), rgba(5,5,6,0.98));
+      box-shadow: 0 30px 88px rgba(0,0,0,0.62), inset 0 1px 0 rgba(255,255,255,0.07);
+    }
+
+    .poster-image {
+      width: calc(100% - 16px);
+      aspect-ratio: 2 / 2.72;
+      margin: 8px 8px 0;
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 21px;
+      filter: saturate(0.96) contrast(1.03);
+      box-shadow: 0 18px 48px rgba(0,0,0,0.36);
     }
 
     .poster-footer {
-      grid-template-columns: 1fr;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      padding: 12px;
+      border-top: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0.028), rgba(0,0,0,0.18));
+    }
+
+    .poster-footer div {
+      display: flex;
+      min-height: 72px;
+      flex-direction: column;
+      justify-content: center;
+      padding: 12px 10px;
+      border-color: rgba(255,255,255,0.13);
+      border-radius: 18px;
+      background: linear-gradient(145deg, rgba(255,255,255,0.075), rgba(255,255,255,0.025));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.055), 0 12px 30px rgba(0,0,0,0.20);
+    }
+
+    .poster-footer span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-size: 9px;
+      letter-spacing: 0.11em;
+    }
+
+    .poster-footer strong {
+      margin-top: 8px;
+      font-size: 14px;
+    }
+
+    .poster-genres-panel {
+      padding: 16px 14px 18px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.012));
+    }
+
+    .poster-genre-list {
+      gap: 8px;
     }
 
     .main-card,
@@ -3100,7 +3190,27 @@ const moviePageStyles = `
     }
 
     .poster-card {
-      max-width: 286px;
+      max-width: 100%;
+    }
+
+    .poster-footer {
+      gap: 6px;
+      padding: 10px;
+    }
+
+    .poster-footer div {
+      min-height: 66px;
+      padding: 10px 7px;
+      border-radius: 15px;
+    }
+
+    .poster-footer span {
+      font-size: 8px;
+      letter-spacing: 0.08em;
+    }
+
+    .poster-footer strong {
+      font-size: 13px;
     }
 
     .main-card,
