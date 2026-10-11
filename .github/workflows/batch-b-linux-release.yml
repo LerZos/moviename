@@ -61,10 +61,40 @@ jobs:
       - name: Verify Linux-native Sharp installation
         shell: bash
         run: |
-          node -e "require.resolve('@img/sharp-linux-x64/package.json'); require.resolve('@img/sharp-libvips-linux-x64/package.json')"
+          test -d node_modules/@img/sharp-linux-x64
+          test -d node_modules/@img/sharp-libvips-linux-x64
           test ! -d node_modules/@img/sharp-win32-x64
           test ! -d node_modules/@img/sharp-win32-ia32
           test ! -d node_modules/@img/sharp-win32-arm64
+          node <<'NODE'
+          const sharp = require("sharp");
+
+          async function main() {
+            if (!sharp.versions?.vips) {
+              throw new Error("Sharp loaded without a libvips version");
+            }
+            const output = await sharp({
+              create: {
+                width: 2,
+                height: 2,
+                channels: 4,
+                background: { r: 38, g: 19, b: 77, alpha: 1 },
+              },
+            })
+              .resize(1, 1)
+              .png()
+              .toBuffer();
+            if (!Buffer.isBuffer(output) || output.length === 0) {
+              throw new Error("Sharp produced an empty image");
+            }
+            console.log(`SHARP_NATIVE_SMOKE=PASS vips=${sharp.versions.vips}`);
+          }
+
+          main().catch((error) => {
+            console.error(error);
+            process.exit(1);
+          });
+          NODE
 
       - name: TypeScript
         run: npx tsc --noEmit
@@ -119,11 +149,65 @@ jobs:
           test -f release/.next/BUILD_ID
 
       - name: Verify Sharp inside standalone payload
-        run: >-
-          node -e "const path=require('node:path');
-          const roots=[path.resolve('release')];
-          require.resolve('@img/sharp-linux-x64/package.json',{paths:roots});
-          require.resolve('@img/sharp-libvips-linux-x64/package.json',{paths:roots});"
+        shell: bash
+        run: |
+          test -d release/node_modules/@img/sharp-linux-x64
+          test -d release/node_modules/@img/sharp-libvips-linux-x64
+          isolated_release="$RUNNER_TEMP/kinoluma-sharp-standalone"
+          rm -rf "$isolated_release"
+          cp -a release "$isolated_release"
+          RELEASE_DIR="$isolated_release" node <<'NODE'
+          const fs = require("node:fs");
+          const path = require("node:path");
+          const { createRequire } = require("node:module");
+
+          async function main() {
+            const releaseDir = fs.realpathSync(process.env.RELEASE_DIR);
+            const releaseRequire = createRequire(path.join(releaseDir, "server.js"));
+            const sharpEntry = fs.realpathSync(releaseRequire.resolve("sharp"));
+            const relativeEntry = path.relative(releaseDir, sharpEntry);
+            if (
+              relativeEntry === "" ||
+              relativeEntry === ".." ||
+              relativeEntry.startsWith(`..${path.sep}`) ||
+              path.isAbsolute(relativeEntry)
+            ) {
+              throw new Error(`Sharp resolved outside standalone: ${sharpEntry}`);
+            }
+            for (const packageName of ["sharp-linux-x64", "sharp-libvips-linux-x64"]) {
+              const packageDir = path.join(releaseDir, "node_modules", "@img", packageName);
+              if (!fs.statSync(packageDir).isDirectory()) {
+                throw new Error(`Missing standalone package directory: ${packageName}`);
+              }
+            }
+            const sharp = releaseRequire("sharp");
+            if (!sharp.versions?.vips) {
+              throw new Error("Standalone Sharp loaded without a libvips version");
+            }
+            const output = await sharp({
+              create: {
+                width: 2,
+                height: 2,
+                channels: 4,
+                background: { r: 38, g: 19, b: 77, alpha: 1 },
+              },
+            })
+              .resize(1, 1)
+              .png()
+              .toBuffer();
+            if (!Buffer.isBuffer(output) || output.length === 0) {
+              throw new Error("Standalone Sharp produced an empty image");
+            }
+            console.log(
+              `STANDALONE_SHARP_SMOKE=PASS entry=${relativeEntry} vips=${sharp.versions.vips}`,
+            );
+          }
+
+          main().catch((error) => {
+            console.error(error);
+            process.exit(1);
+          });
+          NODE
 
       - name: Linux standalone runtime QA
         shell: bash
