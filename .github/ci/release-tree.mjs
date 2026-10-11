@@ -65,6 +65,42 @@ function treeHash(entries) {
   return sha256(Buffer.from(canonical, "utf8"));
 }
 
+function findFirstDifference(expectedEntries, actualEntries) {
+  const fields = ["path", "type", "mode", "bytes", "sha256", "target"];
+  const length = Math.max(expectedEntries.length, actualEntries.length);
+
+  for (let index = 0; index < length; index += 1) {
+    const expectedEntry = expectedEntries[index];
+    const actualEntry = actualEntries[index];
+
+    if (!expectedEntry || !actualEntry) {
+      return {
+        index,
+        path: expectedEntry?.path ?? actualEntry?.path ?? null,
+        field: !expectedEntry ? "unexpected-entry" : "missing-entry",
+        expected: expectedEntry ?? null,
+        actual: actualEntry ?? null,
+      };
+    }
+
+    for (const field of fields) {
+      const expectedValue = expectedEntry[field] ?? null;
+      const actualValue = actualEntry[field] ?? null;
+      if (expectedValue !== actualValue) {
+        return {
+          index,
+          path: expectedEntry.path ?? actualEntry.path,
+          field,
+          expected: expectedValue,
+          actual: actualValue,
+        };
+      }
+    }
+  }
+
+  return null;
+}
+
 if (mode === "create") {
   const entries = await collect(root);
   const manifest = {
@@ -86,7 +122,16 @@ if (mode === "create") {
     actualTreeSha256 === expected.treeSha256 &&
     JSON.stringify(entries) === JSON.stringify(expected.files);
   console.log(`RELEASE_TREE_VERIFY=${pass ? "PASS" : "FAIL"}`);
-  if (!pass) process.exitCode = 1;
+  if (!pass) {
+    console.log(`RELEASE_TREE_EXPECTED_ENTRIES=${expected.files.length}`);
+    console.log(`RELEASE_TREE_ACTUAL_ENTRIES=${entries.length}`);
+    console.log(`RELEASE_TREE_EXPECTED_SHA256=${expected.treeSha256}`);
+    console.log(`RELEASE_TREE_ACTUAL_SHA256=${actualTreeSha256}`);
+    console.log(
+      `RELEASE_TREE_FIRST_DIFFERENCE=${JSON.stringify(findFirstDifference(expected.files, entries))}`,
+    );
+    process.exitCode = 1;
+  }
 } else {
   throw new Error("Usage: node release-tree.mjs <create|verify> <release-dir> [manifest-path]");
 }

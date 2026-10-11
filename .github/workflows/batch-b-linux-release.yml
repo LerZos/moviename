@@ -257,7 +257,7 @@ jobs:
           archive_name="$(basename "$archive")"
           (cd dist && sha256sum "$archive_name" > "${archive_name}.sha256")
           mkdir -p extracted-release
-          tar -xzf "$archive" -C extracted-release
+          tar --same-permissions -xzf "$archive" -C extracted-release
           node .github/ci/release-tree.mjs verify extracted-release extracted-release/release-tree.json
           export RELEASE_NPM_VERSION="$(npm --version)"
           node .github/ci/write-release-manifest.mjs \
