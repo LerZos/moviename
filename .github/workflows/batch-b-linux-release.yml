@@ -1,16 +1,16 @@
-name: KinoLuma Batch B Linux release candidate
+name: KinoLuma global poster fix Linux release candidate
 
 on:
   push:
     branches:
-      - release/batch-b-linux-20261011
+      - release/global-poster-fix-20261012
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: kinoluma-batch-b-linux-release
+  group: kinoluma-global-poster-fix-linux-release
   cancel-in-progress: false
 
 jobs:
@@ -50,10 +50,10 @@ jobs:
           test -z "${TMDB_API_KEY:-}"
           test -z "${TMDB_ACCESS_TOKEN:-}"
 
-      - name: Verify approved recovery source and Batch B scope
+      - name: Verify approved eight-file global poster fix
         run: >-
-          node .github/ci/verify-batch-b-source.mjs .
-          batch-b-source-verification.json
+          node .github/ci/verify-global-poster-fix-source.mjs .
+          poster-fix-source-verification.json
 
       - name: Install Linux dependencies from lockfile
         run: npm ci --include=optional
@@ -109,6 +109,7 @@ jobs:
           src/app/data/manualPopularAnime.ts
           src/app/lib/imageLinks.ts
           src/app/lib/home/homeCatalogRoutes.ts
+          src/app/components/PosterImage.tsx
 
       - name: Supabase Admin lazy initialization tests
         run: >-
@@ -250,7 +251,7 @@ jobs:
         run: |
           node .github/ci/release-tree.mjs create release release/release-tree.json
           build_id="$(tr -d '\r\n' < .next/BUILD_ID)"
-          archive="dist/kinoluma-batch-b-linux-${build_id}.tar"
+          archive="dist/kinoluma-global-poster-fix-linux-${build_id}.tar"
           tar --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner -C release -cf "$archive" .
           gzip -n -9 "$archive"
           archive="${archive}.gz"
@@ -264,14 +265,14 @@ jobs:
             "$archive" \
             dist/release-manifest.json \
             runtime-qa.json \
-            batch-b-source-verification.json \
+            poster-fix-source-verification.json \
             release/release-tree.json
-          cp batch-b-source-verification.json runtime-qa.json dist/
+          cp poster-fix-source-verification.json runtime-qa.json dist/
 
       - name: Upload immutable candidate artifacts
         uses: actions/upload-artifact@v7.0.2
         with:
-          name: kinoluma-batch-b-linux-${{ github.run_id }}
+          name: kinoluma-global-poster-fix-linux-${{ github.run_id }}
           path: dist/
           if-no-files-found: error
           compression-level: 0

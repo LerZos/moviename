@@ -1,5 +1,19 @@
 @import "tailwindcss";
 
+/* Keep the shared poster rule above legacy component-level crop overrides. */
+img.kinoluma-poster-image.kinoluma-poster-image {
+  object-fit: contain !important;
+  object-position: center !important;
+  background-color: #101010 !important;
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0.52), rgba(0, 0, 0, 0.52)),
+    var(--kinoluma-poster-source) !important;
+  background-position: center, center !important;
+  background-repeat: no-repeat, no-repeat !important;
+  background-size: cover, cover !important;
+  transform: none !important;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;

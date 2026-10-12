@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import Script from "next/script";
 import MobileBottomNav from "../../components/MobileBottomNav";
+import PosterImage, { syncPosterBackground } from "../../components/PosterImage";
 import { type MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 import type { Movie, MovieFact, PlayerProvider } from "../../data/movies";
 import type { MovieCardIndexItem } from "../../data/movieCardIndex";
@@ -1077,7 +1078,8 @@ export default function MoviePageClient({
               priority
               unoptimized
               sizes="(max-width: 768px) 78vw, 330px"
-              className="poster-image"
+              className="kinoluma-poster-image poster-image"
+              onLoad={(event) => syncPosterBackground(event.currentTarget)}
               onError={() => {
                 const fallbackPoster = movie.posterFallbacks?.find(
                   (fallback) => fallback !== posterSrc,
@@ -1489,7 +1491,7 @@ export default function MoviePageClient({
                   title={`${item.title} (${item.year}) смотреть онлайн ${getContentKind(item)}`}
                 >
                   <div className="similar-poster-wrap">
-                    <img
+                    <PosterImage
                       src={item.poster}
                       alt={item.title}
                       className="similar-poster"
@@ -2507,11 +2509,6 @@ const moviePageStyles = `
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 420ms ease;
-  }
-
-  .similar-card:hover .similar-poster {
-    transform: scale(1.05);
   }
 
   .similar-rating {
@@ -2863,7 +2860,7 @@ const moviePageStyles = `
 
     .poster-image {
       width: calc(100% - 16px);
-      aspect-ratio: 2 / 2.72;
+      aspect-ratio: 2 / 3;
       margin: 8px 8px 0;
       border: 1px solid rgba(255,255,255,0.10);
       border-radius: 21px;

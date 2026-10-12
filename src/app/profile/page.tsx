@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 
 import MobileBottomNav from "../components/MobileBottomNav";
+import PosterImage from "../components/PosterImage";
 import {
   profileCatalogItems as catalogItems,
   type ProfileCatalogItem,
@@ -337,7 +338,7 @@ function MovieCard({
         aria-label={`Открыть ${item.title}`}
       >
         <div className="movie-poster-wrap">
-          <img
+          <PosterImage
             src={item.poster}
             alt={item.title}
             className="movie-poster"
@@ -475,7 +476,7 @@ function DetailsModal({
         </button>
 
         <div className="details-poster-side">
-          <img
+          <PosterImage
             src={item.poster}
             alt={item.title}
             onError={(event) => {
@@ -1367,7 +1368,7 @@ export default function ProfilePage() {
               className="featured-preview"
               onClick={() => openItemDetails(featuredItem)}
             >
-              <img
+              <PosterImage
                 src={featuredItem.poster}
                 alt={featuredItem.title}
                 onError={(event) => {
@@ -2354,11 +2355,10 @@ const profileStyles = `
     object-fit: cover;
     display: block;
     opacity: 0.92;
-    transition: transform 500ms ease, opacity 500ms ease;
+    transition: opacity 500ms ease;
   }
 
   .movie-card:hover .movie-poster {
-    transform: scale(1.06);
     opacity: 1;
   }
 

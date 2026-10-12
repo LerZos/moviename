@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import type { CSSProperties } from "react";
 import { useEffect, useRef, useState } from "react";
 
+import PosterImage from "../components/PosterImage";
 import type { Movie } from "../data/movies";
 import { canResolveTrailerUrl, resolveTrailerUrl } from "../lib/trailers";
 
@@ -191,7 +192,7 @@ export default function CollectionMovieGridClient({
                 className="collection-movie-poster collection-movie-poster-button"
                 aria-label={`Открыть карточку: ${item.title}`}
               >
-                <img
+                <PosterImage
                   src={item.poster}
                   alt={`${item.title} (${item.year})`}
                   loading={index < 4 ? "eager" : "lazy"}
@@ -269,7 +270,7 @@ export default function CollectionMovieGridClient({
             </button>
 
             <div className="collection-details-poster">
-              <img src={selectedItem.poster} alt={selectedItem.title} />
+              <PosterImage src={selectedItem.poster} alt={selectedItem.title} />
             </div>
 
             <div className="collection-details-content">

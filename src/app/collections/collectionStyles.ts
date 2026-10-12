@@ -417,11 +417,10 @@ export const collectionStyles = `
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 500ms ease, filter 500ms ease;
+    transition: filter 500ms ease;
   }
 
   .collection-movie-card:hover .collection-movie-poster img {
-    transform: scale(1.045);
     filter: brightness(1.06);
   }
 

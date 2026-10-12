@@ -4,6 +4,7 @@ import Link from "next/link";
 import { UserRound } from "lucide-react";
 
 import MobileBottomNav from "./components/MobileBottomNav";
+import PosterImage from "./components/PosterImage";
 import type { Movie } from "./data/movies";
 import { supabase } from "./lib/supabase";
 import { canResolveTrailerUrl, resolveTrailerUrl } from "./lib/trailers";
@@ -704,13 +705,13 @@ function MovieCard({
         onClick={() => onOpenDetails(item)}
         className={`movie-poster ${isRowMode ? "movie-poster-row" : "movie-poster-grid"}`}
       >
-        <img
+        <PosterImage
           src={item.poster}
           alt={item.title}
           loading={isRowMode && index < 5 ? "eager" : "lazy"}
           decoding="async"
           referrerPolicy="no-referrer"
-          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+          className="h-full w-full object-cover"
           onError={(event) => {
             const nextFallback =
               item.posterFallbacks?.[posterFallbackIndexRef.current];
@@ -6088,8 +6089,7 @@ export default function Home({
           .desktop-mock-rail::-webkit-scrollbar { display: none; }
           .desktop-mock-rail-card { position: relative; min-width: 158px; overflow: hidden; scroll-snap-align: start; border: 1px solid rgba(255,255,255,0.12); border-radius: 19px; background: #0f1012; color: #fff; text-align: left; box-shadow: 0 18px 44px rgba(0,0,0,0.34); transition: transform 190ms ease, border-color 190ms ease, box-shadow 190ms ease; }
           .desktop-mock-rail-card:hover { transform: translateY(-4px); border-color: rgba(255,255,255,0.30); box-shadow: 0 26px 66px rgba(0,0,0,0.50); }
-          .desktop-mock-rail-card img { display: block; width: 100%; aspect-ratio: 2 / 2.78; object-fit: cover; filter: saturate(0.9) contrast(1.04); transition: transform 240ms ease; }
-          .desktop-mock-rail-card:hover img { transform: scale(1.035); }
+          .desktop-mock-rail-card img { display: block; width: 100%; aspect-ratio: 2 / 3; object-fit: cover; object-position: center; filter: saturate(0.9) contrast(1.04); }
           .desktop-mock-rail-card span { position: absolute; inset: auto 0 0; padding: 54px 12px 12px; background: linear-gradient(transparent, rgba(0,0,0,0.94)); }
           .desktop-mock-rail-card strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 1000; }
           .desktop-mock-rail-card em { display: block; margin-top: 4px; color: rgba(255,255,255,0.58); font-size: 11px; font-style: normal; font-weight: 850; }
@@ -6119,8 +6119,8 @@ export default function Home({
           @keyframes kinolumaCardIn { from { opacity: 0; transform: translateY(16px) scale(0.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
           .desktop-mock-card-poster { position: relative; overflow: hidden; background: #111; }
           .desktop-mock-card-poster::after { content: ""; position: absolute; inset: auto 0 0; height: 34%; background: linear-gradient(180deg, transparent, rgba(0,0,0,0.76)); pointer-events: none; }
-          .desktop-mock-card-poster img { display: block; width: 100%; aspect-ratio: 2 / 3; object-fit: cover; filter: saturate(0.90) contrast(1.04); transition: transform 260ms ease, filter 260ms ease; }
-          .desktop-mock-card:hover .desktop-mock-card-poster img { transform: scale(1.035); filter: saturate(1) contrast(1.08); }
+          .desktop-mock-card-poster img { display: block; width: 100%; aspect-ratio: 2 / 3; object-fit: cover; object-position: center; filter: saturate(0.90) contrast(1.04); transition: filter 260ms ease; }
+          .desktop-mock-card:hover .desktop-mock-card-poster img { filter: saturate(1) contrast(1.08); }
           .desktop-mock-card-type, .desktop-mock-card-rating { position: absolute; z-index: 3; top: 12px; border-radius: 999px; padding: 8px 11px; font-size: 11px; font-weight: 1000; line-height: 1; letter-spacing: -0.01em; }
           .desktop-mock-card-type { left: 12px; background: rgba(3,3,3,0.74); color: #fff; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12); backdrop-filter: blur(12px); }
           .desktop-mock-card-rating { right: 12px; min-width: 48px; text-align: center; background: rgba(3,3,3,0.74); color: #ffd76a; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12), 0 12px 30px rgba(0,0,0,0.32); backdrop-filter: blur(12px); font-size: 12px; }
@@ -6140,11 +6140,11 @@ export default function Home({
           .desktop-mock-side-panel { background: radial-gradient(circle at 74% 0%, rgba(255,255,255,0.13), transparent 36%), linear-gradient(180deg, rgba(255,255,255,0.060), rgba(255,255,255,0.018)), rgba(8,8,9,0.88); }
           .desktop-mock-side-featured { background: radial-gradient(circle at 74% 0%, rgba(255,255,255,0.13), transparent 36%), linear-gradient(180deg, rgba(255,255,255,0.060), rgba(255,255,255,0.018)), rgba(8,8,9,0.88); }
           .desktop-mock-side-title { margin: 5px 0 13px; color: #fff; font-size: 20px; font-weight: 1000; letter-spacing: -0.04em; }
-          .desktop-mock-side-item { display: grid; grid-template-columns: 32px 64px minmax(0, 1fr); gap: 12px; align-items: center; width: 100%; border: 1px solid transparent; border-top-color: rgba(255,255,255,0.075); border-radius: 15px; background: transparent; padding: 10px 8px; color: #fff; text-align: left; transition: background 170ms ease, border-color 170ms ease, transform 170ms ease; }
+          .desktop-mock-side-item { display: grid; grid-template-columns: 32px 60px minmax(0, 1fr); gap: 12px; align-items: center; width: 100%; border: 1px solid transparent; border-top-color: rgba(255,255,255,0.075); border-radius: 15px; background: transparent; padding: 10px 8px; color: #fff; text-align: left; transition: background 170ms ease, border-color 170ms ease, transform 170ms ease; }
           .desktop-mock-side-item:first-of-type { border-top-color: transparent; }
           .desktop-mock-side-item:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.14); background: rgba(255,255,255,0.050); }
           .desktop-mock-rank { display: grid; width: 30px; height: 30px; place-items: center; border: 1px solid rgba(255,255,255,0.14); border-radius: 999px; background: rgba(255,255,255,0.045); font-size: 11px; font-weight: 1000; }
-          .desktop-mock-side-item img { width: 64px; height: 88px; border-radius: 12px; object-fit: cover; box-shadow: 0 14px 28px rgba(0,0,0,0.36); }
+          .desktop-mock-side-item img { width: 60px; height: 90px; border-radius: 12px; object-fit: cover; object-position: center; box-shadow: 0 14px 28px rgba(0,0,0,0.36); }
           .desktop-mock-side-item strong { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; font-size: 13px; font-weight: 1000; line-height: 1.2; }
           .desktop-mock-side-item small { display: block; margin-top: 6px; color: rgba(255,255,255,0.50); font-size: 11px; font-weight: 850; }
           .desktop-mock-collection-item { grid-template-columns: 32px 58px minmax(0, 1fr); text-decoration: none; }
@@ -6977,8 +6977,9 @@ export default function Home({
           .mobile-v2-watch-card img {
             display: block;
             width: 100%;
-            aspect-ratio: 2 / 2.72;
+            aspect-ratio: 2 / 3;
             object-fit: cover;
+            object-position: center;
             filter: saturate(0.92) contrast(1.04);
           }
 
@@ -7107,6 +7108,7 @@ export default function Home({
             width: 100%;
             aspect-ratio: 2 / 3;
             object-fit: cover;
+            object-position: center;
           }
 
           .mobile-v2-card-body {
@@ -7218,19 +7220,25 @@ export default function Home({
             font-weight: 1000;
           }
 
-          .mobile-v2-list-item img,
+          .mobile-v2-list-item > img,
           .mobile-v2-collection-mark {
-            width: 58px;
-            height: 78px;
             border-radius: 12px;
-            object-fit: cover;
             background: rgba(255,255,255,0.05);
             box-shadow: 0 14px 30px rgba(0,0,0,0.34);
+          }
+
+          .mobile-v2-list-item > img {
+            width: 52px;
+            height: 78px;
+            justify-self: center;
+            object-fit: cover;
+            object-position: center;
           }
 
           .mobile-v2-collection-mark {
             position: relative;
             display: grid;
+            width: 58px;
             height: 58px;
             place-items: center;
             color: #fff;
@@ -7528,7 +7536,7 @@ export default function Home({
                         aria-hidden={isLeavingSuggestion}
                         tabIndex={isLeavingSuggestion ? -1 : 0}
                       >
-                        <img
+                        <PosterImage
                           src={item.poster}
                           alt={item.title}
                           className="h-20 w-14 shrink-0 rounded-lg object-cover bg-neutral-900"
@@ -7649,7 +7657,7 @@ export default function Home({
                   onClick={() => openDetails(item)}
                   aria-label={`Открыть: ${item.title}`}
                 >
-                  <img
+                  <PosterImage
                     src={getFeaturedPosterImage(item)}
                     alt={item.title}
                     loading="lazy"
@@ -7733,7 +7741,7 @@ export default function Home({
                     aria-label={`Открыть: ${item.title}`}
                   >
                     <div className="desktop-mock-card-poster">
-                      <img
+                      <PosterImage
                         src={item.poster}
                         alt={item.title}
                         loading="lazy"
@@ -7807,7 +7815,7 @@ export default function Home({
                     className="desktop-mock-side-item"
                   >
                     <span className="desktop-mock-rank">{index + 1}</span>
-                    <img
+                    <PosterImage
                       src={item.poster}
                       alt={item.title}
                       loading="lazy"
@@ -7841,7 +7849,7 @@ export default function Home({
                     className="desktop-mock-side-item"
                   >
                     <span className="desktop-mock-rank">{index + 1}</span>
-                    <img
+                    <PosterImage
                       src={item.poster}
                       alt={item.title}
                       loading="lazy"
@@ -7924,7 +7932,7 @@ export default function Home({
                   onClick={() => openDetails(item)}
                   aria-label={"\u041e\u0442\u043a\u0440\u044b\u0442\u044c: " + item.title}
                 >
-                  <img
+                  <PosterImage
                     src={getFeaturedPosterImage(item)}
                     alt={item.title}
                     loading="lazy"
@@ -7991,7 +7999,7 @@ export default function Home({
                   aria-label={"\u041e\u0442\u043a\u0440\u044b\u0442\u044c: " + item.title}
                 >
                   <div className="mobile-v2-card-poster">
-                    <img
+                    <PosterImage
                       src={item.poster}
                       alt={item.title}
                       loading="lazy"
@@ -8033,7 +8041,7 @@ export default function Home({
               {newReleasesContent.slice(0, 4).map((item, index) => (
                 <button key={"mobile-v2-side-" + item.id} type="button" onClick={() => openDetails(item)} className="mobile-v2-list-item">
                   <span className="mobile-v2-rank">{index + 1}</span>
-                  <img src={item.poster} alt={item.title} loading="lazy" decoding="async" referrerPolicy="no-referrer" />
+                  <PosterImage src={item.poster} alt={item.title} loading="lazy" decoding="async" referrerPolicy="no-referrer" />
                   <span>
                     <strong>{item.title}</strong>
                     <em>{item.year} · {getRatingBadgeText(item)}</em>
@@ -8079,7 +8087,7 @@ export default function Home({
           className="mobile-featured-poster-card group relative z-10 overflow-hidden text-left"
           aria-label={`Открыть информацию: ${featuredContent.title}`}
         >
-          <img
+          <PosterImage
             key={`mobile-featured-poster-${featuredContent.id}`}
             src={featuredPosterImage}
             alt={`Обложка: ${featuredContent.title}`}
@@ -8214,7 +8222,7 @@ export default function Home({
                     aria-label={`Показать слайд: ${item.title}`}
                   >
                     <span className="featured-roulette-poster">
-                      <img
+                      <PosterImage
                         src={getFeaturedPosterImage(item)}
                         alt={`Постер: ${item.title}`}
                         loading="lazy"
@@ -8295,7 +8303,7 @@ export default function Home({
                   aria-label={`Открыть: ${item.title}`}
                 >
                   <span className="featured-roulette-poster">
-                    <img
+                    <PosterImage
                       src={getFeaturedPosterImage(item)}
                       alt={`Постер: ${item.title}`}
                       loading="lazy"
@@ -8652,7 +8660,7 @@ export default function Home({
             </button>
 
             <div className="details-modal-poster h-[520px] bg-neutral-900">
-              <img
+              <PosterImage
                 src={selectedItem.poster}
                 alt={selectedItem.title}
                 loading="lazy"

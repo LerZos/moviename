@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 
+import PosterImage from "../../components/PosterImage";
 import type { Movie } from "../../data/movies";
 import { canResolveTrailerUrl, resolveTrailerUrl } from "../../lib/trailers";
 
@@ -337,7 +338,7 @@ function CatalogMovieCard({
         className="catalog-card-poster"
         aria-label={`Открыть ${item.title}`}
       >
-        <img
+        <PosterImage
           src={posterSrc}
           alt={item.title}
           loading={index < 8 ? "eager" : "lazy"}
@@ -932,7 +933,7 @@ export default function CatalogCategoryPage({
             </button>
 
             <div className="details-modal-poster h-[520px] bg-neutral-900">
-              <img
+              <PosterImage
                 src={selectedItem.poster}
                 alt={selectedItem.title}
                 className="h-full w-full object-cover"
@@ -1707,11 +1708,10 @@ const catalogStyles = `
     height: 100%;
     display: block;
     object-fit: cover;
-    transition: transform 500ms ease, filter 500ms ease;
+    transition: filter 500ms ease;
   }
 
   .catalog-card:hover .catalog-card-image {
-    transform: scale(1.045);
     filter: brightness(1.06);
   }
 
@@ -2570,7 +2570,7 @@ const catalogStyles = `
     }
 
     .catalog-card-poster {
-      aspect-ratio: 2 / 2.72 !important;
+      aspect-ratio: 2 / 3 !important;
     }
 
     .catalog-card-type,

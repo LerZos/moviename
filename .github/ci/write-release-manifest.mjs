@@ -17,13 +17,13 @@ const buildId = (await readFile(".next/BUILD_ID", "utf8")).trim();
 
 const manifest = {
   schemaVersion: 1,
-  release: "kinoluma-batch-b-linux-candidate",
+  release: source.releaseName ?? "kinoluma-batch-b-linux-candidate",
   source: {
     repository: "LerZos/moviename",
-    baseCommit: "54398810c958380a1624eec02429b7e31680755e",
+    baseCommit: source.baseCommit ?? "54398810c958380a1624eec02429b7e31680755e",
     releaseCommit: process.env.GITHUB_SHA ?? null,
     releaseRef: process.env.GITHUB_REF_NAME ?? null,
-    approvedRecoveryTreeSha1: "8b96fabdac495e55d138d689e9ace694643b68e9",
+    approvedRecoveryTreeSha1: source.approvedRecoveryTreeSha1 ?? null,
     trackedDiffSha256: source.trackedDiffSha256,
     appSourceFiles: source.changedAppFilesCount,
   },
@@ -52,7 +52,7 @@ const manifest = {
       reportSha256: "88b064add5557fb0dc8328ecebd1b6a67891518d43c14710baa75142555ad94f",
       note: "Inherited evidence for the exact approved source; no TMDB credential is used by this build.",
     },
-    visualParityEvidence: {
+    visualParityEvidence: source.visualParityEvidence ?? {
       desktop: "PASS",
       mobile: "PASS",
       note: "Inherited evidence for the exact approved source guarded by source hashes.",
