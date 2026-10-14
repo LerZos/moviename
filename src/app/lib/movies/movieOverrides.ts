@@ -10,6 +10,10 @@ import {
   type PlayerProvider,
 } from "../../data/movies";
 import { hasRealSupabaseAdminCredentials, getSupabaseAdmin } from "../supabase/admin";
+import {
+  getManualRatingFromRawJson,
+  resolveManualMovieRating,
+} from "./rating";
 import { attachVerifiedCredits } from "./verifiedCredits";
 
 export type MovieOverrideData = Partial<Movie> & Record<string, unknown>;
@@ -283,10 +287,6 @@ function getNumber(value: unknown) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function roundRating(value: number) {
-  return Math.max(0, Math.min(10, Math.round(value * 10) / 10));
-}
-
 function getNestedRecord(source: Record<string, unknown>, key: string) {
   return asRecord(source[key]);
 }
@@ -301,10 +301,9 @@ function getRawSourceRecords(rawJson: unknown) {
 }
 
 function getRatingFromRawJson(rawJson: unknown) {
-  const { raw, tmdb, kinopoisk, candidate } = getRawSourceRecords(rawJson);
-  const kinoluma = getNestedRecord(raw, "kinoluma");
+  const { tmdb, kinopoisk, candidate } = getRawSourceRecords(rawJson);
   const kinopoiskRating = asRecord(kinopoisk.rating);
-  const manualRating = getNumber(kinoluma.manual_rating);
+  const manualRating = getManualRatingFromRawJson(rawJson);
   const kpRating = getNumber(kinopoiskRating.kp);
   const imdbRating = getNumber(kinopoiskRating.imdb);
   const tmdbRating =
@@ -312,13 +311,12 @@ function getRatingFromRawJson(rawJson: unknown) {
   const tmdbVoteCount =
     getNumber(tmdb.vote_count) ?? getNumber(candidate.vote_count) ?? 0;
 
-  if (manualRating && manualRating > 0) return roundRating(manualRating);
-  if (kpRating && kpRating > 0) return roundRating(kpRating);
-  if (imdbRating && imdbRating > 0) return roundRating(imdbRating);
-  if (tmdbRating && tmdbRating > 0 && tmdbVoteCount > 0)
-    return roundRating(tmdbRating);
+  const automaticRating =
+    (kpRating && kpRating > 0 ? kpRating : null) ??
+    (imdbRating && imdbRating > 0 ? imdbRating : null) ??
+    (tmdbRating && tmdbRating > 0 && tmdbVoteCount > 0 ? tmdbRating : 0);
 
-  return 0;
+  return resolveManualMovieRating(automaticRating, manualRating);
 }
 
 function getDurationFromRawJson(rawJson: unknown) {
@@ -569,13 +567,7 @@ function isHiddenOverride(override: MovieOverrideData | null | undefined) {
 }
 
 function getSafeOverrideRating(baseRating: number, overrideRating: unknown) {
-  const normalizedRating = getNumber(overrideRating);
-
-  if (normalizedRating === null || normalizedRating <= 0) {
-    return baseRating;
-  }
-
-  return roundRating(normalizedRating);
+  return resolveManualMovieRating(baseRating, overrideRating);
 }
 
 function replaceManualMetadataFact(

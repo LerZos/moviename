@@ -1,5 +1,6 @@
 import { getSupabaseAdmin } from "../../../../lib/supabase/admin";
 import { assertAdminSecret } from "../../../../lib/import/adminAuth";
+import { mergeManualRatingIntoRawJson } from "../../../../lib/movies/rating";
 import { normalizeTrailerUrl } from "../../../../lib/trailers";
 
 export const runtime = "nodejs";
@@ -354,21 +355,6 @@ function mergePlayerLinksIntoRawJson(
       ...kinoluma,
       players: parsePlayerLinks(playerLinks, beforeDraftType || base.type),
       players_updated_at: new Date().toISOString(),
-    },
-  };
-}
-
-function mergeManualRatingIntoRawJson(rawJson: unknown, rating: number | null) {
-  const base = asRecord(rawJson);
-  const kinoluma = asRecord(base.kinoluma);
-
-  return {
-    ...base,
-    kinoluma: {
-      ...kinoluma,
-      manual_rating: rating,
-      manual_movie_rating: rating,
-      manual_rating_updated_at: new Date().toISOString(),
     },
   };
 }

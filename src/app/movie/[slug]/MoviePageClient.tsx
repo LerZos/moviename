@@ -9,6 +9,7 @@ import { type MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 import type { Movie, MovieFact, PlayerProvider } from "../../data/movies";
 import type { MovieCardIndexItem } from "../../data/movieCardIndex";
 import { normalizeCatalogCredits } from "../../lib/movies/credits";
+import { formatMovieRating } from "../../lib/movies/rating";
 import { supabase } from "../../lib/supabase";
 import {
   getCurrentSupabaseUser,
@@ -444,16 +445,6 @@ function isVisibleFact(fact: MovieFact) {
     !/(?:kinopoisk|кинопоиск|tmdb|imdb)/i.test(normalizedLabel) &&
     !isUnknownFactValue(fact.value)
   );
-}
-
-const UNKNOWN_RATING_TEXT = "Уточняется";
-
-function formatMovieRating(rating: number) {
-  if (!Number.isFinite(rating) || rating <= 0) {
-    return UNKNOWN_RATING_TEXT;
-  }
-
-  return `★ ${Number.isInteger(rating) ? rating.toString() : rating.toFixed(1)}`;
 }
 
 function getContentKind(movie: Pick<Movie, "type" | "genres"> | MovieCardIndexItem) {

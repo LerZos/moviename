@@ -4,6 +4,10 @@ import { tmdbFetch } from '../../../../lib/import/tmdb';
 import { buildTmdbImageUrl } from '../../../../lib/imageLinks';
 import { findBestMovieImages } from '../../../../lib/import/movieImages';
 import {
+  getManualRatingFromRawJson,
+  resolveManualMovieRating,
+} from '../../../../lib/movies/rating';
+import {
   fetchVibixByImdbId,
   fetchVibixByKinopoiskId,
   getVibixConfig,
@@ -103,10 +107,6 @@ function getNumber(value: unknown) {
 
   const parsed = Number(value.replace(',', '.').trim());
   return Number.isFinite(parsed) ? parsed : null;
-}
-
-function roundRating(value: number) {
-  return Math.max(0, Math.min(10, Math.round(value * 10) / 10));
 }
 
 function getString(value: unknown) {
@@ -231,24 +231,24 @@ async function enrichVibixCandidate(raw: unknown) {
 
 function getDraftMovieRating(rawJson: unknown) {
   const raw = asObject(rawJson);
-  const kinoluma = asObject(raw.kinoluma);
   const tmdb = asObject(raw.tmdb);
   const kinopoisk = asObject(raw.kinopoisk);
   const candidate = asObject(raw.candidate);
   const kinopoiskRating = asObject(kinopoisk.rating);
 
-  const manualRating = getNumber(kinoluma.manual_rating);
+  const manualRating = getManualRatingFromRawJson(rawJson);
   const kpRating = getNumber(kinopoiskRating.kp);
   const imdbRating = getNumber(kinopoiskRating.imdb);
   const tmdbRating = getNumber(tmdb.vote_average) ?? getNumber(candidate.vote_average);
   const tmdbVoteCount = getNumber(tmdb.vote_count) ?? getNumber(candidate.vote_count) ?? 0;
 
-  if (manualRating && manualRating > 0) return roundRating(manualRating);
-  if (kpRating && kpRating > 0) return roundRating(kpRating);
-  if (imdbRating && imdbRating > 0) return roundRating(imdbRating);
-  if (tmdbRating && tmdbRating > 0 && tmdbVoteCount > 0) return roundRating(tmdbRating);
+  const automaticRating =
+    (kpRating && kpRating > 0 ? kpRating : null) ??
+    (imdbRating && imdbRating > 0 ? imdbRating : null) ??
+    (tmdbRating && tmdbRating > 0 && tmdbVoteCount > 0 ? tmdbRating : 0);
+  const rating = resolveManualMovieRating(automaticRating, manualRating);
 
-  return null;
+  return rating > 0 ? rating : null;
 }
 
 function getCandidatePosterUrl(raw: unknown) {

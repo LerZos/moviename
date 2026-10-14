@@ -5,6 +5,7 @@ import { useMemo, useState, type FormEvent, type ReactNode } from "react";
 
 import { supabase } from "../../../../lib/supabase";
 import type { Movie } from "../../../../data/movies";
+import { parseManualRatingInput } from "../../../../lib/movies/rating";
 
 type MovieAdminEditFormProps = {
   slug: string;
@@ -434,7 +435,7 @@ export default function MovieAdminEditForm({
         originalTitle: valueToString(formData.get("originalTitle")).trim(),
         type: valueToString(formData.get("type")).trim(),
         year: parseNumber(formData.get("year")),
-        rating: parseNumber(formData.get("rating")),
+        rating: parseManualRatingInput(formData.get("rating")) ?? null,
         description: valueToString(formData.get("description")).trim(),
         longDescription: valueToString(formData.get("longDescription")).trim(),
         poster: valueToString(formData.get("poster")).trim(),
@@ -590,6 +591,7 @@ export default function MovieAdminEditForm({
                 name="rating"
                 value={ratingPreview}
                 onChange={(event) => setRatingPreview(event.target.value)}
+                inputMode="decimal"
                 className="edit-input"
               />
             </label>

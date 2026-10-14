@@ -1,16 +1,16 @@
-name: KinoLuma Batch C.3 Linux release candidate
+name: KinoLuma Admin Rating Fix Linux release candidate
 
 on:
   push:
     branches:
-      - release/batch-c3-credits-20261014
+      - release/admin-rating-fix-20261014
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: kinoluma-batch-c3-linux-release
+  group: kinoluma-admin-rating-linux-release
   cancel-in-progress: false
 
 jobs:
@@ -50,10 +50,10 @@ jobs:
           test -z "${TMDB_API_KEY:-}"
           test -z "${TMDB_ACCESS_TOKEN:-}"
 
-      - name: Verify approved Batch C.3 source and dry-run plan
+      - name: Verify approved admin rating source
         run: >-
-          node .github/ci/verify-batch-c3-source.mjs .
-          batch-c3-source-verification.json
+          node .github/ci/verify-admin-rating-source.mjs .
+          admin-rating-source-verification.json
 
       - name: Install Linux dependencies from lockfile
         run: npm ci --include=optional
@@ -115,14 +115,25 @@ jobs:
           src/app/lib/movies/verifiedCredits.ts
           src/app/lib/movies/credits.ts
           src/app/lib/movies/movieOverrides.ts
+          src/app/lib/movies/rating.ts
+          src/app/admin/movies/[slug]/edit/MovieAdminEditForm.tsx
+          src/app/api/admin/movies/[slug]/override/route.ts
+          src/app/api/admin/import/update-draft/route.ts
+          src/app/api/admin/import/list/route.ts
+          src/app/api/admin/import/draft-action/route.ts
           src/app/lib/import/fetchMovieFacts.ts
           src/app/lib/import/curatedPack300.ts
           scripts/generate-batch-c3-credits.mjs
           scripts/batch-c3-credits.test.mjs
           scripts/credits-normalization.test.mjs
+          scripts/admin-rating.test.mjs
 
-      - name: Batch C.1 and C.3 targeted credits tests
-        run: node --test scripts/credits-normalization.test.mjs scripts/batch-c3-credits.test.mjs
+      - name: Targeted credits and admin rating tests
+        run: >-
+          node --test
+          scripts/credits-normalization.test.mjs
+          scripts/batch-c3-credits.test.mjs
+          scripts/admin-rating.test.mjs
 
       - name: Supabase Admin lazy initialization tests
         run: >-
@@ -265,7 +276,7 @@ jobs:
         run: |
           node .github/ci/release-tree.mjs create release release/release-tree.json
           build_id="$(tr -d '\r\n' < .next/BUILD_ID)"
-          archive="dist/kinoluma-batch-c3-linux-${build_id}.tar"
+          archive="dist/kinoluma-admin-rating-linux-${build_id}.tar"
           tar --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner -C release -cf "$archive" .
           gzip -n -9 "$archive"
           archive="${archive}.gz"
@@ -279,15 +290,15 @@ jobs:
             "$archive" \
             dist/release-manifest.json \
             runtime-qa.json \
-            batch-c3-source-verification.json \
+            admin-rating-source-verification.json \
             release/release-tree.json
-          cp batch-c3-source-verification.json runtime-qa.json dist/
+          cp admin-rating-source-verification.json runtime-qa.json dist/
           cp release-plans/batch-c3-dry-run-plan.json release-plans/batch-c3-manual-overrides-audit.json dist/
 
       - name: Upload immutable candidate artifacts
         uses: actions/upload-artifact@v7.0.2
         with:
-          name: kinoluma-batch-c3-linux-${{ github.run_id }}
+          name: kinoluma-admin-rating-linux-${{ github.run_id }}
           path: dist/
           if-no-files-found: error
           compression-level: 0

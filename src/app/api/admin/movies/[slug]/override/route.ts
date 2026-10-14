@@ -2,6 +2,10 @@ import { revalidatePath } from 'next/cache';
 
 import { assertAdminAccess, getAdminUserFromRequest } from '../../../../../lib/import/adminAuth';
 import { getMovieOverrideData, getPublicBaseMovieBySlug, saveMovieOverride, type MovieOverrideData } from '../../../../../lib/movies/movieOverrides';
+import {
+  mergeMovieOverrideData,
+  parseManualRatingInput,
+} from '../../../../../lib/movies/rating';
 import { extractRendexVideoId } from '../../../../../lib/players';
 
 export const runtime = 'nodejs';
@@ -81,7 +85,7 @@ function buildOverridePayload(body: Record<string, unknown>): MovieOverrideData 
   const year = cleanNumber(body.year);
   if (year !== undefined) payload.year = String(year);
 
-  const rating = cleanNumber(body.rating);
+  const rating = parseManualRatingInput(body.rating);
   if (rating !== undefined) payload.rating = rating;
 
   const kinopoiskId = cleanNumber(body.kinopoiskId);
@@ -164,16 +168,27 @@ export async function PUT(request: Request, context: RouteContext) {
       );
     }
 
-    const overridePayload = buildOverridePayload(body as Record<string, unknown>);
+    const requestBody = body as Record<string, unknown>;
+    const overridePayload = buildOverridePayload(requestBody);
+    const currentOverride = await getMovieOverrideData(slug);
+    const shouldClearRating =
+      Object.prototype.hasOwnProperty.call(requestBody, 'rating') &&
+      (requestBody.rating === null ||
+        (typeof requestBody.rating === 'string' && !requestBody.rating.trim()));
+    const nextOverride = mergeMovieOverrideData(
+      currentOverride,
+      overridePayload,
+      shouldClearRating ? ['rating'] : [],
+    ) as MovieOverrideData;
 
-    await saveMovieOverride(slug, overridePayload, adminUser?.email || 'admin');
+    await saveMovieOverride(slug, nextOverride, adminUser?.email || 'admin');
 
     revalidateMovieUpdateSurfaces(slug);
 
     return Response.json({
       ok: true,
       slug,
-      data: overridePayload,
+      data: nextOverride,
     });
   } catch (error) {
     return Response.json(
@@ -181,7 +196,7 @@ export async function PUT(request: Request, context: RouteContext) {
         ok: false,
         error: error instanceof Error ? error.message : 'Unknown movie override error',
       },
-      { status: 500 },
+      { status: error instanceof RangeError ? 400 : 500 },
     );
   }
 }
