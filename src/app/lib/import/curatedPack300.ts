@@ -203,6 +203,7 @@ type FullCard = {
   cast: CastItem[];
   crew: {
     directors: string[];
+    creators: string[];
     writers: string[];
     studios: string[];
   };
@@ -772,6 +773,7 @@ function buildLongDescription(input: {
   genres: string[];
   countries: string[];
   directors: string[];
+  creators: string[];
   cast: CastItem[];
   studios: string[];
   seasons: number | null;
@@ -788,6 +790,7 @@ function buildLongDescription(input: {
   const productionParts = [
     countryText ? `производство: ${countryText}` : "",
     input.directors.length ? `режиссура: ${input.directors.slice(0, 3).join(", ")}` : "",
+    input.creators.length ? `создатели сериала: ${input.creators.slice(0, 3).join(", ")}` : "",
     input.studios.length ? `студии: ${input.studios.slice(0, 3).join(", ")}` : "",
     input.cast.length ? `в основном составе: ${input.cast.slice(0, 5).map((item) => item.name).join(", ")}` : "",
     input.seasons ? `сезонов: ${input.seasons}` : "",
@@ -942,6 +945,16 @@ function tmdbCrewNames(details: TmdbDetails | null, jobs: string[], limit: numbe
   );
 }
 
+export function collectCuratedProductionCredits(details: TmdbDetails | null, doc: KinopoiskDoc) {
+  return {
+    directors: uniq([
+      ...tmdbCrewNames(details, ["Director"], 8),
+      ...personNames(doc, ["режиссеры", "director"], 8),
+    ], 8),
+    creators: uniq((details?.created_by ?? []).map((item) => item.name), 8),
+  };
+}
+
 function formatDuration(doc: KinopoiskDoc, details: TmdbDetails | null) {
   const minutes =
     cleanInt(details?.runtime) ??
@@ -990,7 +1003,7 @@ function qualityScore(card: FullCard) {
   if (card.description.length >= 80) score += 7;
   if (card.longDescription.length >= 300) score += 7;
   if (card.cast.length) score += 6;
-  if (card.crew.directors.length) score += 6;
+  if (card.crew.directors.length || card.crew.creators.length) score += 6;
   if (card.crew.studios.length) score += 4;
   if (card.media.posterUrl !== "нужно найти") score += 5;
   if (card.media.backdropUrl !== "нужно найти") score += 4;
@@ -1023,11 +1036,8 @@ async function enrichCandidate(candidate: Candidate): Promise<PreparedMovie | nu
   const slug = generateSlug(title, year);
   const genres = mergedGenres(doc, details);
   const countries = productionCountries(doc, details);
-  const directors = uniq([
-    ...tmdbCrewNames(details, ["Director"], 8),
-    ...personNames(doc, ["режиссеры", "director"], 8),
-    ...((details?.created_by ?? []).map((item) => item.name)),
-  ], 8);
+  const { directors, creators } = collectCuratedProductionCredits(details, doc);
+  const isTv = candidate.type === "series" || reference?.mediaType === "tv";
   const writers = uniq([
     ...tmdbCrewNames(details, ["Writer", "Screenplay", "Teleplay", "Story"], 10),
     ...personNames(doc, ["сценаристы", "writer"], 10),
@@ -1062,6 +1072,7 @@ async function enrichCandidate(candidate: Candidate): Promise<PreparedMovie | nu
     genres,
     countries,
     directors,
+    creators: isTv ? creators : [],
     cast: finalCast,
     studios,
     seasons,
@@ -1101,7 +1112,8 @@ async function enrichCandidate(candidate: Candidate): Promise<PreparedMovie | nu
     ...(countries.length ? [{ label: "Страна", value: countries.join(", ") }] : []),
     { label: "Длительность", value: duration },
     ...(rating !== null ? [{ label: "Рейтинг", value: rating.toFixed(1) }] : []),
-    ...(directors.length ? [{ label: "Режиссёр", value: directors.slice(0, 3).join(", ") }] : []),
+    ...(!isTv && directors.length ? [{ label: "Режиссёр", value: directors.slice(0, 3).join(", ") }] : []),
+    ...(isTv && creators.length ? [{ label: "Создатели", value: creators.slice(0, 3).join(", ") }] : []),
     ...(studios.length ? [{ label: "Студия", value: studios.slice(0, 3).join(", ") }] : []),
     ...(seasons ? [{ label: "Сезоны", value: String(seasons) }] : []),
     ...(episodes ? [{ label: "Эпизоды", value: String(episodes) }] : []),
@@ -1127,7 +1139,7 @@ async function enrichCandidate(candidate: Candidate): Promise<PreparedMovie | nu
     faq,
     facts,
     cast: finalCast,
-    crew: { directors, writers, studios },
+    crew: { directors, creators: isTv ? creators : [], writers, studios },
     media: {
       posterUrl: posterUrl || "нужно найти",
       backdropUrl: backdropUrl || "нужно найти",

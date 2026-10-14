@@ -8,6 +8,7 @@ import PosterImage, { syncPosterBackground } from "../../components/PosterImage"
 import { type MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 import type { Movie, MovieFact, PlayerProvider } from "../../data/movies";
 import type { MovieCardIndexItem } from "../../data/movieCardIndex";
+import { normalizeCatalogCredits } from "../../lib/movies/credits";
 import { supabase } from "../../lib/supabase";
 import {
   getCurrentSupabaseUser,
@@ -596,7 +597,15 @@ export default function MoviePageClient({
 
   const similarMovies = useMemo(() => relatedMovies, [relatedMovies]);
 
-  const cast = movie.cast || [];
+  const credits = useMemo(() => normalizeCatalogCredits(movie), [movie]);
+  const creditGroups = [
+    { title: "Режиссёры", people: credits.directors.map((name) => ({ name, role: "Режиссёр" })) },
+    { title: "Создатели сериала", people: credits.seriesCreators.map((name) => ({ name, role: "Создатель" })) },
+    { title: "Актёры", people: credits.actors },
+    { title: "Актёры озвучивания", people: credits.voiceActors },
+    { title: "Персонажи", people: credits.characters },
+    { title: "Участники", people: credits.unclassified },
+  ].filter((group) => group.people.length > 0);
   const contentKind = getContentKind(movie);
   const relatedSectionTitle =
     movie.type === "Сериал"
@@ -1421,28 +1430,32 @@ export default function MoviePageClient({
             <div className="section-head">
               <div>
                 <p className="eyebrow">Команда</p>
-                <h2>Главные роли</h2>
+                <h2>Команда и персонажи</h2>
               </div>
             </div>
 
-            {cast.length > 0 ? (
-              <div className="cast-list">
-                {cast.map((person) => (
-                  <article key={person.name} className="cast-card">
-                    <div className="cast-info">
-                      <h3>{person.name}</h3>
-                      <p>{person.role}</p>
+            {creditGroups.length > 0 ? (
+              <div className="credits-groups">
+                {creditGroups.map((group) => (
+                  <div key={group.title}>
+                    <h3 className="credits-group-title">{group.title}</h3>
+                    <div className="cast-list">
+                      {group.people.map((person) => (
+                        <article key={`${group.title}-${person.name}-${person.role}`} className="cast-card">
+                          <div className="cast-info">
+                            <h3>{person.name}</h3>
+                            {person.role ? <p>{person.role}</p> : null}
+                          </div>
+                          <div className="cast-avatar">{getInitials(person.name)}</div>
+                        </article>
+                      ))}
                     </div>
-
-                    <div className="cast-avatar">
-                      {getInitials(person.name)}
-                    </div>
-                  </article>
+                  </div>
                 ))}
               </div>
             ) : (
               <p className="long-text">
-                Информация об актёрах для этого материала пока готовится.
+                Информация о команде и персонажах пока готовится.
               </p>
             )}
           </section>
@@ -2351,6 +2364,18 @@ const moviePageStyles = `
     line-height: 1.2;
     font-weight: 1000;
     letter-spacing: -0.04em;
+  }
+
+  .credits-groups {
+    display: grid;
+    gap: 16px;
+  }
+
+  .credits-group-title {
+    margin: 0 0 10px;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 800;
   }
 
   .cast-list {

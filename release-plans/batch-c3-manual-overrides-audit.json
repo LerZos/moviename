@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "checkedAtUtc": "2026-10-13T21:55:54Z",
+  "mode": "READ_ONLY",
+  "source": "connected Supabase project swwdgacmhenmrdikqaqn, public.movie_overrides",
+  "allowlistPlanSha256": "7eb1168f8b1ea93118c9fccec1a4507ae5d0fc1c8c2eedea6f8410440eaaaf78",
+  "allowlistChecked": 369,
+  "overrideRowsInspected": 64,
+  "allowlistedCardsWithAnyOverride": 1,
+  "allowlistedCardsWithCreditsOverride": 0,
+  "earlyHistoricalCardsWithoutCheckpointCovered": 17,
+  "historicalCreditsConflictsReconfirmed": "12/12",
+  "valuesOrRawOverrideDataStored": false,
+  "productionModified": false
+}

@@ -43,6 +43,8 @@ const manifest = {
     source: source.pass,
     batchB: `${source.batchB.totalImageMutations}/481`,
     manualOverrides: `${source.manualOverrides.preserved}/9`,
+    credits: source.credits ?? null,
+    creditsPlanSha256: source.planSha256 ?? null,
     runtime: runtime.pass,
     ssrCanonical: `${runtime.ssrCanonical.passed}/18`,
     sitemap: `${runtime.sitemap.urlCount}/2189`,

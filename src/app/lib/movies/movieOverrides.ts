@@ -10,6 +10,7 @@ import {
   type PlayerProvider,
 } from "../../data/movies";
 import { hasRealSupabaseAdminCredentials, getSupabaseAdmin } from "../supabase/admin";
+import { attachVerifiedCredits } from "./verifiedCredits";
 
 export type MovieOverrideData = Partial<Movie> & Record<string, unknown>;
 
@@ -397,8 +398,14 @@ function getBudgetFromRawJson(rawJson: unknown) {
   return `$${Math.round(budget).toLocaleString("en-US")}`;
 }
 
-function getDraftFacts(draft: MovieDraftRow): MovieFact[] {
+export function getDraftFacts(draft: MovieDraftRow): MovieFact[] {
   const facts: MovieFact[] = [];
+  const { tmdb } = getRawSourceRecords(draft.raw_json);
+  const isTv = draft.type === "series" || draft.type === "tv" ||
+    ((draft.type === "anime" || draft.type === "cartoon") && Boolean(tmdb.first_air_date));
+  const creators = Array.isArray(tmdb.created_by)
+    ? cleanStringArray(tmdb.created_by.map((person) => asRecord(person).name), 8)
+    : [];
   const country = getCountryFromRawJson(draft.raw_json);
   const duration = getDurationFromRawJson(draft.raw_json);
   const budget = getBudgetFromRawJson(draft.raw_json);
@@ -410,7 +417,9 @@ function getDraftFacts(draft: MovieDraftRow): MovieFact[] {
   if (duration) facts.push({ label: "Длительность", value: duration });
   if (budget) facts.push({ label: "Бюджет", value: budget });
   if (studio) facts.push({ label: "Студия", value: studio });
-  if (draft.directors?.length)
+  if (isTv && creators.length)
+    facts.push({ label: "Создатели", value: creators.slice(0, 3).join(", ") });
+  if (!isTv && draft.directors?.length)
     facts.push({
       label: "Режиссёр",
       value: draft.directors.slice(0, 3).join(", "),
@@ -781,7 +790,8 @@ export async function getMovieWithOverrides(
     return null;
   }
 
-  return sanitizeMovieForPublicDisplay(applyOverride(baseMovie, override));
+  const mergedMovie = applyOverride(baseMovie, override);
+  return sanitizeMovieForPublicDisplay(attachVerifiedCredits(mergedMovie, override));
 }
 
 

@@ -47,6 +47,22 @@ type KinopoiskSearchResponse = {
   }>;
 };
 
+export function collectDirectorNames(
+  details: Pick<TmdbDetails, 'credits' | 'created_by'>,
+  kinopoisk: NonNullable<KinopoiskSearchResponse['docs']>[number] | null,
+): string[] {
+  return Array.from(new Set([
+    ...((kinopoisk?.persons ?? [])
+      .filter((person) => person.profession === 'режиссеры' || person.enProfession === 'director')
+      .map((person) => person.name ?? person.enName)
+      .filter(Boolean) as string[]),
+    ...((details.credits?.crew ?? [])
+      .filter((person) => person.job === 'Director')
+      .map((person) => person.name)
+      .filter(Boolean) as string[]),
+  ])).slice(0, 8);
+}
+
 function getYear(value?: string): number | null {
   if (!value) return null;
   const year = Number(value.slice(0, 4));
@@ -273,19 +289,7 @@ export async function fetchMovieFacts(candidate: ImportCandidate): Promise<Movie
     ]),
   ).slice(0, 12);
 
-  const directors = Array.from(
-    new Set([
-      ...((kinopoisk?.persons ?? [])
-        .filter((person) => person.profession === 'режиссеры' || person.enProfession === 'director')
-        .map((person) => person.name ?? person.enName)
-        .filter(Boolean) as string[]),
-      ...((details.credits?.crew ?? [])
-        .filter((person) => person.job === 'Director')
-        .map((person) => person.name)
-        .filter(Boolean) as string[]),
-      ...((details.created_by ?? []).map((person) => person.name).filter(Boolean) as string[]),
-    ]),
-  ).slice(0, 8);
+  const directors = collectDirectorNames(details, kinopoisk);
 
   const imdbId = details.external_ids?.imdb_id ?? kinopoisk?.externalId?.imdb ?? null;
   const kinopoiskId = typeof kinopoisk?.id === 'number' ? kinopoisk.id : null;

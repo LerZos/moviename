@@ -38,6 +38,13 @@ export type CastMember = {
   role: string;
 };
 
+export type VerifiedMovieCredits = {
+  provenance: "FULLY_VERIFIED" | "TMDB_ONLY";
+  directors?: string[];
+  seriesCreators?: string[];
+  actors?: CastMember[];
+};
+
 export type MovieFaqItem = {
   question: string;
   answer: string;
@@ -95,6 +102,7 @@ export type Movie = {
   facts?: MovieFact[];
   faq?: MovieFaqItem[];
   cast?: CastMember[];
+  verifiedCredits?: VerifiedMovieCredits;
   players?: PlayerProvider[];
 };
 

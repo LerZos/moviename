@@ -1,16 +1,16 @@
-name: KinoLuma global poster fix Linux release candidate
+name: KinoLuma Batch C.3 Linux release candidate
 
 on:
   push:
     branches:
-      - release/global-poster-fix-20261012
+      - release/batch-c3-credits-20261014
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: kinoluma-global-poster-fix-linux-release
+  group: kinoluma-batch-c3-linux-release
   cancel-in-progress: false
 
 jobs:
@@ -50,10 +50,10 @@ jobs:
           test -z "${TMDB_API_KEY:-}"
           test -z "${TMDB_ACCESS_TOKEN:-}"
 
-      - name: Verify approved eight-file global poster fix
+      - name: Verify approved Batch C.3 source and dry-run plan
         run: >-
-          node .github/ci/verify-global-poster-fix-source.mjs .
-          poster-fix-source-verification.json
+          node .github/ci/verify-batch-c3-source.mjs .
+          batch-c3-source-verification.json
 
       - name: Install Linux dependencies from lockfile
         run: npm ci --include=optional
@@ -110,6 +110,19 @@ jobs:
           src/app/lib/imageLinks.ts
           src/app/lib/home/homeCatalogRoutes.ts
           src/app/components/PosterImage.tsx
+          src/app/data/movies.ts
+          src/app/data/generatedCanonicalCredits.ts
+          src/app/lib/movies/verifiedCredits.ts
+          src/app/lib/movies/credits.ts
+          src/app/lib/movies/movieOverrides.ts
+          src/app/lib/import/fetchMovieFacts.ts
+          src/app/lib/import/curatedPack300.ts
+          scripts/generate-batch-c3-credits.mjs
+          scripts/batch-c3-credits.test.mjs
+          scripts/credits-normalization.test.mjs
+
+      - name: Batch C.1 and C.3 targeted credits tests
+        run: node --test scripts/credits-normalization.test.mjs scripts/batch-c3-credits.test.mjs
 
       - name: Supabase Admin lazy initialization tests
         run: >-
@@ -237,6 +250,7 @@ jobs:
             cd ..
             node .github/ci/runtime-qa.mjs http://127.0.0.1:3100 runtime-qa.json
             node .github/ci/verify-anime-page-wiring.mjs . http://127.0.0.1:3100
+            node .github/ci/verify-batch-c3-pages.mjs http://127.0.0.1:3100
             kill "$server_pid"
             wait "$server_pid" || true
             trap - EXIT
@@ -251,7 +265,7 @@ jobs:
         run: |
           node .github/ci/release-tree.mjs create release release/release-tree.json
           build_id="$(tr -d '\r\n' < .next/BUILD_ID)"
-          archive="dist/kinoluma-global-poster-fix-linux-${build_id}.tar"
+          archive="dist/kinoluma-batch-c3-linux-${build_id}.tar"
           tar --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner -C release -cf "$archive" .
           gzip -n -9 "$archive"
           archive="${archive}.gz"
@@ -265,14 +279,15 @@ jobs:
             "$archive" \
             dist/release-manifest.json \
             runtime-qa.json \
-            poster-fix-source-verification.json \
+            batch-c3-source-verification.json \
             release/release-tree.json
-          cp poster-fix-source-verification.json runtime-qa.json dist/
+          cp batch-c3-source-verification.json runtime-qa.json dist/
+          cp release-plans/batch-c3-dry-run-plan.json release-plans/batch-c3-manual-overrides-audit.json dist/
 
       - name: Upload immutable candidate artifacts
         uses: actions/upload-artifact@v7.0.2
         with:
-          name: kinoluma-global-poster-fix-linux-${{ github.run_id }}
+          name: kinoluma-batch-c3-linux-${{ github.run_id }}
           path: dist/
           if-no-files-found: error
           compression-level: 0
