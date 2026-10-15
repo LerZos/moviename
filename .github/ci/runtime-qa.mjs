@@ -23,6 +23,7 @@ const slugs = [
   "attack-on-titan",
   "naruto",
   "jumanji-1995",
+  "the-100-2014",
 ];
 
 function canonicalFromHtml(html) {
@@ -46,12 +47,27 @@ for (const slug of slugs) {
   const pass = response.status === 200 && canonical === expectedCanonical;
   pages.push({ slug, status: response.status, canonical, expectedCanonical, pass });
   if (!pass) errors.push(`${slug}: SSR/canonical check failed`);
+  if (slug === "the-100-2014") {
+    for (const expected of ["Сезоны и серии", "Сезон 7", "100 серий", "Jason Rothenberg", "wHIMMLFsk32wIzDmawWkYVbxFCS.jpg"]) {
+      if (!html.includes(expected)) errors.push(`${slug}: missing ${expected} in SSR HTML`);
+    }
+  }
+}
+
+for (const query of ["Сотня", "The 100"]) {
+  const response = await fetch(`${origin}/api/search?q=${encodeURIComponent(query)}`);
+  const body = response.ok ? await response.json() : null;
+  if (response.status !== 200 || !Array.isArray(body?.items) ||
+      body.items.filter((item) => item.slug === "the-100-2014").length !== 1) {
+    errors.push(`Search for ${query} did not return exactly one The 100 card`);
+  }
 }
 
 const sitemapResponse = await fetch(`${origin}/sitemap.xml`);
 const sitemap = await sitemapResponse.text();
 const sitemapUrlCount = [...sitemap.matchAll(/<loc>[^<]+<\/loc>/g)].length;
-if (sitemapResponse.status !== 200 || sitemapUrlCount !== 2189) {
+if (sitemapResponse.status !== 200 || sitemapUrlCount !== 2190 ||
+    !sitemap.includes("https://kinoluma.online/movie/the-100-2014")) {
   errors.push(`Sitemap check failed: HTTP ${sitemapResponse.status}, ${sitemapUrlCount} URLs`);
 }
 
@@ -116,8 +132,8 @@ const report = {
 };
 
 await writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
-console.log(`SSR_CANONICAL=${report.ssrCanonical.passed}/18`);
-console.log(`SITEMAP_URLS=${sitemapUrlCount}/2189`);
+console.log(`SSR_CANONICAL=${report.ssrCanonical.passed}/19`);
+console.log(`SITEMAP_URLS=${sitemapUrlCount}/2190`);
 console.log(`IMAGE_OPTIMIZER=${imageResponse.status}:${imageContentType}`);
 console.log(`ROUTE_GUARDS=${adminResponse.status}/${cronResponse.status}/${tmdbResponse.status}`);
 console.log(`RUNTIME_QA=${report.pass ? "PASS" : "FAIL"}`);

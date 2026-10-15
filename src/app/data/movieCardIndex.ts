@@ -20,6 +20,16 @@ export type MovieCardIndexItem = {
 };
 
 export const movieCardIndex: MovieCardIndexItem[] = [
+  {
+    id: 950001,
+    slug: "the-100-2014",
+    title: "Сотня",
+    type: "Сериал",
+    year: "2014–2020",
+    rating: 7.3,
+    genres: ["Фантастика", "Драма", "Боевик", "Приключения"],
+    poster: "https://image.tmdb.org/t/p/original/wHIMMLFsk32wIzDmawWkYVbxFCS.jpg",
+  },
   ...generatedRequestedMovieCardIndex,
   ...manualGoodPopularMovieCardIndex,
   ...manualSeoMovieExpansionCardIndex,

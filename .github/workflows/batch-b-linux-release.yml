@@ -1,16 +1,16 @@
-name: KinoLuma Admin Rating Fix Linux release candidate
+name: KinoLuma The 100 Linux release candidate
 
 on:
   push:
     branches:
-      - release/admin-rating-fix-20261014
+      - release/the-100-20261015
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: kinoluma-admin-rating-linux-release
+  group: kinoluma-the-100-linux-release
   cancel-in-progress: false
 
 jobs:
@@ -50,10 +50,10 @@ jobs:
           test -z "${TMDB_API_KEY:-}"
           test -z "${TMDB_ACCESS_TOKEN:-}"
 
-      - name: Verify approved admin rating source
+      - name: Verify isolated The 100 source
         run: >-
-          node .github/ci/verify-admin-rating-source.mjs .
-          admin-rating-source-verification.json
+          node .github/ci/verify-the-100-source.mjs .
+          the-100-source-verification.json
 
       - name: Install Linux dependencies from lockfile
         run: npm ci --include=optional
@@ -110,7 +110,13 @@ jobs:
           src/app/lib/imageLinks.ts
           src/app/lib/home/homeCatalogRoutes.ts
           src/app/components/PosterImage.tsx
+          src/app/data/canonicalIdentity.ts
+          src/app/data/manualCanonicalMovieAdditions.ts
+          src/app/data/manualThe100Addition.ts
+          src/app/data/manualThe100Episodes.ts
           src/app/data/movies.ts
+          src/app/data/movieCardIndex.ts
+          src/app/data/profileCatalogItems.ts
           src/app/data/generatedCanonicalCredits.ts
           src/app/lib/movies/verifiedCredits.ts
           src/app/lib/movies/credits.ts
@@ -127,6 +133,7 @@ jobs:
           scripts/batch-c3-credits.test.mjs
           scripts/credits-normalization.test.mjs
           scripts/admin-rating.test.mjs
+          scripts/the-100.test.mjs
 
       - name: Targeted credits and admin rating tests
         run: >-
@@ -134,6 +141,9 @@ jobs:
           scripts/credits-normalization.test.mjs
           scripts/batch-c3-credits.test.mjs
           scripts/admin-rating.test.mjs
+
+      - name: The 100 identity, seasons and credits tests
+        run: node scripts/the-100.test.mjs
 
       - name: Supabase Admin lazy initialization tests
         run: >-
@@ -276,7 +286,7 @@ jobs:
         run: |
           node .github/ci/release-tree.mjs create release release/release-tree.json
           build_id="$(tr -d '\r\n' < .next/BUILD_ID)"
-          archive="dist/kinoluma-admin-rating-linux-${build_id}.tar"
+          archive="dist/kinoluma-the-100-linux-${build_id}.tar"
           tar --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner -C release -cf "$archive" .
           gzip -n -9 "$archive"
           archive="${archive}.gz"
@@ -290,15 +300,15 @@ jobs:
             "$archive" \
             dist/release-manifest.json \
             runtime-qa.json \
-            admin-rating-source-verification.json \
+            the-100-source-verification.json \
             release/release-tree.json
-          cp admin-rating-source-verification.json runtime-qa.json dist/
+          cp the-100-source-verification.json runtime-qa.json dist/
           cp release-plans/batch-c3-dry-run-plan.json release-plans/batch-c3-manual-overrides-audit.json dist/
 
       - name: Upload immutable candidate artifacts
         uses: actions/upload-artifact@v7.0.2
         with:
-          name: kinoluma-admin-rating-linux-${{ github.run_id }}
+          name: kinoluma-the-100-linux-${{ github.run_id }}
           path: dist/
           if-no-files-found: error
           compression-level: 0

@@ -13,6 +13,7 @@ import { manualWorldPopular200Additions } from "./manualWorldPopular200Additions
 import { manualSeoMovieExpansionAdditions } from "./manualSeoMovieExpansion";
 import { manualRequestedSeriesAdditions } from "./manualRequestedSeriesAdditions";
 import { manualUserPinnedAdditions } from "./manualUserPinnedAdditions";
+import { manualThe100Addition } from "./manualThe100Addition";
 import {
   IMAGE_LINKS,
   createCartoonPoster,
@@ -36,6 +37,18 @@ export type MovieFact = {
 export type CastMember = {
   name: string;
   role: string;
+};
+
+export type MovieEpisode = {
+  number: number;
+  originalTitle: string;
+  russianTitle?: string;
+  airDate: string;
+};
+
+export type MovieSeason = {
+  season: number;
+  episodes: MovieEpisode[];
 };
 
 export type VerifiedMovieCredits = {
@@ -95,6 +108,7 @@ export type Movie = {
   releaseStatus?: string;
   seasons?: number;
   episodes?: number;
+  episodeGuide?: MovieSeason[];
   source?: string;
   seoTitle?: string;
   seoDescription?: string;
@@ -435,6 +449,7 @@ function hydrateMovieContent(movie: Movie) {
 
 const moviesRaw: Movie[] = [
   ...manualUserPinnedAdditions,
+  manualThe100Addition,
   ...manualRequestedSeriesAdditions,
   ...generatedRequestedExpansionMovies,
   ...manualCuratedExpansionPack,

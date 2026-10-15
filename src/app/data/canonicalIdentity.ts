@@ -2,8 +2,10 @@ import {
   canonicalMovieRegistry,
   type CanonicalContentType,
   type CanonicalMovieId,
+  type CanonicalMovieRegistryTuple,
   type TmdbNamespace,
 } from "./generatedCanonicalMovieRegistry";
+import { manualCanonicalMovieAdditions } from "./manualCanonicalMovieAdditions";
 
 export type CanonicalMovieIdentity = {
   canonicalMovieId: CanonicalMovieId;
@@ -25,7 +27,12 @@ export type CanonicalIdentityResolution =
     }
   | { status: "not_found"; matchedBy: string };
 
-const identities: CanonicalMovieIdentity[] = canonicalMovieRegistry.map(
+const generatedIdentities: readonly CanonicalMovieRegistryTuple[] = canonicalMovieRegistry;
+const identityEntries: readonly CanonicalMovieRegistryTuple[] = [
+  ...generatedIdentities,
+  ...manualCanonicalMovieAdditions,
+];
+const identities: CanonicalMovieIdentity[] = identityEntries.map(
   ([
     canonicalMovieId,
     slug,

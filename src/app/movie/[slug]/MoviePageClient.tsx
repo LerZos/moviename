@@ -1452,6 +1452,45 @@ export default function MoviePageClient({
           </section>
         </section>
 
+        {movie.episodeGuide?.length ? (
+          <section className="section-card episode-guide animate-in" aria-labelledby="episode-guide-title">
+            <div className="section-head">
+              <div>
+                <p className="eyebrow">Эпизоды</p>
+                <h2 id="episode-guide-title">Сезоны и серии</h2>
+              </div>
+              <p className="episode-guide-total">
+                {movie.episodeGuide.length} сезонов · {movie.episodeGuide.reduce((count, season) => count + season.episodes.length, 0)} серий
+              </p>
+            </div>
+
+            <div className="episode-seasons">
+              {movie.episodeGuide.map((season) => (
+                <details key={season.season} className="episode-season" open={season.season === 1}>
+                  <summary>
+                    <span>Сезон {season.season}</span>
+                    <span>{season.episodes.length} серий</span>
+                  </summary>
+                  <ol className="episode-list">
+                    {season.episodes.map((episode) => (
+                      <li key={`${season.season}-${episode.number}`} className="episode-item">
+                        <span className="episode-number">{String(episode.number).padStart(2, "0")}</span>
+                        <span className="episode-titles">
+                          <strong>{episode.russianTitle || episode.originalTitle}</strong>
+                          {episode.russianTitle ? <span>{episode.originalTitle}</span> : null}
+                        </span>
+                        <time dateTime={episode.airDate}>
+                          {episode.airDate.split("-").reverse().join(".")}
+                        </time>
+                      </li>
+                    ))}
+                  </ol>
+                </details>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
         <section id="faq" className="section-card faq-section animate-in">
           <div className="section-head similar-head">
             <div>
@@ -2316,6 +2355,97 @@ const moviePageStyles = `
     grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
     gap: 20px;
     align-items: start;
+  }
+
+  .episode-guide {
+    margin-top: 20px;
+  }
+
+  .episode-guide-total {
+    margin: 0;
+    color: #a0a0a0;
+    font-size: 13px;
+    font-weight: 750;
+  }
+
+  .episode-seasons {
+    display: grid;
+    gap: 10px;
+  }
+
+  .episode-season {
+    min-width: 0;
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 18px;
+    background: rgba(0,0,0,0.42);
+  }
+
+  .episode-season summary {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 18px;
+    cursor: pointer;
+    font-weight: 850;
+  }
+
+  .episode-season summary:focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: 3px;
+  }
+
+  .episode-season summary span:last-child {
+    color: #a0a0a0;
+    font-size: 13px;
+  }
+
+  .episode-list {
+    margin: 0;
+    padding: 0 18px 12px;
+    list-style: none;
+  }
+
+  .episode-item {
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 12px;
+    padding: 12px 0;
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .episode-number,
+  .episode-item time,
+  .episode-titles span {
+    color: #a0a0a0;
+    font-size: 13px;
+  }
+
+  .episode-titles {
+    display: grid;
+    min-width: 0;
+    gap: 4px;
+  }
+
+  .episode-titles strong {
+    overflow-wrap: anywhere;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+
+  @media (max-width: 640px) {
+    .episode-guide .section-head {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .episode-item {
+      grid-template-columns: 26px minmax(0, 1fr);
+    }
+
+    .episode-item time {
+      grid-column: 2;
+    }
   }
 
   .section-head {
