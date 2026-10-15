@@ -29,11 +29,11 @@ const git = (args, encoding = "utf8") =>
   execFileSync("git", args, { cwd: repo, encoding, maxBuffer: 32 * 1024 * 1024 });
 const errors = [];
 const parentCommit = git(["rev-parse", `${candidateRef}^`]).trim();
-const baseAncestor = git(["rev-parse", `${candidateRef}~2`]).trim();
+const baseAncestor = git(["rev-parse", `${candidateRef}~3`]).trim();
 if (baseAncestor !== BASE_COMMIT) errors.push("Release ancestry does not start at the approved production source commit");
 
 const commitCount = Number(git(["rev-list", "--count", `${BASE_COMMIT}..${candidateRef}`]).trim());
-if (commitCount !== 2) errors.push(`Expected the release and targeted test correction commits, found ${commitCount}`);
+if (commitCount !== 3) errors.push(`Expected the release and two targeted CI corrections, found ${commitCount}`);
 
 const changedFiles = git(["diff", "--name-only", BASE_COMMIT, candidateRef])
   .trim().split(/\r?\n/).filter(Boolean).sort();

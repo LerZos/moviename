@@ -48,8 +48,10 @@ for (const slug of slugs) {
   pages.push({ slug, status: response.status, canonical, expectedCanonical, pass });
   if (!pass) errors.push(`${slug}: SSR/canonical check failed`);
   if (slug === "the-100-2014") {
+    // React separates adjacent text nodes with hydration comments in SSR HTML.
+    const renderedText = html.replace(/<!--\s*-->/g, "");
     for (const expected of ["Сезоны и серии", "Сезон 7", "100 серий", "Jason Rothenberg", "wHIMMLFsk32wIzDmawWkYVbxFCS.jpg"]) {
-      if (!html.includes(expected)) errors.push(`${slug}: missing ${expected} in SSR HTML`);
+      if (!renderedText.includes(expected)) errors.push(`${slug}: missing ${expected} in SSR HTML`);
     }
   }
 }
