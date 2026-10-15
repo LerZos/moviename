@@ -5,6 +5,7 @@ import path from "node:path";
 
 const BASE_COMMIT = "4e05f90b20bff8c65d8ab4bf8bcda09d03b66d33";
 const APP_FILES = [
+  "scripts/batch-c3-credits.test.mjs",
   "scripts/the-100.test.mjs",
   "src/app/data/canonicalIdentity.ts",
   "src/app/data/manualCanonicalMovieAdditions.ts",
@@ -28,10 +29,11 @@ const git = (args, encoding = "utf8") =>
   execFileSync("git", args, { cwd: repo, encoding, maxBuffer: 32 * 1024 * 1024 });
 const errors = [];
 const parentCommit = git(["rev-parse", `${candidateRef}^`]).trim();
-if (parentCommit !== BASE_COMMIT) errors.push("Release parent is not the approved production source commit");
+const baseAncestor = git(["rev-parse", `${candidateRef}~2`]).trim();
+if (baseAncestor !== BASE_COMMIT) errors.push("Release ancestry does not start at the approved production source commit");
 
 const commitCount = Number(git(["rev-list", "--count", `${BASE_COMMIT}..${candidateRef}`]).trim());
-if (commitCount !== 1) errors.push(`Expected one release commit, found ${commitCount}`);
+if (commitCount !== 2) errors.push(`Expected the release and targeted test correction commits, found ${commitCount}`);
 
 const changedFiles = git(["diff", "--name-only", BASE_COMMIT, candidateRef])
   .trim().split(/\r?\n/).filter(Boolean).sort();
@@ -47,6 +49,7 @@ const report = {
   releaseName: "kinoluma-the-100-linux-candidate",
   baseCommit: BASE_COMMIT,
   parentCommit,
+  baseAncestor,
   releaseCommit: git(["rev-parse", candidateRef]).trim(),
   commitCount,
   changedFiles,

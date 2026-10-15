@@ -30,8 +30,10 @@ const { collectDirectorNames } = require("../src/app/lib/import/fetchMovieFacts.
 const { collectCuratedProductionCredits } = require("../src/app/lib/import/curatedPack300.ts");
 const moviesById = new Map(movies.map((movie) => [movie.canonicalMovieId, movie]));
 
-test("all allowlisted identities resolve against the 2000-card production catalog", () => {
-  assert.equal(movies.length, 2000);
+test("all allowlisted identities resolve against the original 2000 cards plus The 100", () => {
+  assert.equal(movies.filter((movie) => movie.slug !== "the-100-2014").length, 2000);
+  assert.equal(movies.filter((movie) => movie.slug === "the-100-2014").length, 1);
+  assert.equal(movies.length, 2001);
   assert.equal(generatedCanonicalCredits.length, 369);
   assert.equal(new Set(generatedCanonicalCredits.map((entry) => entry.canonicalMovieId)).size, 369);
   for (const entry of generatedCanonicalCredits) {
