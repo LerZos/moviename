@@ -9,8 +9,25 @@ export type CatalogCredits = {
   unclassified: CastMember[];
 };
 
+export type CreditDisplayGroup = {
+  key: "directors" | "creators" | "cast" | "voice-cast" | "characters" | "participants";
+  title: string;
+  people: CastMember[];
+};
+
+export const COLLAPSED_CREDIT_COUNT = 6;
+
 const DIRECTOR_LABELS = new Set(["режиссёр", "режиссёры", "режиссер", "режиссеры"]);
 const CREATOR_LABELS = new Set(["создатель", "создатели"]);
+const LEGACY_CAST_SUMMARY_LABELS = new Set([
+  "актёры",
+  "актеры",
+  "актёрский состав",
+  "актерский состав",
+  "в главных ролях",
+  "главные роли",
+  "главные герои",
+]);
 
 function uniqueNames(values: string[]): string[] {
   const seen = new Set<string>();
@@ -20,6 +37,63 @@ function uniqueNames(values: string[]): string[] {
     seen.add(key);
     return true;
   });
+}
+
+function uniquePeople(values: CastMember[]): CastMember[] {
+  const people = new Map<string, CastMember>();
+
+  for (const person of values) {
+    const name = person.name.trim();
+    const role = person.role.trim();
+    const key = name.toLocaleLowerCase("ru-RU");
+    if (!name) continue;
+
+    const existing = people.get(key);
+    if (!existing || (!existing.role && role)) {
+      people.set(key, { name: existing?.name ?? name, role });
+    }
+  }
+
+  return [...people.values()];
+}
+
+export function buildCreditDisplayGroups(credits: CatalogCredits): CreditDisplayGroup[] {
+  const groups: CreditDisplayGroup[] = [
+    {
+      key: "directors",
+      title: "Режиссёры",
+      people: credits.directors.map((name) => ({ name, role: "" })),
+    },
+    {
+      key: "creators",
+      title: "Создатели сериала",
+      people: credits.seriesCreators.map((name) => ({ name, role: "" })),
+    },
+    { key: "cast", title: "Актёрский состав", people: credits.actors },
+    { key: "voice-cast", title: "Актёры озвучивания", people: credits.voiceActors },
+    { key: "characters", title: "Персонажи", people: credits.characters },
+    { key: "participants", title: "Участники", people: credits.unclassified },
+  ];
+
+  return groups
+    .map((group) => ({ ...group, people: uniquePeople(group.people) }))
+    .filter((group) => group.people.length > 0);
+}
+
+export function getVisibleCreditPeople(
+  people: CastMember[],
+  expanded: boolean,
+  limit = COLLAPSED_CREDIT_COUNT,
+): CastMember[] {
+  return expanded ? people : people.slice(0, limit);
+}
+
+export function isLegacyCastSummaryLabel(label: string): boolean {
+  return LEGACY_CAST_SUMMARY_LABELS.has(label.trim().toLocaleLowerCase("ru-RU"));
+}
+
+export function shouldShowMovieFact(label: string, hasStructuredCast: boolean): boolean {
+  return !hasStructuredCast || !isLegacyCastSummaryLabel(label);
 }
 
 function factNames(movie: Movie, labels: Set<string>): string[] {

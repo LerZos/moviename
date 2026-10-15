@@ -8,7 +8,13 @@ import PosterImage, { syncPosterBackground } from "../../components/PosterImage"
 import { type MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 import type { Movie, MovieFact, PlayerProvider } from "../../data/movies";
 import type { MovieCardIndexItem } from "../../data/movieCardIndex";
-import { normalizeCatalogCredits } from "../../lib/movies/credits";
+import {
+  buildCreditDisplayGroups,
+  getVisibleCreditPeople,
+  normalizeCatalogCredits,
+  shouldShowMovieFact,
+  type CreditDisplayGroup,
+} from "../../lib/movies/credits";
 import { formatMovieRating } from "../../lib/movies/rating";
 import { supabase } from "../../lib/supabase";
 import {
@@ -319,6 +325,44 @@ function getInitials(name: string) {
   );
 }
 
+function CreditGroupList({ group }: { group: CreditDisplayGroup }) {
+  const [expanded, setExpanded] = useState(false);
+  const visiblePeople = getVisibleCreditPeople(group.people, expanded);
+  const hiddenCount = group.people.length - visiblePeople.length;
+
+  return (
+    <div className="credits-group">
+      <h3 className="credits-group-title">{group.title}</h3>
+      <div className="cast-list">
+        {visiblePeople.map((person) => (
+          <article key={`${group.key}-${person.name}`} className="cast-card">
+            <p className="cast-line">
+              <strong>{person.name}</strong>
+              {person.role ? (
+                <>
+                  <span aria-hidden="true"> — </span>
+                  <span>{person.role}</span>
+                </>
+              ) : null}
+            </p>
+            <div className="cast-avatar" aria-hidden="true">{getInitials(person.name)}</div>
+          </article>
+        ))}
+      </div>
+      {group.people.length > visiblePeople.length || expanded ? (
+        <button
+          type="button"
+          className="credits-toggle"
+          aria-expanded={expanded}
+          onClick={() => setExpanded((value) => !value)}
+        >
+          {expanded ? "Скрыть" : `Показать ещё ${hiddenCount}`}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 function readNumberArrayFromStorage(key: string) {
   try {
     const savedValue = window.localStorage.getItem(key);
@@ -589,14 +633,7 @@ export default function MoviePageClient({
   const similarMovies = useMemo(() => relatedMovies, [relatedMovies]);
 
   const credits = useMemo(() => normalizeCatalogCredits(movie), [movie]);
-  const creditGroups = [
-    { title: "Режиссёры", people: credits.directors.map((name) => ({ name, role: "Режиссёр" })) },
-    { title: "Создатели сериала", people: credits.seriesCreators.map((name) => ({ name, role: "Создатель" })) },
-    { title: "Актёры", people: credits.actors },
-    { title: "Актёры озвучивания", people: credits.voiceActors },
-    { title: "Персонажи", people: credits.characters },
-    { title: "Участники", people: credits.unclassified },
-  ].filter((group) => group.people.length > 0);
+  const creditGroups = useMemo(() => buildCreditDisplayGroups(credits), [credits]);
   const contentKind = getContentKind(movie);
   const relatedSectionTitle =
     movie.type === "Сериал"
@@ -708,7 +745,15 @@ export default function MoviePageClient({
     return () => observer.disconnect();
   }, [isPlayerVisible]);
 
-  const visibleFacts = useMemo(() => facts.filter(isVisibleFact), [facts]);
+  const hasStructuredCast = creditGroups.some((group) =>
+    ["cast", "voice-cast", "characters", "participants"].includes(group.key),
+  );
+  const visibleFacts = useMemo(
+    () => facts.filter((fact) =>
+      isVisibleFact(fact) && shouldShowMovieFact(fact.label, hasStructuredCast),
+    ),
+    [facts, hasStructuredCast],
+  );
   const ratingText = formatMovieRating(movie.rating);
 
   const isWatchLater = watchLaterIds.includes(movie.id);
@@ -1428,20 +1473,7 @@ export default function MoviePageClient({
             {creditGroups.length > 0 ? (
               <div className="credits-groups">
                 {creditGroups.map((group) => (
-                  <div key={group.title}>
-                    <h3 className="credits-group-title">{group.title}</h3>
-                    <div className="cast-list">
-                      {group.people.map((person) => (
-                        <article key={`${group.title}-${person.name}-${person.role}`} className="cast-card">
-                          <div className="cast-info">
-                            <h3>{person.name}</h3>
-                            {person.role ? <p>{person.role}</p> : null}
-                          </div>
-                          <div className="cast-avatar">{getInitials(person.name)}</div>
-                        </article>
-                      ))}
-                    </div>
-                  </div>
+                  <CreditGroupList key={group.key} group={group} />
                 ))}
               </div>
             ) : (
@@ -2371,6 +2403,7 @@ const moviePageStyles = `
 
   .cast-list {
     display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
   }
 
@@ -2396,27 +2429,41 @@ const moviePageStyles = `
     background: rgba(255,255,255,0.055);
   }
 
-  .cast-info {
+  .cast-line {
+    margin: 0;
     min-width: 0;
     flex: 1 1 auto;
-  }
-
-  .cast-info h3 {
-    margin: 0;
-    color: #ffffff;
     font-size: 15px;
-    line-height: 1.2;
-    font-weight: 1000;
-    overflow-wrap: anywhere;
-  }
-
-  .cast-info p {
-    margin: 6px 0 0;
+    line-height: 1.4;
     color: #858585;
-    font-size: 13px;
-    line-height: 1.35;
     font-weight: 750;
     overflow-wrap: anywhere;
+  }
+
+  .cast-line strong {
+    color: #ffffff;
+    font-weight: 1000;
+  }
+
+  .credits-toggle {
+    margin-top: 10px;
+    min-height: 40px;
+    padding: 9px 14px;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 999px;
+    background: rgba(255,255,255,0.04);
+    color: #ffffff;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 850;
+    cursor: pointer;
+    transition: border-color 180ms ease, background 180ms ease;
+  }
+
+  .credits-toggle:hover,
+  .credits-toggle:focus-visible {
+    border-color: rgba(255,255,255,0.28);
+    background: rgba(255,255,255,0.08);
   }
 
   .cast-avatar {
@@ -3136,6 +3183,10 @@ const moviePageStyles = `
 
     .cast-card {
       border-radius: 18px;
+    }
+
+    .cast-list {
+      grid-template-columns: 1fr;
     }
 
     .similar-section {
