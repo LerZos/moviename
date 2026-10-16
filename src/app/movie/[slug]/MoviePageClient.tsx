@@ -6,9 +6,15 @@ import Script from "next/script";
 import MobileBottomNav from "../../components/MobileBottomNav";
 import PosterImage, { syncPosterBackground } from "../../components/PosterImage";
 import { type MouseEvent, useEffect, useMemo, useRef, useState } from "react";
-import type { Movie, MovieFact, PlayerProvider } from "../../data/movies";
+import type { Movie, MovieFact, MovieSeason, PlayerProvider } from "../../data/movies";
 import type { MovieCardIndexItem } from "../../data/movieCardIndex";
-import { normalizeCatalogCredits } from "../../lib/movies/credits";
+import {
+  buildCreditDisplayGroups,
+  getVisibleCreditPeople,
+  normalizeCatalogCredits,
+  shouldShowMovieFact,
+  type CreditDisplayGroup,
+} from "../../lib/movies/credits";
 import { formatMovieRating } from "../../lib/movies/rating";
 import { supabase } from "../../lib/supabase";
 import {
@@ -319,6 +325,49 @@ function getInitials(name: string) {
   );
 }
 
+function CreditGroupList({ group }: { group: CreditDisplayGroup }) {
+  const [expanded, setExpanded] = useState(false);
+  const visiblePeople = getVisibleCreditPeople(group.people, expanded);
+  const hiddenCount = group.people.length - visiblePeople.length;
+  const listId = `credit-group-${group.key}`;
+
+  return (
+    <div
+      className="credits-group"
+      data-compact={group.people.length === 1 ? "true" : undefined}
+    >
+      <h3 className="credits-group-title">{group.title}</h3>
+      <div id={listId} className="cast-list">
+        {visiblePeople.map((person) => (
+          <article key={`${group.key}-${person.name}`} className="cast-card">
+            <p className="cast-line">
+              <strong>{person.name}</strong>
+              {person.role ? (
+                <>
+                  <span aria-hidden="true"> — </span>
+                  <span>{person.role}</span>
+                </>
+              ) : null}
+            </p>
+            <div className="cast-avatar" aria-hidden="true">{getInitials(person.name)}</div>
+          </article>
+        ))}
+      </div>
+      {group.people.length > visiblePeople.length || expanded ? (
+        <button
+          type="button"
+          className="credits-toggle"
+          aria-expanded={expanded}
+          aria-controls={listId}
+          onClick={() => setExpanded((value) => !value)}
+        >
+          {expanded ? "Скрыть" : `Показать ещё ${hiddenCount}`}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 function readNumberArrayFromStorage(key: string) {
   try {
     const savedValue = window.localStorage.getItem(key);
@@ -510,6 +559,63 @@ function getGeneratedPosterFallback(title: string) {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
+function EpisodeSeasonAccordion({
+  season,
+  initiallyOpen,
+}: {
+  season: MovieSeason;
+  initiallyOpen: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(initiallyOpen);
+  const panelId = `episode-season-${season.season}-panel`;
+
+  return (
+    <section className="episode-season">
+      <button
+        type="button"
+        className="episode-season-trigger"
+        aria-expanded={isOpen}
+        aria-controls={panelId}
+        onClick={() => setIsOpen((current) => !current)}
+      >
+        <span>Сезон {season.season}</span>
+        <span className="episode-season-meta">
+          <span>{season.episodes.length} серий</span>
+          <svg
+            className="episode-season-chevron"
+            viewBox="0 0 20 20"
+            aria-hidden="true"
+          >
+            <path d="m5 7.5 5 5 5-5" />
+          </svg>
+        </span>
+      </button>
+      <div
+        id={panelId}
+        className={isOpen ? "episode-season-panel is-open" : "episode-season-panel"}
+        aria-hidden={!isOpen}
+      >
+        <div className="episode-season-panel-inner">
+          <ol className="episode-list">
+            {season.episodes.map((episode) => (
+              <li key={`${season.season}-${episode.number}`} className="episode-item">
+                <span className="episode-number">{String(episode.number).padStart(2, "0")}</span>
+                <span className="episode-titles">
+                  <strong>{episode.russianTitle || episode.originalTitle}</strong>
+                  {episode.russianTitle ? <span>{episode.originalTitle}</span> : null}
+                </span>
+                <time dateTime={episode.airDate}>
+                  {episode.airDate.split("-").reverse().join(".")}
+                </time>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function MoviePageClient({
   movie,
   relatedMovies = [],
@@ -589,14 +695,7 @@ export default function MoviePageClient({
   const similarMovies = useMemo(() => relatedMovies, [relatedMovies]);
 
   const credits = useMemo(() => normalizeCatalogCredits(movie), [movie]);
-  const creditGroups = [
-    { title: "Режиссёры", people: credits.directors.map((name) => ({ name, role: "Режиссёр" })) },
-    { title: "Создатели сериала", people: credits.seriesCreators.map((name) => ({ name, role: "Создатель" })) },
-    { title: "Актёры", people: credits.actors },
-    { title: "Актёры озвучивания", people: credits.voiceActors },
-    { title: "Персонажи", people: credits.characters },
-    { title: "Участники", people: credits.unclassified },
-  ].filter((group) => group.people.length > 0);
+  const creditGroups = useMemo(() => buildCreditDisplayGroups(credits), [credits]);
   const contentKind = getContentKind(movie);
   const relatedSectionTitle =
     movie.type === "Сериал"
@@ -708,7 +807,10 @@ export default function MoviePageClient({
     return () => observer.disconnect();
   }, [isPlayerVisible]);
 
-  const visibleFacts = useMemo(() => facts.filter(isVisibleFact), [facts]);
+  const visibleFacts = useMemo(
+    () => facts.filter((fact) => isVisibleFact(fact) && shouldShowMovieFact(fact.label, credits)),
+    [credits, facts],
+  );
   const ratingText = formatMovieRating(movie.rating);
 
   const isWatchLater = watchLaterIds.includes(movie.id);
@@ -1417,7 +1519,7 @@ export default function MoviePageClient({
             </nav>
           </section>
 
-          <section className="section-card animate-in delay-1">
+          <section className="section-card credits-section animate-in delay-1">
             <div className="section-head">
               <div>
                 <p className="eyebrow">Команда</p>
@@ -1428,20 +1530,7 @@ export default function MoviePageClient({
             {creditGroups.length > 0 ? (
               <div className="credits-groups">
                 {creditGroups.map((group) => (
-                  <div key={group.title}>
-                    <h3 className="credits-group-title">{group.title}</h3>
-                    <div className="cast-list">
-                      {group.people.map((person) => (
-                        <article key={`${group.title}-${person.name}-${person.role}`} className="cast-card">
-                          <div className="cast-info">
-                            <h3>{person.name}</h3>
-                            {person.role ? <p>{person.role}</p> : null}
-                          </div>
-                          <div className="cast-avatar">{getInitials(person.name)}</div>
-                        </article>
-                      ))}
-                    </div>
-                  </div>
+                  <CreditGroupList key={group.key} group={group} />
                 ))}
               </div>
             ) : (
@@ -1466,26 +1555,11 @@ export default function MoviePageClient({
 
             <div className="episode-seasons">
               {movie.episodeGuide.map((season) => (
-                <details key={season.season} className="episode-season" open={season.season === 1}>
-                  <summary>
-                    <span>Сезон {season.season}</span>
-                    <span>{season.episodes.length} серий</span>
-                  </summary>
-                  <ol className="episode-list">
-                    {season.episodes.map((episode) => (
-                      <li key={`${season.season}-${episode.number}`} className="episode-item">
-                        <span className="episode-number">{String(episode.number).padStart(2, "0")}</span>
-                        <span className="episode-titles">
-                          <strong>{episode.russianTitle || episode.originalTitle}</strong>
-                          {episode.russianTitle ? <span>{episode.originalTitle}</span> : null}
-                        </span>
-                        <time dateTime={episode.airDate}>
-                          {episode.airDate.split("-").reverse().join(".")}
-                        </time>
-                      </li>
-                    ))}
-                  </ol>
-                </details>
+                <EpisodeSeasonAccordion
+                  key={season.season}
+                  season={season}
+                  initiallyOpen={season.season === 1}
+                />
               ))}
             </div>
           </section>
@@ -2352,7 +2426,7 @@ const moviePageStyles = `
     min-width: 0;
     margin-top: 20px;
     display: grid;
-    grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+    grid-template-columns: minmax(0, 1fr);
     gap: 20px;
     align-items: start;
   }
@@ -2375,28 +2449,74 @@ const moviePageStyles = `
 
   .episode-season {
     min-width: 0;
+    overflow: hidden;
     border: 1px solid rgba(255,255,255,0.10);
     border-radius: 18px;
     background: rgba(0,0,0,0.42);
   }
 
-  .episode-season summary {
+  .episode-season-trigger {
+    width: 100%;
     display: flex;
+    align-items: center;
     justify-content: space-between;
     gap: 12px;
     padding: 16px 18px;
+    border: 0;
+    background: transparent;
+    color: #ffffff;
+    text-align: left;
     cursor: pointer;
+    font: inherit;
     font-weight: 850;
   }
 
-  .episode-season summary:focus-visible {
+  .episode-season-trigger:focus-visible {
     outline: 2px solid #ffffff;
-    outline-offset: 3px;
+    outline-offset: -3px;
   }
 
-  .episode-season summary span:last-child {
+  .episode-season-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
     color: #a0a0a0;
     font-size: 13px;
+  }
+
+  .episode-season-chevron {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: transform 300ms ease;
+  }
+
+  .episode-season-trigger[aria-expanded="true"] .episode-season-chevron {
+    transform: rotate(180deg);
+  }
+
+  .episode-season-panel {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transition:
+      grid-template-rows 300ms ease,
+      opacity 250ms ease;
+  }
+
+  .episode-season-panel.is-open {
+    grid-template-rows: 1fr;
+    opacity: 1;
+  }
+
+  .episode-season-panel-inner {
+    min-height: 0;
+    overflow: hidden;
   }
 
   .episode-list {
@@ -2448,6 +2568,13 @@ const moviePageStyles = `
     }
   }
 
+  @media (prefers-reduced-motion: reduce) {
+    .episode-season-panel,
+    .episode-season-chevron {
+      transition: none;
+    }
+  }
+
   .section-head {
     margin-bottom: 20px;
     display: flex;
@@ -2489,7 +2616,11 @@ const moviePageStyles = `
 
   .credits-groups {
     display: grid;
-    gap: 16px;
+    gap: 22px;
+  }
+
+  .credits-group {
+    min-width: 0;
   }
 
   .credits-group-title {
@@ -2501,7 +2632,12 @@ const moviePageStyles = `
 
   .cast-list {
     display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 10px;
+  }
+
+  .credits-group[data-compact="true"] .cast-list {
+    grid-template-columns: minmax(0, 420px);
   }
 
   .cast-card {
@@ -2526,27 +2662,41 @@ const moviePageStyles = `
     background: rgba(255,255,255,0.055);
   }
 
-  .cast-info {
+  .cast-line {
+    margin: 0;
     min-width: 0;
     flex: 1 1 auto;
-  }
-
-  .cast-info h3 {
-    margin: 0;
-    color: #ffffff;
-    font-size: 15px;
-    line-height: 1.2;
-    font-weight: 1000;
-    overflow-wrap: anywhere;
-  }
-
-  .cast-info p {
-    margin: 6px 0 0;
     color: #858585;
-    font-size: 13px;
-    line-height: 1.35;
+    font-size: 14px;
+    line-height: 1.45;
     font-weight: 750;
     overflow-wrap: anywhere;
+  }
+
+  .cast-line strong {
+    color: #ffffff;
+    font-weight: 1000;
+  }
+
+  .credits-toggle {
+    margin-top: 12px;
+    min-height: 40px;
+    padding: 9px 14px;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 999px;
+    background: rgba(255,255,255,0.04);
+    color: #ffffff;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 850;
+    cursor: pointer;
+    transition: border-color 180ms ease, background 180ms ease;
+  }
+
+  .credits-toggle:hover,
+  .credits-toggle:focus-visible {
+    border-color: rgba(255,255,255,0.28);
+    background: rgba(255,255,255,0.08);
   }
 
   .cast-avatar {
@@ -2735,6 +2885,10 @@ const moviePageStyles = `
     .similar-grid {
       grid-template-columns: repeat(4, minmax(0, 1fr));
     }
+
+    .cast-list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
   }
 
   @media (max-width: 980px) {
@@ -2814,6 +2968,11 @@ const moviePageStyles = `
     .movie-hero,
     .details-grid {
       gap: 14px;
+    }
+
+    .cast-list,
+    .credits-group[data-compact="true"] .cast-list {
+      grid-template-columns: minmax(0, 1fr);
     }
 
     .similar-section {

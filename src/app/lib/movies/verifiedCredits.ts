@@ -44,10 +44,12 @@ export function attachVerifiedCredits(
   movie: Movie,
   override: Record<string, unknown> | null | undefined,
 ): Movie {
+  const verifiedCredits = getVerifiedCreditsForMovie(movie) ?? movie.verifiedCredits;
+
   return {
     ...movie,
     verifiedCredits: hasManualCreditsOverride(override)
       ? undefined
-      : getVerifiedCreditsForMovie(movie) ?? undefined,
+      : verifiedCredits,
   };
 }
