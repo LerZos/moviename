@@ -1,32 +1,16 @@
 import { NextResponse } from "next/server";
 
 import { movies, type Movie } from "../../data/movies";
+import { normalizeSearchText, searchCatalog } from "../../lib/search/searchEngine";
 
-function normalizeSearchText(text: string) {
-  return text
-    .toLowerCase()
-    .replaceAll("ё", "е")
-    .replace(/[^a-zа-я0-9]+/g, " ")
-    .trim();
-}
-
-function getSearchText(movie: Movie) {
-  return normalizeSearchText(
-    [
-      movie.title,
-      movie.originalTitle,
-      ...movie.searchTitles,
-      movie.type,
-      movie.year,
-      ...movie.genres,
-      movie.slug,
-    ].join(" "),
-  );
-}
+const SEARCH_RESULT_LIMIT = 24;
+const SEARCH_CACHE_LIMIT = 100;
+const searchResultCache = new Map<string, ReturnType<typeof toSearchItem>[]>();
 
 function toSearchItem(movie: Movie) {
   return {
     id: movie.id,
+    canonicalMovieId: movie.canonicalMovieId,
     slug: movie.slug,
     title: movie.title,
     originalTitle: movie.originalTitle,
@@ -50,41 +34,26 @@ function toSearchItem(movie: Movie) {
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
-  const query = normalizeSearchText(url.searchParams.get("q") || "");
+  const rawQuery = url.searchParams.get("q") || "";
+  const query = normalizeSearchText(rawQuery);
 
-  if (query.length < 2) {
+  if (!query) {
     return NextResponse.json({ items: [] });
   }
 
-  const items = movies
-    .map((movie) => {
-      const title = normalizeSearchText(movie.title);
-      const originalTitle = normalizeSearchText(movie.originalTitle);
-      const aliases = movie.searchTitles.map((item) => normalizeSearchText(item));
-      const searchText = getSearchText(movie);
-      const exact =
-        title === query ||
-        originalTitle === query ||
-        aliases.includes(query) ||
-        movie.slug === query;
-      const startsWith =
-        title.startsWith(query) ||
-        originalTitle.startsWith(query) ||
-        aliases.some((item) => item.startsWith(query));
+  const cachedItems = searchResultCache.get(query);
+  const items = cachedItems ?? searchCatalog(movies, rawQuery, { limit: SEARCH_RESULT_LIMIT }).map(toSearchItem);
 
-      return { movie, searchText, exact, startsWith };
-    })
-    .filter((item) => item.searchText.includes(query))
-    .sort((first, second) => {
-      if (first.exact !== second.exact) return Number(second.exact) - Number(first.exact);
-      if (first.startsWith !== second.startsWith) {
-        return Number(second.startsWith) - Number(first.startsWith);
-      }
+  if (!cachedItems) {
+    searchResultCache.set(query, items);
+    if (searchResultCache.size > SEARCH_CACHE_LIMIT) {
+      const oldestKey = searchResultCache.keys().next().value;
+      if (oldestKey) searchResultCache.delete(oldestKey);
+    }
+  }
 
-      return second.movie.rating - first.movie.rating;
-    })
-    .slice(0, 24)
-    .map(({ movie }) => toSearchItem(movie));
-
-  return NextResponse.json({ items });
+  return NextResponse.json(
+    { items },
+    { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=3600" } },
+  );
 }

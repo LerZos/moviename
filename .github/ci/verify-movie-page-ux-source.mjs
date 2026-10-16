@@ -3,13 +3,13 @@ import { execFileSync } from "node:child_process";
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
 
-const BASE_COMMIT = "1f6ece775d7f6c9e52e0c3405636f0282da1f9c3";
+const BASE_COMMIT = "1bcc9517a684ea80101986daaa53e620558ac6c9";
 const APP_FILES = [
-  "scripts/episode-accordion-cast.test.mjs",
-  "scripts/movie-page-credits-layout.test.mjs",
-  "src/app/lib/movies/credits.ts",
-  "src/app/lib/movies/verifiedCredits.ts",
-  "src/app/movie/[slug]/MoviePageClient.tsx",
+  "scripts/smart-search.test.mjs",
+  "src/app/HomeClient.tsx",
+  "src/app/api/search/route.ts",
+  "src/app/lib/search/searchEngine.ts",
+  "src/app/page.tsx",
 ];
 const CI_FILES = [
   ".github/ci/verify-movie-page-ux-source.mjs",
@@ -24,7 +24,7 @@ const errors = [];
 
 const parentCommit = git(["rev-parse", `${candidateRef}^`]).trim();
 if (parentCommit !== BASE_COMMIT) {
-  errors.push("Release commit is not directly based on the approved production source commit");
+  errors.push("Batch D release commit is not directly based on the approved production source commit");
 }
 
 const commitCount = Number(git(["rev-list", "--count", `${BASE_COMMIT}..${candidateRef}`]).trim());
@@ -37,7 +37,7 @@ const changedFiles = git(["diff", "--name-only", BASE_COMMIT, candidateRef])
   .sort();
 const approvedFiles = [...APP_FILES, ...CI_FILES].sort();
 if (JSON.stringify(changedFiles) !== JSON.stringify(approvedFiles)) {
-  errors.push("Missing or unexpected files in Movie Page UX release diff");
+  errors.push("Missing or unexpected files in Batch D release diff");
 }
 
 const appDiff = git(["diff", "--binary", BASE_COMMIT, candidateRef, "--", ...APP_FILES], "buffer");
@@ -46,7 +46,7 @@ const trackedDiffSha256 = createHash("sha256").update(normalizedDiff).digest("he
 
 const report = {
   schemaVersion: 1,
-  releaseName: "kinoluma-movie-page-ux-linux-candidate",
+  releaseName: "kinoluma-batch-d-smart-search-linux-candidate",
   baseCommit: BASE_COMMIT,
   parentCommit,
   releaseCommit: git(["rev-parse", candidateRef]).trim(),
@@ -62,6 +62,12 @@ const report = {
     seo: "UNCHANGED",
     seasons: "UNCHANGED",
   },
+  inheritedProductionFeatures: {
+    batchC3Credits: "UNCHANGED",
+    adminRatingFix: "UNCHANGED",
+    globalPosterFix: "UNCHANGED",
+    moviePageUx: "UNCHANGED",
+  },
   the100: {
     slug: "the-100-2014",
     tmdbNamespace: "tv",
@@ -73,10 +79,12 @@ const report = {
   batchB: { totalImageMutations: 481, inheritedUnchangedFrom: BASE_COMMIT },
   manualOverrides: { preserved: 9, inheritedUnchangedFrom: BASE_COMMIT },
   credits: { inheritedFrom: BASE_COMMIT, allowlistedCards: 369 },
-  visualParityEvidence: {
-    desktop: "PASS_LOCAL_PRE_RELEASE",
-    mobile: "PASS_LOCAL_PRE_RELEASE",
-    note: "CI validates source and runtime; browser evidence was completed before release preparation.",
+  smartSearch: {
+    changedFiles: APP_FILES,
+    canonicalRegistry: "UNCHANGED",
+    publicUrls: "UNCHANGED",
+    reviewedSearchOnlyAlias: "JOKER_2019_LEGACY_TO_CURRENT",
+    localVisualQa: { desktop: "PASS", mobile: "PASS" },
   },
   errors,
   pass: errors.length === 0,

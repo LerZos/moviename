@@ -9,6 +9,7 @@ import type { Movie } from "./data/movies";
 import { supabase } from "./lib/supabase";
 import { canResolveTrailerUrl, resolveTrailerUrl } from "./lib/trailers";
 import { getHomeCatalogPathWithType, homeGenreRoutes } from "./lib/home/homeCatalogRoutes";
+import { normalizeSearchText, searchCatalog } from "./lib/search/searchEngine";
 import {
   emptyMovieActionState,
   getCurrentSupabaseUser,
@@ -41,6 +42,7 @@ import {
 type ContentItem = Pick<
   Movie,
   | "id"
+  | "canonicalMovieId"
   | "slug"
   | "title"
   | "originalTitle"
@@ -440,14 +442,6 @@ function getPosterFallback(title: string, originalTitle: string, type: string) {
   return createGeneratedPoster(title, originalTitle, type);
 }
 
-function normalizeText(text: string) {
-  return text
-    .toLowerCase()
-    .replaceAll("ё", "е")
-    .replace(/[^a-zа-я0-9]+/g, " ")
-    .trim();
-}
-
 function readNumberArrayFromStorage(key: string) {
   try {
     const savedValue = window.localStorage.getItem(key);
@@ -482,19 +476,6 @@ const catalogSlugByType: Record<string, string> = {
   Аниме: "anime",
   Мультфильм: "cartoons",
 };
-
-function getSearchText(item: ContentItem) {
-  return normalizeText(
-    [
-      item.title,
-      item.originalTitle,
-      ...item.searchTitles,
-      item.type,
-      item.year,
-      ...item.genres,
-    ].join(" "),
-  );
-}
 
 function getGenresForType(selectedType: string, items: ContentItem[]) {
   const contentByType =
@@ -1158,6 +1139,7 @@ export default function Home({
 }: HomeProps) {
   const content = useMemo(() => initialContent ?? [], [initialContent]);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const searchRequestCacheRef = useRef(new Map<string, ContentItem[]>());
   const filmsSectionRef = useRef<HTMLElement | null>(null);
   const seriesSectionRef = useRef<HTMLElement | null>(null);
   const animeSectionRef = useRef<HTMLElement | null>(null);
@@ -1343,49 +1325,65 @@ export default function Home({
     return content.filter((item) => watchLaterIds.includes(item.id));
   }, [content, watchLaterIds]);
 
-  const normalizedSearch = useMemo(() => normalizeText(search), [search]);
+  const normalizedSearch = useMemo(() => normalizeSearchText(search), [search]);
+  const localSearchContent = useMemo(
+    () => (normalizedSearch ? searchCatalog(content, search, { limit: 24 }) : content),
+    [content, normalizedSearch, search],
+  );
   const activeSearchContent =
     normalizedSearch &&
-    serverSearchQuery === normalizedSearch &&
-    serverSearchResults.length > 0
+    serverSearchQuery === normalizedSearch
       ? serverSearchResults
-      : content;
+      : localSearchContent;
 
   useEffect(() => {
-    if (normalizedSearch.length < 2) {
-      setServerSearchResults([]);
-      setServerSearchQuery("");
+    if (!normalizedSearch) {
       return;
     }
 
+    const cachedResults = searchRequestCacheRef.current.get(normalizedSearch);
     const controller = new AbortController();
-
-    fetch(`/api/search?q=${encodeURIComponent(search.trim())}`, {
-      signal: controller.signal,
-    })
-      .then((response) => (response.ok ? response.json() : { items: [] }))
-      .then((data: { items?: ContentItem[] }) => {
-        if (controller.signal.aborted) return;
-
-        setServerSearchResults(Array.isArray(data.items) ? data.items : []);
+    const timeoutId = window.setTimeout(() => {
+      if (cachedResults) {
+        setServerSearchResults(cachedResults);
         setServerSearchQuery(normalizedSearch);
+        return;
+      }
+
+      fetch(`/api/search?q=${encodeURIComponent(search.trim())}`, {
+        signal: controller.signal,
       })
-      .catch((error) => {
-        if (controller.signal.aborted) return;
+        .then((response) => (response.ok ? response.json() : { items: [] }))
+        .then((data: { items?: ContentItem[] }) => {
+          if (controller.signal.aborted) return;
 
-        console.error("Search request failed", error);
-        setServerSearchResults([]);
-        setServerSearchQuery("");
-      });
+          const items = Array.isArray(data.items) ? data.items : [];
+          searchRequestCacheRef.current.set(normalizedSearch, items);
+          if (searchRequestCacheRef.current.size > 40) {
+            const oldestKey = searchRequestCacheRef.current.keys().next().value;
+            if (oldestKey) searchRequestCacheRef.current.delete(oldestKey);
+          }
+          setServerSearchResults(items);
+          setServerSearchQuery(normalizedSearch);
+        })
+        .catch((error) => {
+          if (controller.signal.aborted) return;
 
-    return () => controller.abort();
+          console.error("Search request failed", error);
+          setServerSearchResults([]);
+          setServerSearchQuery("");
+        });
+    }, cachedResults ? 0 : 260);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      controller.abort();
+    };
   }, [normalizedSearch, search]);
 
   const filteredContent = useMemo(() => {
     if (normalizedSearch) {
-      return activeSearchContent.filter((item) =>
-        getSearchText(item).includes(normalizedSearch),
-      );
+      return activeSearchContent;
     }
 
     return content.filter((item) => {
@@ -1603,48 +1601,7 @@ export default function Home({
       return [];
     }
 
-    return activeSearchContent
-      .map((item) => {
-        const normalizedTitle = normalizeText(item.title);
-        const normalizedOriginalTitle = normalizeText(item.originalTitle);
-        const normalizedSearchTitles = item.searchTitles.map((title) =>
-          normalizeText(title),
-        );
-        const exactTitle =
-          normalizedTitle === normalizedSearch ||
-          normalizedOriginalTitle === normalizedSearch ||
-          normalizedSearchTitles.includes(normalizedSearch);
-        const startsWithTitle =
-          normalizedTitle.startsWith(normalizedSearch) ||
-          normalizedOriginalTitle.startsWith(normalizedSearch) ||
-          normalizedSearchTitles.some((title) =>
-            title.startsWith(normalizedSearch),
-          );
-
-        return {
-          item,
-          exactTitle,
-          startsWithTitle,
-          searchText: getSearchText(item),
-        };
-      })
-      .filter(({ searchText }) => searchText.includes(normalizedSearch))
-      .sort((firstItem, secondItem) => {
-        if (firstItem.exactTitle !== secondItem.exactTitle) {
-          return Number(secondItem.exactTitle) - Number(firstItem.exactTitle);
-        }
-
-        if (firstItem.startsWithTitle !== secondItem.startsWithTitle) {
-          return (
-            Number(secondItem.startsWithTitle) -
-            Number(firstItem.startsWithTitle)
-          );
-        }
-
-        return secondItem.item.rating - firstItem.item.rating;
-      })
-      .slice(0, 7)
-      .map(({ item }) => item);
+    return activeSearchContent.slice(0, 7);
   }, [activeSearchContent, normalizedSearch]);
 
   const shouldShowSearchSuggestions =

@@ -64,6 +64,7 @@ function getHomeMoviePool(movies: Movie[], featured: Movie[]) {
 function getHomeClientContent(movies: Movie[]) {
   return movies.map((movie) => ({
     id: movie.id,
+    canonicalMovieId: movie.canonicalMovieId,
     slug: movie.slug,
     title: movie.title,
     originalTitle: movie.originalTitle,

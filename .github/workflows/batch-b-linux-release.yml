@@ -1,16 +1,16 @@
-name: KinoLuma Movie Page UX Linux release candidate
+name: KinoLuma Batch D Smart Search Linux release candidate
 
 on:
   push:
     branches:
-      - release/movie-page-ux-20261016
+      - release/batch-d-smart-search-20261016
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: kinoluma-movie-page-ux-linux-release
+  group: kinoluma-batch-d-smart-search-linux-release
   cancel-in-progress: false
 
 jobs:
@@ -50,10 +50,10 @@ jobs:
           test -z "${TMDB_API_KEY:-}"
           test -z "${TMDB_ACCESS_TOKEN:-}"
 
-      - name: Verify isolated Movie Page UX source
+      - name: Verify isolated Batch D source
         run: >-
           node .github/ci/verify-movie-page-ux-source.mjs .
-          movie-page-ux-source-verification.json
+          batch-d-source-verification.json
 
       - name: Install Linux dependencies from lockfile
         run: npm ci --include=optional
@@ -136,6 +136,10 @@ jobs:
           scripts/the-100.test.mjs
           scripts/episode-accordion-cast.test.mjs
           scripts/movie-page-credits-layout.test.mjs
+          src/app/lib/search/searchEngine.ts
+          src/app/api/search/route.ts
+          src/app/page.tsx
+          scripts/smart-search.test.mjs
 
       - name: Targeted credits and admin rating tests
         run: >-
@@ -152,6 +156,9 @@ jobs:
         run: |
           node scripts/episode-accordion-cast.test.mjs
           node --test scripts/movie-page-credits-layout.test.mjs
+
+      - name: Batch D smart search regression tests
+        run: node --test scripts/smart-search.test.mjs
 
       - name: Supabase Admin lazy initialization tests
         run: >-
@@ -294,7 +301,7 @@ jobs:
         run: |
           node .github/ci/release-tree.mjs create release release/release-tree.json
           build_id="$(tr -d '\r\n' < .next/BUILD_ID)"
-          archive="dist/kinoluma-movie-page-ux-linux-${build_id}.tar"
+          archive="dist/kinoluma-batch-d-smart-search-linux-${build_id}.tar"
           tar --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner -C release -cf "$archive" .
           gzip -n -9 "$archive"
           archive="${archive}.gz"
@@ -308,15 +315,15 @@ jobs:
             "$archive" \
             dist/release-manifest.json \
             runtime-qa.json \
-            movie-page-ux-source-verification.json \
+            batch-d-source-verification.json \
             release/release-tree.json
-          cp movie-page-ux-source-verification.json runtime-qa.json dist/
+          cp batch-d-source-verification.json runtime-qa.json dist/
           cp release-plans/batch-c3-dry-run-plan.json release-plans/batch-c3-manual-overrides-audit.json dist/
 
       - name: Upload immutable candidate artifacts
         uses: actions/upload-artifact@v7.0.2
         with:
-          name: kinoluma-movie-page-ux-linux-${{ github.run_id }}
+          name: kinoluma-batch-d-smart-search-linux-${{ github.run_id }}
           path: dist/
           if-no-files-found: error
           compression-level: 0
