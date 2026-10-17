@@ -76,9 +76,16 @@ assert.match(moviePage, /aria-expanded=\{isOpen\}/);
 assert.match(moviePage, /aria-controls=\{panelId\}/);
 assert.match(moviePage, /grid-template-rows:\s*0fr/);
 assert.match(moviePage, /grid-template-rows:\s*1fr/);
-assert.match(moviePage, /grid-template-rows 300ms ease/);
-assert.match(moviePage, /opacity 250ms ease/);
+assert.match(moviePage, /grid-template-rows 300ms cubic-bezier/);
+assert.match(moviePage, /opacity 220ms ease/);
 assert.match(moviePage, /prefers-reduced-motion:\s*reduce/);
 assert.match(moviePage, /episode-season-trigger\[aria-expanded="true"\]/);
+assert.match(moviePage, /episode-season-panel-inner/);
+assert.match(moviePage, /visibility 0s linear 300ms/);
+assert.match(moviePage, /className=\{expanded \? "credits-reveal-panel is-open"/);
+assert.match(moviePage, /aria-hidden=\{!expanded\}/);
+assert.match(moviePage, /credits-toggle\[aria-expanded="true"\] \.credits-toggle-chevron/);
+assert.match(moviePage, /\.credits-reveal-panel-inner,[\s\S]*?\.credits-toggle-chevron[\s\S]*?transition: none/);
+assert.doesNotMatch(moviePage, /getVisibleCreditPeople\(group\.people, expanded\)/);
 
 console.log("EPISODE_ACCORDION_CAST=PASS");

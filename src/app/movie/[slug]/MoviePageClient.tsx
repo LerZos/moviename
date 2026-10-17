@@ -325,11 +325,32 @@ function getInitials(name: string) {
   );
 }
 
+function CreditPersonCard({ person }: {
+  person: CreditDisplayGroup["people"][number];
+}) {
+  return (
+    <article className="cast-card">
+      <p className="cast-line">
+        <strong>{person.name}</strong>
+        {person.role ? (
+          <>
+            <span aria-hidden="true"> — </span>
+            <span>{person.role}</span>
+          </>
+        ) : null}
+      </p>
+      <div className="cast-avatar" aria-hidden="true">{getInitials(person.name)}</div>
+    </article>
+  );
+}
+
 function CreditGroupList({ group }: { group: CreditDisplayGroup }) {
   const [expanded, setExpanded] = useState(false);
-  const visiblePeople = getVisibleCreditPeople(group.people, expanded);
-  const hiddenCount = group.people.length - visiblePeople.length;
+  const visiblePeople = getVisibleCreditPeople(group.people, false);
+  const additionalPeople = group.people.slice(visiblePeople.length);
+  const hiddenCount = additionalPeople.length;
   const listId = `credit-group-${group.key}`;
+  const additionalListId = `${listId}-additional`;
 
   return (
     <div
@@ -339,30 +360,43 @@ function CreditGroupList({ group }: { group: CreditDisplayGroup }) {
       <h3 className="credits-group-title">{group.title}</h3>
       <div id={listId} className="cast-list">
         {visiblePeople.map((person) => (
-          <article key={`${group.key}-${person.name}`} className="cast-card">
-            <p className="cast-line">
-              <strong>{person.name}</strong>
-              {person.role ? (
-                <>
-                  <span aria-hidden="true"> — </span>
-                  <span>{person.role}</span>
-                </>
-              ) : null}
-            </p>
-            <div className="cast-avatar" aria-hidden="true">{getInitials(person.name)}</div>
-          </article>
+          <CreditPersonCard
+            key={`${group.key}-${person.name}`}
+            person={person}
+          />
         ))}
       </div>
-      {group.people.length > visiblePeople.length || expanded ? (
-        <button
-          type="button"
-          className="credits-toggle"
-          aria-expanded={expanded}
-          aria-controls={listId}
-          onClick={() => setExpanded((value) => !value)}
-        >
-          {expanded ? "Скрыть" : `Показать ещё ${hiddenCount}`}
-        </button>
+      {hiddenCount > 0 ? (
+        <>
+          <div
+            id={additionalListId}
+            className={expanded ? "credits-reveal-panel is-open" : "credits-reveal-panel"}
+            aria-hidden={!expanded}
+          >
+            <div className="credits-reveal-panel-inner">
+              <div className="cast-list cast-list-additional">
+                {additionalPeople.map((person) => (
+                  <CreditPersonCard
+                    key={`${group.key}-${person.name}`}
+                    person={person}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="credits-toggle"
+            aria-expanded={expanded}
+            aria-controls={additionalListId}
+            onClick={() => setExpanded((value) => !value)}
+          >
+            <span>{expanded ? "Скрыть" : `Показать ещё ${hiddenCount}`}</span>
+            <svg className="credits-toggle-chevron" viewBox="0 0 20 20" aria-hidden="true">
+              <path d="m5 7.5 5 5 5-5" />
+            </svg>
+          </button>
+        </>
       ) : null}
     </div>
   );
@@ -2503,20 +2537,31 @@ const moviePageStyles = `
   .episode-season-panel {
     display: grid;
     grid-template-rows: 0fr;
-    opacity: 0;
     transition:
-      grid-template-rows 300ms ease,
-      opacity 250ms ease;
+      grid-template-rows 300ms cubic-bezier(0.22, 1, 0.36, 1),
+      visibility 0s linear 300ms;
+    visibility: hidden;
   }
 
   .episode-season-panel.is-open {
     grid-template-rows: 1fr;
-    opacity: 1;
+    transition-delay: 0s;
+    visibility: visible;
   }
 
   .episode-season-panel-inner {
     min-height: 0;
     overflow: hidden;
+    opacity: 0;
+    transform: translateY(-6px);
+    transition:
+      opacity 220ms ease,
+      transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .episode-season-panel.is-open .episode-season-panel-inner {
+    opacity: 1;
+    transform: translateY(0);
   }
 
   .episode-list {
@@ -2570,8 +2615,13 @@ const moviePageStyles = `
 
   @media (prefers-reduced-motion: reduce) {
     .episode-season-panel,
+    .episode-season-panel-inner,
     .episode-season-chevron {
       transition: none;
+    }
+
+    .episode-season-panel-inner {
+      transform: none;
     }
   }
 
@@ -2636,6 +2686,40 @@ const moviePageStyles = `
     gap: 10px;
   }
 
+  .credits-reveal-panel {
+    display: grid;
+    grid-template-rows: 0fr;
+    visibility: hidden;
+    transition:
+      grid-template-rows 300ms cubic-bezier(0.22, 1, 0.36, 1),
+      visibility 0s linear 300ms;
+  }
+
+  .credits-reveal-panel.is-open {
+    grid-template-rows: 1fr;
+    visibility: visible;
+    transition-delay: 0s;
+  }
+
+  .credits-reveal-panel-inner {
+    min-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(-6px);
+    transition:
+      opacity 220ms ease,
+      transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .credits-reveal-panel.is-open .credits-reveal-panel-inner {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .cast-list-additional {
+    padding-top: 10px;
+  }
+
   .credits-group[data-compact="true"] .cast-list {
     grid-template-columns: minmax(0, 420px);
   }
@@ -2681,6 +2765,9 @@ const moviePageStyles = `
   .credits-toggle {
     margin-top: 12px;
     min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
     padding: 9px 14px;
     border: 1px solid rgba(255,255,255,0.12);
     border-radius: 999px;
@@ -2690,13 +2777,42 @@ const moviePageStyles = `
     font-size: 13px;
     font-weight: 850;
     cursor: pointer;
-    transition: border-color 180ms ease, background 180ms ease;
+    transition:
+      border-color 180ms ease,
+      background 180ms ease;
+  }
+
+  .credits-toggle-chevron {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .credits-toggle[aria-expanded="true"] .credits-toggle-chevron {
+    transform: rotate(180deg);
   }
 
   .credits-toggle:hover,
   .credits-toggle:focus-visible {
     border-color: rgba(255,255,255,0.28);
     background: rgba(255,255,255,0.08);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .credits-reveal-panel,
+    .credits-reveal-panel-inner,
+    .credits-toggle-chevron {
+      transition: none;
+    }
+
+    .credits-reveal-panel-inner {
+      transform: none;
+    }
   }
 
   .cast-avatar {
