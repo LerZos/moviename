@@ -41,9 +41,9 @@ export type CastMember = {
 
 export type MovieEpisode = {
   number: number;
-  originalTitle: string;
+  originalTitle?: string;
   russianTitle?: string;
-  airDate: string;
+  airDate?: string;
 };
 
 export type MovieSeason = {
@@ -109,6 +109,7 @@ export type Movie = {
   seasons?: number;
   episodes?: number;
   episodeGuide?: MovieSeason[];
+  episodeSpecials?: MovieEpisode[];
   source?: string;
   seoTitle?: string;
   seoDescription?: string;

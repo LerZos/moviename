@@ -15,6 +15,7 @@ import {
   resolveManualMovieRating,
 } from "./rating";
 import { attachVerifiedCredits } from "./verifiedCredits";
+import { attachVerifiedEpisodeGuide } from "../episodeGuides/movieIntegration";
 
 export type MovieOverrideData = Partial<Movie> & Record<string, unknown>;
 
@@ -782,7 +783,8 @@ export async function getMovieWithOverrides(
     return null;
   }
 
-  const mergedMovie = applyOverride(baseMovie, override);
+  const movieWithEpisodes = await attachVerifiedEpisodeGuide(baseMovie);
+  const mergedMovie = applyOverride(movieWithEpisodes, override);
   return sanitizeMovieForPublicDisplay(attachVerifiedCredits(mergedMovie, override));
 }
 

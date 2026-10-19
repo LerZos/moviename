@@ -596,12 +596,59 @@ function getGeneratedPosterFallback(title: string) {
 function EpisodeSeasonAccordion({
   season,
   initiallyOpen,
+  title,
 }: {
   season: MovieSeason;
   initiallyOpen: boolean;
+  title?: string;
 }) {
   const [isOpen, setIsOpen] = useState(initiallyOpen);
+  const [isMounted, setIsMounted] = useState(initiallyOpen);
+  const requestedOpen = useRef(initiallyOpen);
+  const frame = useRef<number | null>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const panelId = `episode-season-${season.season}-panel`;
+
+  useEffect(() => () => {
+    if (frame.current !== null) cancelAnimationFrame(frame.current);
+    if (closeTimer.current !== null) clearTimeout(closeTimer.current);
+  }, []);
+
+  function toggleSeason() {
+    const nextOpen = !requestedOpen.current;
+    requestedOpen.current = nextOpen;
+    if (frame.current !== null) cancelAnimationFrame(frame.current);
+    if (closeTimer.current !== null) clearTimeout(closeTimer.current);
+    frame.current = null;
+    closeTimer.current = null;
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (nextOpen) {
+      setIsMounted(true);
+      if (reducedMotion || isMounted) {
+        setIsOpen(true);
+      } else {
+        // Paint the newly mounted list at 0fr before starting the existing CSS transition.
+        frame.current = requestAnimationFrame(() => {
+          frame.current = requestAnimationFrame(() => {
+            frame.current = null;
+            if (requestedOpen.current) setIsOpen(true);
+          });
+        });
+      }
+    } else {
+      setIsOpen(false);
+      if (reducedMotion) {
+        setIsMounted(false);
+      } else {
+        // Fallback if transitionend is lost (e.g. motion preference changes).
+        closeTimer.current = setTimeout(() => {
+          closeTimer.current = null;
+          if (!requestedOpen.current) setIsMounted(false);
+        }, 350);
+      }
+    }
+  }
 
   return (
     <section className="episode-season">
@@ -610,11 +657,14 @@ function EpisodeSeasonAccordion({
         className="episode-season-trigger"
         aria-expanded={isOpen}
         aria-controls={panelId}
-        onClick={() => setIsOpen((current) => !current)}
+        onClick={toggleSeason}
       >
-        <span>Сезон {season.season}</span>
+        <span>{title || `Сезон ${season.season}`}</span>
         <span className="episode-season-meta">
-          <span>{season.episodes.length} серий</span>
+          <span>
+            {season.episodes.length}{" "}
+            {formatRussianCount(season.episodes.length, "серия", "серии", "серий")}
+          </span>
           <svg
             className="episode-season-chevron"
             viewBox="0 0 20 20"
@@ -628,26 +678,44 @@ function EpisodeSeasonAccordion({
         id={panelId}
         className={isOpen ? "episode-season-panel is-open" : "episode-season-panel"}
         aria-hidden={!isOpen}
+        onTransitionEnd={(event) => {
+          if (event.target === event.currentTarget &&
+              event.propertyName === "grid-template-rows" && !requestedOpen.current) {
+            if (closeTimer.current !== null) clearTimeout(closeTimer.current);
+            closeTimer.current = null;
+            setIsMounted(false);
+          }
+        }}
       >
         <div className="episode-season-panel-inner">
-          <ol className="episode-list">
+          {isMounted ? <ol className="episode-list">
             {season.episodes.map((episode) => (
               <li key={`${season.season}-${episode.number}`} className="episode-item">
                 <span className="episode-number">{String(episode.number).padStart(2, "0")}</span>
                 <span className="episode-titles">
-                  <strong>{episode.russianTitle || episode.originalTitle}</strong>
-                  {episode.russianTitle ? <span>{episode.originalTitle}</span> : null}
+                  <strong>{episode.russianTitle || episode.originalTitle || `Серия ${episode.number}`}</strong>
+                  {episode.russianTitle && episode.originalTitle && episode.russianTitle !== episode.originalTitle
+                    ? <span>{episode.originalTitle}</span> : null}
                 </span>
-                <time dateTime={episode.airDate}>
+                {episode.airDate ? <time dateTime={episode.airDate}>
                   {episode.airDate.split("-").reverse().join(".")}
-                </time>
+                </time> : null}
               </li>
             ))}
-          </ol>
+          </ol> : null}
         </div>
       </div>
     </section>
   );
+}
+
+function formatRussianCount(count: number, one: string, few: string, many: string) {
+  const lastTwo = count % 100;
+  if (lastTwo >= 11 && lastTwo <= 14) return many;
+  const last = count % 10;
+  if (last === 1) return one;
+  if (last >= 2 && last <= 4) return few;
+  return many;
 }
 
 export default function MoviePageClient({
@@ -1583,7 +1651,8 @@ export default function MoviePageClient({
                 <h2 id="episode-guide-title">Сезоны и серии</h2>
               </div>
               <p className="episode-guide-total">
-                {movie.episodeGuide.length} сезонов · {movie.episodeGuide.reduce((count, season) => count + season.episodes.length, 0)} серий
+                {movie.episodeGuide.length} {formatRussianCount(movie.episodeGuide.length, "сезон", "сезона", "сезонов")} ·{" "}
+                {movie.episodeGuide.reduce((count, season) => count + season.episodes.length, 0)} {formatRussianCount(movie.episodeGuide.reduce((count, season) => count + season.episodes.length, 0), "серия", "серии", "серий")}
               </p>
             </div>
 
@@ -1595,6 +1664,21 @@ export default function MoviePageClient({
                   initiallyOpen={season.season === 1}
                 />
               ))}
+            </div>
+          </section>
+        ) : null}
+
+        {movie.episodeSpecials?.length ? (
+          <section className="section-card episode-guide animate-in" aria-labelledby="episode-specials-title">
+            <div className="section-head">
+              <h2 id="episode-specials-title">Спецвыпуски</h2>
+            </div>
+            <div className="episode-seasons">
+              <EpisodeSeasonAccordion
+                season={{ season: 0, episodes: movie.episodeSpecials }}
+                initiallyOpen={false}
+                title="Спецвыпуски"
+              />
             </div>
           </section>
         ) : null}
