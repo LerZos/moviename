@@ -56,6 +56,7 @@ export function buildPilotSnapshot(
   identity: CanonicalMovieIdentity,
   baseline: Baseline,
   responses: readonly CachedResponse[],
+  identifyEndpoint: (endpoint: string) => string = endpointIdentity,
 ) {
   if (identity.canonicalMovieId !== entry.canonicalMovieId || identity.slug !== entry.slug ||
       identity.tmdbNamespace !== "tv" || identity.tmdbId !== entry.tmdbId) throw new Error("CANONICAL_IDENTITY_MISMATCH");
@@ -63,7 +64,7 @@ export function buildPilotSnapshot(
   for (const response of responses) {
     if (response.status !== 200) continue;
     if (response.canonicalMovieId !== entry.canonicalMovieId ||
-        endpointIdentity(response.endpoint) !== entry.canonicalMovieId ||
+        identifyEndpoint(response.endpoint) !== entry.canonicalMovieId ||
         !response.observedAt || !Number.isFinite(Date.parse(response.observedAt))) throw new Error("RESPONSE_PROVENANCE_MISMATCH");
     if (byEndpoint.has(response.endpoint)) throw new Error("DUPLICATE_CACHED_RESPONSE");
     byEndpoint.set(response.endpoint, response);

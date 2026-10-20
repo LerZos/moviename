@@ -10,9 +10,12 @@
     "test:episode-guides:e1": "node --test scripts/episode-guides/e1.test.mjs",
     "dry-run:episode-guides:e1": "node scripts/episode-guides/e1-dry-run.mjs --json",
     "test:episode-guides:e2": "node --test scripts/episode-guides/e2.test.mjs",
+    "test:episode-guides:e3": "node --test scripts/episode-guides/e3.test.mjs",
     "test:episode-guides:integration": "node --test scripts/episode-guides/integration.test.mjs scripts/episode-guides/accordion.test.mjs",
     "import:episode-guides:e2": "node scripts/episode-guides/e2-run.mjs",
-    "prepare:episode-guides:e2": "node scripts/episode-guides/e2-prepare.mjs"
+    "prepare:episode-guides:e2": "node scripts/episode-guides/e2-prepare.mjs",
+    "import:episode-guides:e3": "node scripts/episode-guides/e3-run.mjs",
+    "prepare:episode-guides:e3": "node scripts/episode-guides/e3-prepare.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.2",

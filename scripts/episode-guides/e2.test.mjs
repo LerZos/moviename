@@ -273,15 +273,18 @@ test("English translations are not called original when source language is not E
     .every((episode) => episode.originalTitle === undefined));
 });
 
-test("real pilot snapshots alone are available; loader, checksum and catalog isolation hold", async () => {
+test("E.2 snapshots remain available after E.3 activation; checksum and isolation hold", async () => {
   const { episodeGuideSnapshotManifest } = requireLocal("../../src/app/lib/episodeGuides/manifest.ts");
   const { loadEpisodeGuideSnapshot } = requireLocal("../../src/app/lib/episodeGuides/loader.ts");
   const { computeEpisodeGuideChecksum } = requireLocal("../../src/app/lib/episodeGuides/checksum.ts");
   const available = Object.entries(episodeGuideSnapshotManifest).filter(([, entry]) => entry.status === "available");
   assert.deepEqual(available.map(([id]) => id).sort(), [
     "01c49b47-8e78-48c7-a718-ec2c06824aa1", "174f15d5-abe2-433e-9e8e-e65c61391ca2",
+    "42989ff4-cd94-4f82-a7b0-7d75b3a73fe5", "bc84cfc1-a6fb-4bc0-9661-24fca39c6363",
+    "c5cf7ec6-d093-43b0-84b8-9f903c332451",
   ]);
-  assert.equal(Object.values(episodeGuideSnapshotManifest).filter((entry) => entry.status === "planned").length, 8);
+  assert.equal(Object.values(episodeGuideSnapshotManifest).filter((entry) => entry.status === "planned").length, 5);
+  assert.equal(Object.values(episodeGuideSnapshotManifest).filter((entry) => entry.status === "prepared").length, 0);
   for (const { entry, identity, movie } of verifyLocalPilotIdentities()) {
     const snapshot = await loadEpisodeGuideSnapshot(entry.canonicalMovieId);
     assert.ok(snapshot);
@@ -299,6 +302,6 @@ test("real pilot snapshots alone are available; loader, checksum and catalog iso
     assert.equal(movie.episodeGuide, undefined);
   }
   for (const [id, entry] of Object.entries(episodeGuideSnapshotManifest)) {
-    if (entry.status === "planned") assert.equal(await loadEpisodeGuideSnapshot(id), null);
+    if (entry.status !== "available") assert.equal(await loadEpisodeGuideSnapshot(id), null);
   }
 });

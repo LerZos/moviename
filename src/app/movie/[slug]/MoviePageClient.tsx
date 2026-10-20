@@ -1593,8 +1593,8 @@ export default function MoviePageClient({
             </div>
 
             <div className="facts-grid">
-              {visibleFacts.map((fact) => (
-                <article key={fact.label} className="fact-card">
+              {visibleFacts.map((fact, index) => (
+                <article key={`${fact.label}-${index}`} className="fact-card">
                   <span>{fact.label}</span>
                   <strong>{fact.value}</strong>
                 </article>

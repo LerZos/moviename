@@ -64,7 +64,7 @@ export function createEpisodeGuideSnapshotLoader(
       );
     }
 
-    if (entry.status === "planned") return Promise.resolve(null);
+    if (entry.status !== "available") return Promise.resolve(null);
 
     const pending = entry.load().then(({ episodeGuideSnapshot }) => {
       if (episodeGuideSnapshot.canonicalMovieId !== canonicalMovieId) {

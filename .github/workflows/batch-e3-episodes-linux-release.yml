@@ -1,0 +1,272 @@
+name: KinoLuma Batch E.3 Episodes Linux release candidate
+
+on:
+  push:
+    branches:
+      - release/batch-e3-episodes-20261020
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kinoluma-batch-e3-episodes-linux-release
+  cancel-in-progress: false
+
+jobs:
+  build-linux-standalone:
+    if: github.ref == 'refs/heads/release/batch-e3-episodes-20261020'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 35
+
+    steps:
+      - name: Check out isolated release branch
+        uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify approved release ref
+        shell: bash
+        run: |
+          test "$GITHUB_REF_NAME" = "release/batch-e3-episodes-20261020"
+          case "$GITHUB_EVENT_NAME" in
+            push|workflow_dispatch) ;;
+            *) echo "Unsupported event: $GITHUB_EVENT_NAME" >&2; exit 1 ;;
+          esac
+
+      - name: Set up exact production Node.js version
+        uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 22.23.0
+          cache: npm
+
+      - name: Pin npm and verify toolchain
+        shell: bash
+        run: |
+          npm install --global npm@10.9.8
+          test "$(node --version)" = "v22.23.0"
+          test "$(npm --version)" = "10.9.8"
+
+      - name: Validate approved public build configuration
+        shell: bash
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.KINOLUMA_NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.KINOLUMA_NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          test -n "$NEXT_PUBLIC_SUPABASE_URL"
+          test -n "$NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"
+          test -z "${SUPABASE_SERVICE_ROLE_KEY:-}"
+          test -z "${TMDB_API_KEY:-}"
+          test -z "${TMDB_ACCESS_TOKEN:-}"
+
+      - name: Verify exact Batch E.3 source and base
+        run: >-
+          node .github/ci/verify-batch-e3-episodes-source.mjs source
+          batch-e3-source-verification.json
+
+      - name: Install Linux dependencies from lockfile
+        run: npm ci --include=optional
+
+      - name: Verify Linux-native Sharp installation
+        shell: bash
+        run: |
+          test -d node_modules/@img/sharp-linux-x64
+          test -d node_modules/@img/sharp-libvips-linux-x64
+          test ! -d node_modules/@img/sharp-win32-x64
+          test ! -d node_modules/@img/sharp-win32-ia32
+          test ! -d node_modules/@img/sharp-win32-arm64
+          node <<'NODE'
+          const sharp = require("sharp");
+          async function main() {
+            if (!sharp.versions?.vips) throw new Error("Sharp loaded without libvips");
+            const output = await sharp({
+              create: {
+                width: 2,
+                height: 2,
+                channels: 4,
+                background: { r: 38, g: 19, b: 77, alpha: 1 },
+              },
+            }).resize(1, 1).png().toBuffer();
+            if (!Buffer.isBuffer(output) || output.length === 0) {
+              throw new Error("Sharp produced an empty image");
+            }
+            console.log(`SHARP_NATIVE_SMOKE=PASS vips=${sharp.versions.vips}`);
+          }
+          main().catch((error) => { console.error(error); process.exit(1); });
+          NODE
+
+      - name: TypeScript
+        run: npx tsc --noEmit --incremental false
+
+      - name: Scoped ESLint with exact base diagnostics
+        run: node .github/ci/verify-batch-e3-episodes-source.mjs lint
+
+      - name: Offline E.3 and published episode regression tests
+        shell: bash
+        run: |
+          sudo env "PATH=$PATH" unshare --net bash -euo pipefail <<'OFFLINE'
+          ip link set lo up
+          test "$(ip -o link show | wc -l)" -eq 1
+          test -z "$(ip route show)"
+          node --test scripts/episode-guides/e3.test.mjs scripts/episode-guides/e2.test.mjs scripts/episode-guides/integration.test.mjs scripts/episode-guides/accordion.test.mjs scripts/the-100.test.mjs scripts/episode-accordion-cast.test.mjs
+          node .github/ci/verify-batch-e3-episodes-source.mjs snapshots
+          OFFLINE
+
+      - name: Build production standalone without external network
+        shell: bash
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.KINOLUMA_NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.KINOLUMA_NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          KINOLUMA_DISABLE_SUPABASE_DURING_BUILD: "true"
+          NEXT_TELEMETRY_DISABLED: "1"
+        run: |
+          sudo --preserve-env=NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,KINOLUMA_DISABLE_SUPABASE_DURING_BUILD,NEXT_TELEMETRY_DISABLED env "PATH=$PATH" unshare --net bash -euo pipefail <<'OFFLINE'
+          ip link set lo up
+          test "$(ip -o link show | wc -l)" -eq 1
+          test -z "$(ip route show)"
+          runuser -u "$SUDO_USER" -- npm run build
+          OFFLINE
+
+      - name: Scan client bundle for privileged credential markers
+        shell: bash
+        run: |
+          if grep -RIlE 'SUPABASE_SERVICE_ROLE_KEY|TMDB_API_KEY|TMDB_ACCESS_TOKEN|sb_secret_' .next/static >/dev/null; then
+            echo "Privileged credential marker found in client bundle" >&2
+            exit 1
+          fi
+
+      - name: Assemble complete standalone payload
+        shell: bash
+        run: |
+          test ! -e release && test ! -e dist && test ! -e extracted-release
+          mkdir -p release/.next dist
+          cp -a .next/standalone/. release/
+          cp -a .next/static release/.next/static
+          cp -a public release/public
+          cp .next/BUILD_ID release/.next/BUILD_ID
+          test -f release/server.js
+          test -f release/.next/BUILD_ID
+          node .github/ci/verify-batch-e3-episodes-source.mjs artifact release
+
+      - name: Verify Sharp inside standalone payload
+        shell: bash
+        run: |
+          test -d release/node_modules/@img/sharp-linux-x64
+          test -d release/node_modules/@img/sharp-libvips-linux-x64
+          isolated_release="$RUNNER_TEMP/kinoluma-sharp-standalone"
+          test ! -e "$isolated_release"
+          cp -a release "$isolated_release"
+          RELEASE_DIR="$isolated_release" node <<'NODE'
+          const fs = require("node:fs");
+          const path = require("node:path");
+          const { createRequire } = require("node:module");
+          async function main() {
+            const releaseDir = fs.realpathSync(process.env.RELEASE_DIR);
+            const releaseRequire = createRequire(path.join(releaseDir, "server.js"));
+            const sharpEntry = fs.realpathSync(releaseRequire.resolve("sharp"));
+            const relativeEntry = path.relative(releaseDir, sharpEntry);
+            if (!relativeEntry || relativeEntry === ".." ||
+                relativeEntry.startsWith(`..${path.sep}`) || path.isAbsolute(relativeEntry)) {
+              throw new Error(`Sharp resolved outside standalone: ${sharpEntry}`);
+            }
+            for (const packageName of ["sharp-linux-x64", "sharp-libvips-linux-x64"]) {
+              const packageDir = path.join(releaseDir, "node_modules", "@img", packageName);
+              if (!fs.statSync(packageDir).isDirectory()) {
+                throw new Error(`Missing standalone package: ${packageName}`);
+              }
+            }
+            const sharp = releaseRequire("sharp");
+            if (!sharp.versions?.vips) throw new Error("Standalone Sharp loaded without libvips");
+            const output = await sharp({
+              create: {
+                width: 2,
+                height: 2,
+                channels: 4,
+                background: { r: 38, g: 19, b: 77, alpha: 1 },
+              },
+            }).resize(1, 1).png().toBuffer();
+            if (!Buffer.isBuffer(output) || output.length === 0) {
+              throw new Error("Standalone Sharp produced an empty image");
+            }
+            console.log(`STANDALONE_SHARP_SMOKE=PASS entry=${relativeEntry} vips=${sharp.versions.vips}`);
+          }
+          main().catch((error) => { console.error(error); process.exit(1); });
+          NODE
+
+      - name: Offline Linux standalone runtime QA
+        shell: bash
+        run: |
+          sudo env "PATH=$PATH" "GITHUB_RUN_ID=$GITHUB_RUN_ID" unshare --net bash -euo pipefail <<'OFFLINE'
+          ip link set lo up
+          test "$(ip -o link show | wc -l)" -eq 1
+          test -z "$(ip route show)"
+          export KINOLUMA_DISABLE_SUPABASE_DURING_BUILD=true
+          export KINOLUMA_LOAD_PUBLISHED_DRAFTS=false
+          export NEXT_TELEMETRY_DISABLED=1
+          export HOSTNAME=127.0.0.1
+          export PORT=3100
+          export KINOLUMA_ADMIN_SECRET="ci-route-guard-${GITHUB_RUN_ID}"
+          export CRON_SECRET="ci-route-guard-${GITHUB_RUN_ID}"
+          unset SUPABASE_SERVICE_ROLE_KEY TMDB_API_KEY TMDB_ACCESS_TOKEN
+          (
+            cd release
+            node server.js > ../server.log 2>&1 &
+            server_pid=$!
+            trap 'kill "$server_pid" 2>/dev/null || true; wait "$server_pid" 2>/dev/null || true' EXIT
+            for attempt in $(seq 1 30); do
+              if curl --fail --silent --show-error http://127.0.0.1:3100/ >/dev/null; then break; fi
+              if ! kill -0 "$server_pid" 2>/dev/null; then
+                echo "Standalone server exited before health check" >&2
+                exit 1
+              fi
+              sleep 1
+            done
+            curl --fail --silent --show-error http://127.0.0.1:3100/ >/dev/null
+            cd ..
+            node .github/ci/runtime-qa.mjs http://127.0.0.1:3100 runtime-qa.json
+            node .github/ci/verify-batch-e3-episodes-source.mjs runtime http://127.0.0.1:3100
+            kill "$server_pid"
+            wait "$server_pid" || true
+            trap - EXIT
+          )
+          if grep -Ei 'uncaught|unhandled rejection|sharp.*(error|failed)' server.log >/dev/null; then
+            echo "Runtime exception marker found in standalone server log" >&2
+            exit 1
+          fi
+
+          OFFLINE
+
+      - name: Create deterministic release archive and verify extraction
+        shell: bash
+        run: |
+          node .github/ci/release-tree.mjs create release release/release-tree.json
+          build_id="$(tr -d '\r\n' < .next/BUILD_ID)"
+          archive="dist/kinoluma-batch-e3-episodes-linux-${build_id}.tar"
+          tar --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner -C release -cf "$archive" .
+          gzip -n -9 "$archive"
+          archive="${archive}.gz"
+          archive_name="$(basename "$archive")"
+          (cd dist && sha256sum "$archive_name" > "${archive_name}.sha256")
+          mkdir -p extracted-release
+          tar --same-permissions -xzf "$archive" -C extracted-release
+          node .github/ci/release-tree.mjs verify extracted-release extracted-release/release-tree.json
+          node .github/ci/verify-batch-e3-episodes-source.mjs artifact extracted-release
+          export RELEASE_NPM_VERSION="$(npm --version)"
+          node .github/ci/write-release-manifest.mjs \
+            "$archive" \
+            dist/release-manifest.json \
+            runtime-qa.json \
+            batch-e3-source-verification.json \
+            release/release-tree.json
+          cp batch-e3-source-verification.json batch-e3-runtime.json runtime-qa.json release/release-tree.json dist/
+
+      - name: Upload immutable candidate artifacts
+        id: candidate
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: kinoluma-batch-e3-episodes-linux-${{ github.run_id }}
+          path: dist/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7

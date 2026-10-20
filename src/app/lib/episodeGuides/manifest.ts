@@ -16,6 +16,10 @@ type EpisodeGuideSnapshotManifestIdentity = {
 export type EpisodeGuideSnapshotManifestEntry =
   | (EpisodeGuideSnapshotManifestIdentity & { status: "planned" })
   | (EpisodeGuideSnapshotManifestIdentity & {
+      status: "prepared";
+      checksum: `sha256:${string}`;
+    })
+  | (EpisodeGuideSnapshotManifestIdentity & {
       status: "available";
       load: () => Promise<EpisodeGuideSnapshotModule>;
     });
@@ -24,8 +28,8 @@ export type EpisodeGuideSnapshotManifest = Readonly<
   Partial<Record<CanonicalMovieId, EpisodeGuideSnapshotManifestEntry>>
 >;
 
-// E.1's remaining eight identities stay planned. Only reviewed E.2 snapshots
-// have explicit server-only lazy imports; no glob or full-catalog payload.
+// Only activated snapshots have server-only lazy imports. Prepared snapshots
+// remain unavailable to the public loader until a separately reviewed UI step.
 export const episodeGuideSnapshotManifest: EpisodeGuideSnapshotManifest = Object.freeze({
   ...Object.fromEntries(
     episodeGuidePilotAllowlist.map((entry) => [
@@ -52,6 +56,24 @@ export const episodeGuideSnapshotManifest: EpisodeGuideSnapshotManifest = Object
     slug: "andor",
     provider: { source: "tmdb", namespace: "tv", id: 83867 },
     load: () => import("./snapshots/174f15d5-abe2-433e-9e8e-e65c61391ca2"),
+  },
+  "42989ff4-cd94-4f82-a7b0-7d75b3a73fe5": {
+    status: "available",
+    slug: "bolshaya-malenkaya-lozh-2017",
+    provider: { source: "tmdb", namespace: "tv", id: 66292 },
+    load: () => import("./snapshots/42989ff4-cd94-4f82-a7b0-7d75b3a73fe5"),
+  },
+  "c5cf7ec6-d093-43b0-84b8-9f903c332451": {
+    status: "available",
+    slug: "avatar-legenda-ob-aange-2004",
+    provider: { source: "tmdb", namespace: "tv", id: 246 },
+    load: () => import("./snapshots/c5cf7ec6-d093-43b0-84b8-9f903c332451"),
+  },
+  "bc84cfc1-a6fb-4bc0-9661-24fca39c6363": {
+    status: "available",
+    slug: "banshi-2013",
+    provider: { source: "tmdb", namespace: "tv", id: 41727 },
+    load: () => import("./snapshots/bc84cfc1-a6fb-4bc0-9661-24fca39c6363"),
   },
 });
 

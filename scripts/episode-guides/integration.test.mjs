@@ -27,6 +27,12 @@ const pilots = [
     checksum: "sha256:a7269e8832e1603c97415355542d7cf9bf7fd346eeb92b21367ba424c5bc8c5a" },
   { id: "174f15d5-abe2-433e-9e8e-e65c61391ca2", seasons: 2, episodes: 24, specials: 5,
     checksum: "sha256:39bfdaf2a4fb4331dad448abe2925941e75a424285539dc3f053e21e97ff2ce8" },
+  { id: "42989ff4-cd94-4f82-a7b0-7d75b3a73fe5", seasons: 2, episodes: 14, specials: 0,
+    checksum: "sha256:c011de3cdad66c068a2d30fbd536b22176ca8bd7a0c686272285dfd72b9436e9" },
+  { id: "c5cf7ec6-d093-43b0-84b8-9f903c332451", seasons: 3, episodes: 61, specials: 24,
+    checksum: "sha256:b157da26e76ff3b8e1fff5965fdfceb7cc2a945a6936cd32752f58290f5ea2cf" },
+  { id: "bc84cfc1-a6fb-4bc0-9661-24fca39c6363", seasons: 4, episodes: 38, specials: 0,
+    checksum: "sha256:90746725ae921f51ad6b0c52cf74f49bf5d146764d11746996f0c3194ed804eb" },
 ];
 const movieFor = (id) => catalog.movies.find((movie) => movie.canonicalMovieId === id);
 
@@ -43,10 +49,10 @@ function withDependencies(relativeFile, modules) {
   return result.exports;
 }
 
-test("catalog imports no snapshots; manifest has exactly two lazy available entries", () => {
+test("catalog imports no snapshots; manifest has exactly five lazy available entries", () => {
   assert.equal(Object.keys(requireLocal.cache).filter((path) => /episodeGuides[/\\]snapshots[/\\]/.test(path)).length, 0);
   assert.deepEqual(Object.entries(manifest).filter(([, entry]) => entry.status === "available").map(([id]) => id).sort(), pilots.map(({ id }) => id).sort());
-  assert.equal(Object.values(manifest).filter((entry) => entry.status === "planned").length, 8);
+  assert.equal(Object.values(manifest).filter((entry) => entry.status === "planned").length, 5);
   for (const { id } of pilots) assert.equal(movieFor(id).episodeGuide, undefined);
 });
 
@@ -74,18 +80,30 @@ for (const pilot of pilots) test(`canonical detail integration + pinned checksum
 });
 
 test("no slug/provider fallback; reject conflicting TV/provider identity", async () => {
-  const base = movieFor(pilots[0].id);
-  const withoutId = { ...base, canonicalMovieId: undefined };
-  assert.equal(await integration.attachVerifiedEpisodeGuide(withoutId), withoutId);
-  for (const [change, issue] of [
-    [{ tmdbNamespace: "movie" }, "MOVIE_NAMESPACE_NOT_TV"],
-    [{ tmdbId: 83867 }, "MOVIE_PROVIDER_ID_MISMATCH"],
-    [{ slug: "andor" }, "MOVIE_SLUG_MISMATCH"],
-  ]) await assert.rejects(integration.attachVerifiedEpisodeGuide({ ...base, ...change }), (error) => error.issueCodes.includes(issue));
+  for (const pilot of pilots) {
+    const base = movieFor(pilot.id);
+    const withoutId = { ...base, canonicalMovieId: undefined };
+    assert.equal(await integration.attachVerifiedEpisodeGuide(withoutId), withoutId);
+    for (const [change, issue] of [
+      [{ tmdbNamespace: "movie" }, "MOVIE_NAMESPACE_NOT_TV"],
+      [{ tmdbId: -1 }, "MOVIE_PROVIDER_ID_MISMATCH"],
+      [{ slug: "wrong-canonical-slug" }, "MOVIE_SLUG_MISMATCH"],
+    ]) await assert.rejects(integration.attachVerifiedEpisodeGuide({ ...base, ...change }), (error) => error.issueCodes.includes(issue));
+  }
   for (const [id, entry] of Object.entries(manifest)) if (entry.status === "planned") {
     const movie = movieFor(id);
     assert.equal(await integration.attachVerifiedEpisodeGuide(movie), movie);
   }
+});
+
+test("Avatar specials keep original titles and absent dates without changing regular totals", async () => {
+  const detail = await integration.attachVerifiedEpisodeGuide(movieFor(pilots[3].id));
+  assert.equal(detail.episodeSpecials.length, 24);
+  assert.equal(detail.episodeSpecials.filter((episode) => !episode.airDate).length, 15);
+  assert.ok(detail.episodeSpecials.every((episode) => !episode.russianTitle && episode.originalTitle));
+  const regular = detail.episodeGuide.flatMap((season) => season.episodes);
+  assert.equal(regular.length, 61);
+  assert.ok(regular.every((episode) => episode.russianTitle && episode.airDate));
 });
 
 test("validated fixture preserves absent dates/titles and sparse special numbers", async () => {
@@ -148,14 +166,15 @@ test("actual existing merge pipeline keeps manual overrides and later credits en
     const detail = await overrides.getMovieWithOverrides(base.slug);
     assert.ok(detail.episodeGuide.length);
     const fixture = { episodeGuide: [{ season: 1, episodes: [{ number: 1, russianTitle: "Ручная правка" }] }],
-      episodeSpecials: [], seasons: 1, episodes: 1, runtime: 42, rating: 7.3,
+      episodeSpecials: [{ number: 1, russianTitle: "Ручной special", airDate: "2026-01-01" }],
+      seasons: 1, episodes: 1, runtime: 42, rating: 7.3,
       canonicalMovieId: "not-a-canonical-id", slug: "not-the-slug", id: -1,
       facts: [{ label: "Создатель", value: "Manual creator" }],
     };
     fixtures.set(base.slug, fixture);
     const merged = await overrides.getMovieWithOverrides(base.slug);
     assert.deepEqual(merged.episodeGuide, fixture.episodeGuide);
-    assert.deepEqual(merged.episodeSpecials, []);
+    assert.deepEqual(merged.episodeSpecials, fixture.episodeSpecials);
     assert.equal(merged.seasons, 1);
     assert.equal(merged.episodes, 1);
     assert.equal(merged.runtime, 42);
@@ -171,7 +190,7 @@ test("actual existing merge pipeline keeps manual overrides and later credits en
     fixtures.set(base.slug, { episodeGuide: [], episodeSpecials: [], hidden: true });
     assert.equal(await overrides.getMovieWithOverrides(base.slug), null);
   }
-  assert.deepEqual(events, Array.from({ length: 6 }, () => ["snapshot", "credits"]).flat());
+  assert.deepEqual(events, Array.from({ length: pilots.length * 3 }, () => ["snapshot", "credits"]).flat());
 });
 
 test("The 100 remains unchanged; no network attempts", async () => {
