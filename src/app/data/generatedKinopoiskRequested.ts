@@ -589,14 +589,14 @@ export const generatedKinopoiskRequestedMovies: Movie[] = [
           "contentId": "838"
         },
         {
-          "id": "rendex-4904",
+          "id": "rendex-325785",
           "name": "Запасной 1",
           "type": "rendex",
           "provider": "rendex",
           "embedUrl": "",
           "publisherId": "678053396",
           "contentType": "movie",
-          "contentId": "4904",
+          "contentId": "325785",
           "scriptSrc": "https://graphicslab.io/sdk/v2/rendex-sdk.min.js",
           "design": "1",
           "color1": "#56CEAA",

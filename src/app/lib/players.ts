@@ -1,4 +1,5 @@
 import type { ContentType, PlayerProvider } from "../data/movies";
+import { normalizeVibixKind, parseVibixId, safeVibixIframeUrl } from "./vibix";
 
 export const RENDEX_SCRIPT_SRC =
   "https://graphicslab.io/sdk/v2/rendex-sdk.min.js";
@@ -214,7 +215,7 @@ export function buildVibixIframePlayer(
   url: unknown,
   index = 0,
 ): KinoLumaPlayer | null {
-  const embedUrl = cleanString(url);
+  const embedUrl = safeVibixIframeUrl(url);
   if (!embedUrl) return null;
 
   return {
@@ -447,20 +448,21 @@ function buildRendexPlayerFromEmbedCode(
   name = "Основной",
 ): KinoLumaPlayer | null {
   const text = cleanString(value);
-  const contentId = extractRendexVideoId(text);
+  if (!/<ins\b|data-id\s*=/i.test(text)) return null;
+  const contentType = normalizeVibixKind(getHtmlDataAttribute(text, "data-type") || "movie");
+  if (!contentType) return null;
+  const contentId = parseVibixId(contentType, getHtmlDataAttribute(text, "data-id"));
   if (!contentId) return null;
 
   return {
-    id: `rendex-${contentId}`,
+    id: `rendex-${contentType}-${contentId}`,
     name,
     type: "rendex",
     embedUrl: "",
     publisherId:
       cleanNumberString(getHtmlDataAttribute(text, "data-publisher-id")) ||
       RENDEX_PUBLISHER_ID,
-    contentType: normalizeRendexContentType(
-      getHtmlDataAttribute(text, "data-type") || "movie",
-    ),
+    contentType,
     contentId,
     scriptSrc: RENDEX_SCRIPT_SRC,
     design:
@@ -630,12 +632,7 @@ export function getImdbIdFromRawJson(rawJson: unknown) {
 }
 
 function normalizeRendexContentType(input?: string | null) {
-  const value = cleanString(input).toLowerCase();
-
-  if (value === "series" || value === "serial" || value === "tv")
-    return "series";
-
-  return "movie";
+  return normalizeVibixKind(input) || "movie";
 }
 
 function getRendexContentType(input: AutoPlayerInput) {
@@ -827,6 +824,11 @@ function normalizePlayer(
     item.type || item.kind || item.provider,
   ).toLowerCase();
   const name = cleanString(item.name) || `Плеер ${index + 1}`;
+  // Do not discard explicit invalidation flags while normalizing a saved
+  // provider record and accidentally restore it later on Movie Page.
+  if (["vibix", "vibix-iframe", "exiim", "rendex", "graphicslab"].some(
+    (provider) => type === provider || cleanString(item.provider).toLowerCase() === provider,
+  ) && (item.disabled === true || item.revoked === true || item.expired === true)) return null;
 
   if (type === "collapse" || type === "collaps") {
     const embedUrl = cleanString(item.embedUrl || item.embed_url || item.url);
@@ -882,12 +884,12 @@ function normalizePlayer(
       item.contentId || item.content_id || item.dataId || item.data_id,
     )
   ) {
-    const contentId = extractRendexVideoId(
-      item.contentId ||
-        item.content_id ||
-        item.dataId ||
-        item.data_id ||
-        item.id,
+    const contentType = normalizeVibixKind(
+      item.contentType || item.content_type || item.dataType || item.data_type || "movie",
+    );
+    if (!contentType) return null;
+    const contentId = parseVibixId(contentType,
+      item.contentId || item.content_id || item.dataId || item.data_id || item.id,
     );
     if (!contentId) return null;
 
@@ -899,14 +901,7 @@ function normalizePlayer(
       publisherId:
         cleanString(item.publisherId || item.publisher_id) ||
         RENDEX_PUBLISHER_ID,
-      contentType: normalizeRendexContentType(
-        cleanString(
-          item.contentType ||
-            item.content_type ||
-            item.dataType ||
-            item.data_type,
-        ) || "movie",
-      ),
+      contentType,
       contentId,
       scriptSrc:
         cleanString(item.scriptSrc || item.script_src) || RENDEX_SCRIPT_SRC,
@@ -1001,20 +996,23 @@ export function parsePlayerText(value: unknown): KinoLumaPlayer[] {
         );
         if (embedCodePlayer) return embedCodePlayer;
 
-        const contentTypeAliases = ["movie", "film", "series", "serial", "tv"];
+        const contentTypeAliases = ["movie", "film", "series", "serial", "tv", "kp", "imdb"];
         const explicitContentType = contentTypeAliases.includes(
           (parts[2] || "").toLowerCase(),
         )
           ? parts[2]
           : "";
         const shortContentId = explicitContentType
-          ? extractRendexVideoId(parts.slice(3).join("|"))
+          ? parseVibixId(normalizeRendexContentType(explicitContentType), parts.slice(3).join("|"))
           : "";
-        const compactContentId = extractRendexVideoId(parts[2]);
+        const compactContentId = parseVibixId("movie", parts[2]);
         const longPublisherId = cleanString(parts[2]) || RENDEX_PUBLISHER_ID;
         const longContentType = normalizeRendexContentType(parts[3] || "movie");
-        const longContentId = extractRendexVideoId(parts[4]);
-        const contentId = shortContentId || longContentId || compactContentId;
+        const longContentId = parseVibixId(longContentType, parts[4]);
+        if (explicitContentType && !shortContentId) return null;
+        if (!explicitContentType && parts.length >= 5 &&
+          (!normalizeVibixKind(parts[3]) || !parseVibixId("movie", longPublisherId) || !longContentId)) return null;
+        const contentId = shortContentId || longContentId || (parts.length === 3 ? compactContentId : "");
 
         if (!contentId) return null;
 
@@ -1090,7 +1088,7 @@ export function playersToText(players: unknown) {
       }
 
       if (player.type === "rendex") {
-        return `${player.name} | rendex | ${player.contentId || ""}`.trim();
+        return `${player.name} | rendex | ${player.publisherId || RENDEX_PUBLISHER_ID} | ${player.contentType || "movie"} | ${player.contentId || ""}`.trim();
       }
 
       return player.embedUrl

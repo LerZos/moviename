@@ -16,6 +16,7 @@ import {
   siteUrl,
 } from "../../lib/seo";
 import MoviePageClient from "./MoviePageClient";
+import { prepareVibixPlan } from "../../lib/vibixPolicy";
 
 type MoviePageProps = {
   params: Promise<{
@@ -188,7 +189,7 @@ export default async function MoviePage({ params }: MoviePageProps) {
         }}
       />
 
-      <MoviePageClient movie={movie} relatedMovies={relatedMovies} />
+      <MoviePageClient movie={movie} relatedMovies={relatedMovies} vibixPlan={prepareVibixPlan(movie)} />
     </>
   );
 }

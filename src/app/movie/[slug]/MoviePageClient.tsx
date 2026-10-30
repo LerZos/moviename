@@ -3,6 +3,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import Script from "next/script";
+import VibixPlayer from "../../components/VibixPlayer";
+import { useVibixLookup } from "../../lib/useVibixLookup";
+import { isVibixPlayer, isUsableSavedPlayer, mergePlayerOptions, selectedPlayer, stablePlayerKey, VIBIX_STATUS_TEXT, VIBIX_PLAN_TEXT, type VibixPlan, type PlayerSelection } from "../../lib/vibix";
 import MobileBottomNav from "../../components/MobileBottomNav";
 import PosterImage, { syncPosterBackground } from "../../components/PosterImage";
 import { type MouseEvent, useEffect, useMemo, useRef, useState } from "react";
@@ -31,6 +34,7 @@ import {
 type MoviePageClientProps = {
   movie: Movie;
   relatedMovies?: MovieCardIndexItem[];
+  vibixPlan?: VibixPlan;
 };
 
 const WATCH_LATER_KEY = "kinoluma-watch-later";
@@ -44,7 +48,6 @@ const DEFAULT_PLAYERS: PlayerProvider[] = [
   { id: "player-3", name: "Плеер 3", embedUrl: "" },
 ];
 
-const RENDEX_SCRIPT_SRC = "https://graphicslab.io/sdk/v2/rendex-sdk.min.js";
 
 const VIBIX_PLAYER_THEME: Record<string, string> = {
   design: "1",
@@ -123,13 +126,6 @@ function getPlayerRecord(
   return player as PlayerProvider & Record<string, unknown>;
 }
 
-function isRendexPlayer(player: PlayerProvider) {
-  const record = getPlayerRecord(player);
-  return (
-    String(record.type || record.provider || "").toLowerCase() === "rendex"
-  );
-}
-
 function isCollapsePlayer(player: PlayerProvider) {
   const record = getPlayerRecord(player);
   const type = String(record.type || record.provider || "").toLowerCase();
@@ -142,14 +138,6 @@ function isCollapsePlayer(player: PlayerProvider) {
     type === "collaps-iframe" ||
     embedUrl.includes("api.ortified.ws/embed")
   );
-}
-
-function hasPlayablePlayer(player: PlayerProvider) {
-  if (isRendexPlayer(player)) {
-    return Boolean(getRendexContentId(player));
-  }
-
-  return Boolean(player.embedUrl?.trim());
 }
 
 function normalizePlayerButtonNames(players: PlayerProvider[]) {
@@ -173,84 +161,6 @@ function normalizePlayerButtonNames(players: PlayerProvider[]) {
 
     return player;
   });
-}
-
-function getPlayerUniqueKey(player: PlayerProvider) {
-  const record = getPlayerRecord(player);
-  const type = String(record.type || record.provider || "iframe").toLowerCase();
-  const embedUrl = String(player.embedUrl || "").trim();
-  const contentKind = String(
-    record.contentKind || record.contentType || "",
-  ).trim();
-  const contentId = String(
-    record.contentId || record.rendexVideoId || "",
-  ).trim();
-
-  if (type === "rendex" && contentId) return `rendex:${contentId}`;
-  if ((type === "collapse" || type === "collaps") && contentId) {
-    return `collapse:${contentKind}:${contentId}`;
-  }
-  if (
-    (type === "vibix" ||
-      type === "vibix-iframe" ||
-      record.provider === "vibix") &&
-    embedUrl
-  ) {
-    return `vibix:${embedUrl}`;
-  }
-
-  return embedUrl ? `${type}:${embedUrl}` : `${type}:${player.id}`;
-}
-
-function isLegacyStandaloneVibixPlayer(player: PlayerProvider) {
-  const record = getPlayerRecord(player);
-  const type = String(record.type || record.provider || "").toLowerCase();
-  return (
-    type === "vibix" || type === "vibix-iframe" || record.provider === "vibix"
-  );
-}
-
-function mergeGeneratedAndManualPlayers(
-  generatedPlayers: PlayerProvider[],
-  realPlayers: PlayerProvider[],
-) {
-  const seen = new Set<string>();
-  const merged: PlayerProvider[] = [];
-
-  for (const player of [...generatedPlayers, ...realPlayers]) {
-    if (!hasPlayablePlayer(player)) continue;
-
-    const key = getPlayerUniqueKey(player);
-    if (seen.has(key)) continue;
-
-    seen.add(key);
-    merged.push(player);
-  }
-
-  return merged;
-}
-
-function getRendexContentId(player: PlayerProvider) {
-  const record = getPlayerRecord(player);
-  return String(record.contentId || record.rendexVideoId || "").trim();
-}
-
-function getRendexPublisherId(player: PlayerProvider) {
-  const record = getPlayerRecord(player);
-  return String(record.publisherId || "678053396").trim();
-}
-
-function getRendexContentType(player: PlayerProvider, movie: Movie) {
-  const record = getPlayerRecord(player);
-  const explicitType = String(record.contentType || "").trim();
-  if (explicitType) return explicitType;
-  return movie.type === "Сериал" ? "series" : "movie";
-}
-
-function getRendexColor(player: PlayerProvider, key: string, fallback: string) {
-  const record = getPlayerRecord(player);
-  const value = record[key];
-  return typeof value === "string" && value.trim() ? value.trim() : fallback;
 }
 
 function escapeHtmlAttribute(value: string) {
@@ -424,42 +334,6 @@ function readNumberArrayFromStorage(key: string) {
 
 function saveNumberArrayToStorage(key: string, ids: number[]) {
   window.localStorage.setItem(key, JSON.stringify(ids));
-}
-
-type VibixRendexResponse = {
-  ok?: boolean;
-  player?: {
-    id?: string;
-    name?: string;
-    type?: string;
-    provider?: string;
-    embedUrl?: string;
-    contentId?: string;
-    contentType?: string;
-    publisherId?: string;
-  } | null;
-};
-
-type VibixRendexPlayerData = {
-  contentId: string;
-  contentType: string;
-  embedUrl?: string;
-  id?: string;
-  name?: string;
-  provider?: string;
-  type?: string;
-  publisherId?: string;
-};
-
-async function readJsonSafely(response: Response) {
-  const text = await response.text();
-  if (!text.trim()) return null;
-
-  try {
-    return JSON.parse(text) as unknown;
-  } catch {
-    return null;
-  }
 }
 
 function toggleId(ids: number[], itemId: number) {
@@ -721,9 +595,21 @@ function formatRussianCount(count: number, one: string, few: string, many: strin
 export default function MoviePageClient({
   movie,
   relatedMovies = [],
+  vibixPlan,
 }: MoviePageClientProps) {
-  const [vibixRendexData, setVibixRendexData] =
-    useState<VibixRendexPlayerData | null>(null);
+  const movieKey = `${movie.canonicalMovieId || movie.id}:${movie.slug}`;
+  const [visibleMovieKey, setVisibleMovieKey] = useState<string | null>(null);
+  const isPlayerVisible = visibleMovieKey === movieKey;
+  const currentVibixPlan = vibixPlan?.movieKey === movieKey ? vibixPlan : null;
+  const savedPlayers = useMemo(() => (movie.players || []).filter(isUsableSavedPlayer), [movie.players]);
+  const vibixLookup = useVibixLookup({
+    movieKey, kpId: movie.kinopoiskId || getFallbackKinopoiskIdBySlug(movie.slug),
+    imdbId: movie.imdbId, movieType: movie.type,
+    // Direct SDK selection never needs an API token or a lookup request.
+    // Keep the existing lookup for legacy callers without a prepared plan.
+    enabled: !vibixPlan && isPlayerVisible && !savedPlayers.some(isVibixPlayer),
+  });
+  const vibixRendexData = vibixLookup.player;
 
   const generatedPlayers = useMemo(
     () =>
@@ -731,8 +617,6 @@ export default function MoviePageClient({
         slug: movie.slug,
         kinopoiskId: movie.kinopoiskId,
         imdbId: movie.imdbId,
-        rendexVideoId: vibixRendexData?.contentId,
-        contentType: vibixRendexData?.contentType,
         movieType: movie.type,
         genres: movie.genres,
       }),
@@ -742,49 +626,28 @@ export default function MoviePageClient({
       movie.kinopoiskId,
       movie.slug,
       movie.type,
-      vibixRendexData?.contentId,
-      vibixRendexData?.contentType,
     ],
   );
 
   const players = useMemo(() => {
-    const vibixPlayer =
-      vibixRendexData?.contentId?.trim()
-        ? ([
-            {
-              id: vibixRendexData.id || `vibix-${vibixRendexData.contentId}`,
-              name: vibixRendexData.name || "Vibix",
-              type:
-                vibixRendexData.type ||
-                (vibixRendexData.embedUrl ? "vibix-iframe" : "rendex"),
-              provider:
-                vibixRendexData.provider ||
-                (vibixRendexData.embedUrl ? "vibix" : "rendex"),
-              embedUrl: vibixRendexData.embedUrl || "",
-              contentType: vibixRendexData.contentType,
-              contentId: vibixRendexData.contentId,
-              publisherId: vibixRendexData.publisherId,
-            } as PlayerProvider,
-          ])
-        : [];
-    const realPlayers = (movie.players || [])
-      .filter(hasPlayablePlayer)
-      .filter((player) => !isLegacyStandaloneVibixPlayer(player));
-
-    const mergedPlayers =
-      realPlayers.length > 0
-        ? mergeGeneratedAndManualPlayers(
-            generatedPlayers,
-            mergeGeneratedAndManualPlayers(vibixPlayer, realPlayers),
-          )
-        : mergeGeneratedAndManualPlayers(generatedPlayers, vibixPlayer);
+    const vibixPlayer = vibixRendexData ? [vibixRendexData] : [];
+    // Saved/manual variants win over a late lookup of the same iframe.
+    const preferredVibix = currentVibixPlan?.status === "verified" || currentVibixPlan?.status === "external";
+    const retainedPlayers = currentVibixPlan
+      ? savedPlayers.filter((player) => !isVibixPlayer(player) || currentVibixPlan.players.some((allowed) => stablePlayerKey(allowed) === stablePlayerKey(player)))
+      : savedPlayers;
+    const mergedPlayers = currentVibixPlan
+      ? preferredVibix
+        ? mergePlayerOptions(currentVibixPlan.players, generatedPlayers, retainedPlayers)
+        : mergePlayerOptions(generatedPlayers, retainedPlayers)
+      : mergePlayerOptions(generatedPlayers, savedPlayers, vibixPlayer);
 
     if (mergedPlayers.length > 0) {
-      return normalizePlayerButtonNames(mergedPlayers).slice(0, 2);
+      return normalizePlayerButtonNames(mergedPlayers);
     }
 
     return DEFAULT_PLAYERS;
-  }, [generatedPlayers, movie.players, vibixRendexData]);
+  }, [generatedPlayers, savedPlayers, vibixRendexData, currentVibixPlan]);
 
   const facts = useMemo(
     () =>
@@ -867,11 +730,11 @@ export default function MoviePageClient({
     ];
   }, [facts, movie]);
 
-  const [activePlayerId, setActivePlayerId] = useState(players[0].id);
+  const [selection, setSelection] = useState<PlayerSelection | null>(null);
   const [posterSrc, setPosterSrc] = useState(movie.poster);
+  const [posterIdentity, setPosterIdentity] = useState(`${movie.slug}:${movie.poster}`);
   const smoothScrollFrameRef = useRef<number | null>(null);
   const playerSectionRef = useRef<HTMLElement | null>(null);
-  const [isPlayerVisible, setIsPlayerVisible] = useState(false);
 
   const [watchLaterIds, setWatchLaterIds] = useState<number[]>([]);
   const [likedItemIds, setLikedItemIds] = useState<number[]>([]);
@@ -880,8 +743,17 @@ export default function MoviePageClient({
   const [isStorageLoaded, setIsStorageLoaded] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  const activePlayer =
-    players.find((player) => player.id === activePlayerId) || players[0];
+  const activePlayer = selectedPlayer(players, selection, movieKey);
+  // Adjust identity-bound state before committing children: no stale iframe is
+  // mounted for the next movie and no effect resets a later user selection.
+  const activePlayerKey = stablePlayerKey(activePlayer);
+  if (selection?.movieKey !== movieKey || selection.playerKey !== activePlayerKey) {
+    setSelection({ movieKey, playerKey: activePlayerKey });
+  }
+  if (posterIdentity !== `${movie.slug}:${movie.poster}`) {
+    setPosterIdentity(`${movie.slug}:${movie.poster}`);
+    setPosterSrc(movie.poster);
+  }
 
   useEffect(() => {
     if (isPlayerVisible) return;
@@ -890,15 +762,15 @@ export default function MoviePageClient({
     if (!section) return;
 
     if (typeof IntersectionObserver === "undefined") {
-      setIsPlayerVisible(true);
-      return;
+      const frame = requestAnimationFrame(() => setVisibleMovieKey(movieKey));
+      return () => cancelAnimationFrame(frame);
     }
 
     const observer = new IntersectionObserver(
       (entries) => {
         if (!entries.some((entry) => entry.isIntersecting)) return;
 
-        setIsPlayerVisible(true);
+        setVisibleMovieKey(movieKey);
         observer.disconnect();
       },
       { rootMargin: "360px 0px", threshold: 0.01 },
@@ -907,7 +779,7 @@ export default function MoviePageClient({
     observer.observe(section);
 
     return () => observer.disconnect();
-  }, [isPlayerVisible]);
+  }, [isPlayerVisible, movieKey]);
 
   const visibleFacts = useMemo(
     () => facts.filter((fact) => isVisibleFact(fact) && shouldShowMovieFact(fact.label, credits)),
@@ -942,88 +814,6 @@ export default function MoviePageClient({
       value: studioFact || movie.originalTitle || "Уточняется",
     },
   ];
-
-  useEffect(() => {
-    const controller = new AbortController();
-    let isCancelled = false;
-
-    async function loadVibixRendexData() {
-      setVibixRendexData(null);
-
-      const fallbackKinopoiskId =
-        movie.kinopoiskId || getFallbackKinopoiskIdBySlug(movie.slug);
-
-      if (!fallbackKinopoiskId && !movie.imdbId) {
-        return;
-      }
-
-      const params = new URLSearchParams();
-
-      if (fallbackKinopoiskId) {
-        params.set("kpId", String(fallbackKinopoiskId));
-      }
-
-      if (movie.imdbId) {
-        params.set("imdbId", String(movie.imdbId));
-      }
-
-      if (movie.type) {
-        params.set("movieType", movie.type);
-      }
-
-      try {
-        const response = await fetch(`/api/player/vibix?${params.toString()}`, {
-          cache: "no-store",
-          signal: controller.signal,
-        });
-
-        if (!response.ok) {
-          return;
-        }
-
-        const payload = (await readJsonSafely(
-          response,
-        )) as VibixRendexResponse | null;
-        const contentId = payload?.player?.contentId?.trim();
-
-        if (!isCancelled && contentId) {
-          setVibixRendexData({
-            contentId,
-            contentType:
-              payload?.player?.contentType?.trim() ||
-              (movie.type === "Сериал" ? "series" : "movie"),
-            embedUrl: payload?.player?.embedUrl?.trim(),
-            id: payload?.player?.id?.trim(),
-            name: payload?.player?.name?.trim(),
-            provider: payload?.player?.provider?.trim(),
-            type: payload?.player?.type?.trim(),
-            publisherId: payload?.player?.publisherId?.trim(),
-          });
-        }
-      } catch (error) {
-        if ((error as Error).name !== "AbortError") {
-          setVibixRendexData(null);
-        }
-      }
-    }
-
-    void loadVibixRendexData();
-
-    return () => {
-      isCancelled = true;
-      controller.abort();
-    };
-  }, [
-    movie.imdbId,
-    movie.kinopoiskId,
-    movie.slug,
-    movie.type,
-  ]);
-
-  useEffect(() => {
-    setPosterSrc(movie.poster);
-    setActivePlayerId(players[0].id);
-  }, [movie.poster, movie.slug, players]);
 
   useEffect(() => {
     let isMounted = true;
@@ -1470,11 +1260,12 @@ export default function MoviePageClient({
             <div className="player-tabs" aria-label="Выбор плеера">
               {players.map((player) => (
                 <button
-                  key={player.id}
+                  key={stablePlayerKey(player)}
                   type="button"
-                  onClick={() => setActivePlayerId(player.id)}
+                  aria-pressed={stablePlayerKey(activePlayer) === stablePlayerKey(player)}
+                  onClick={() => setSelection({ movieKey, playerKey: stablePlayerKey(player) })}
                   className={
-                    activePlayer.id === player.id
+                    activePlayerKey === stablePlayerKey(player)
                       ? "player-tab player-tab-active"
                       : "player-tab"
                   }
@@ -1485,7 +1276,17 @@ export default function MoviePageClient({
             </div>
           </div>
 
-          <div className="player-box">
+          {currentVibixPlan && VIBIX_PLAN_TEXT[currentVibixPlan.status] ? (
+            <p role="status" aria-live="polite" style={{ color: "#b8b8c2", fontSize: 13, marginBottom: 12 }}>
+              {VIBIX_PLAN_TEXT[currentVibixPlan.status]}
+            </p>
+          ) : null}
+          {VIBIX_STATUS_TEXT[vibixLookup.status] ? (
+            <p role="status" aria-live="polite" style={{ color: "#b8b8c2", fontSize: 13, marginBottom: 12 }}>
+              {VIBIX_STATUS_TEXT[vibixLookup.status]}
+            </p>
+          ) : null}
+          <div className={isVibixPlayer(activePlayer) ? "player-box player-box-vibix" : "player-box"}>
             {!isPlayerVisible ? (
               <div className="player-placeholder">
                 <div className="play-icon">
@@ -1497,53 +1298,8 @@ export default function MoviePageClient({
                 <h3>Плеер загрузится при просмотре</h3>
                 <p>Так страница быстрее открывается, а лишние скрипты не грузятся заранее.</p>
               </div>
-            ) : isRendexPlayer(activePlayer) &&
-            getRendexContentId(activePlayer) ? (
-              <>
-                <Script
-                  id="rendex-sdk"
-                  src={RENDEX_SCRIPT_SRC}
-                  strategy="afterInteractive"
-                />
-                <div
-                  key={`${activePlayer.id}-${getRendexContentId(activePlayer)}`}
-                  className="rendex-player-frame"
-                >
-                  <ins
-                    data-publisher-id={getRendexPublisherId(activePlayer)}
-                    data-type={getRendexContentType(activePlayer, movie)}
-                    data-id={getRendexContentId(activePlayer)}
-                    data-design="1"
-                    data-color1={getRendexColor(
-                      activePlayer,
-                      "color1",
-                      "#56CEAA",
-                    )}
-                    data-color2={getRendexColor(
-                      activePlayer,
-                      "color2",
-                      "#FFFFFF",
-                    )}
-                    data-color3={getRendexColor(
-                      activePlayer,
-                      "color3",
-                      "#AEC7BC",
-                    )}
-                    data-color4={getRendexColor(
-                      activePlayer,
-                      "color4",
-                      "#42BD88",
-                    )}
-                    data-color5={getRendexColor(
-                      activePlayer,
-                      "color5",
-                      "#000000",
-                    )}
-                    data-width="100%"
-                    data-height="100%"
-                  />
-                </div>
-              </>
+            ) : isVibixPlayer(activePlayer) ? (
+              <VibixPlayer key={`${movieKey}:${stablePlayerKey(activePlayer)}`} player={activePlayer} title={movie.title} movieType={movie.type} />
             ) : activePlayer.embedUrl ? (
               <>
                 {isCollapsePlayer(activePlayer) ? (
@@ -1554,7 +1310,7 @@ export default function MoviePageClient({
                   />
                 ) : null}
                 <div
-                  key={`${activePlayer.id}-${activePlayer.embedUrl}`}
+                  key={`${movieKey}:${stablePlayerKey(activePlayer)}`}
                   className="player-iframe-shell"
                   dangerouslySetInnerHTML={{
                     __html: buildPlayerIframeHtml(activePlayer, movie),
@@ -2472,6 +2228,12 @@ const moviePageStyles = `
     content: none;
     display: none;
     padding-top: 0;
+  }
+
+  @media (max-width: 640px) {
+    .player-box-vibix {
+      min-height: 370px;
+    }
   }
 
   .rendex-player-frame,

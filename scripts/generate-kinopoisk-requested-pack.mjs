@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import fs from "node:fs";
 import path from "node:path";
+import { verifiedVibixForDocument } from "./lib/verified-vibix-mapping.mjs";
 
 const KINOPOISK_BASE_URL = "https://api.kinopoisk.dev/v1.4";
 const DEFAULT_YEAR_FROM = 2000;
@@ -531,8 +532,9 @@ async function buildPlayers(doc, type, bucket) {
   const players = [buildCollapsePlayer(kpId)];
 
   if (bucket !== "expected") {
-    const video = await findVibixVideo(doc);
-    const videoId = getVibixVideoId(video);
+    const verified = verifiedVibixForDocument(doc, type);
+    const video = verified ? null : await findVibixVideo(doc);
+    const videoId = verified?.contentId || getVibixVideoId(video);
     if (videoId) {
       const config = getVibixConfig();
       players.push({
@@ -541,7 +543,7 @@ async function buildPlayers(doc, type, bucket) {
         type: "rendex",
         provider: "rendex",
         embedUrl: "",
-        publisherId: config.publisherId,
+        publisherId: verified?.publisherId || config.publisherId,
         contentType: getRendexContentType(type),
         contentId: videoId,
         scriptSrc: RENDEX_SCRIPT_SRC,

@@ -6,6 +6,8 @@ import { useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { supabase } from "../../../../lib/supabase";
 import type { Movie } from "../../../../data/movies";
 import { parseManualRatingInput } from "../../../../lib/movies/rating";
+import { parseAdminPlayers, serializeAdminPlayers } from "../../../../lib/adminPlayers";
+import { mergePlayerOptions } from "../../../../lib/vibix";
 
 type MovieAdminEditFormProps = {
   slug: string;
@@ -52,284 +54,22 @@ function parseNumber(value: FormDataEntryValue | null) {
   return Number.isFinite(numberValue) ? numberValue : undefined;
 }
 
-function extractRendexVideoId(value: string) {
-  const trimmed = value.trim();
-  const fromDataId = trimmed.match(/data-id=["']?([^"'\s>]+)/i)?.[1];
-  if (fromDataId) return fromDataId.trim();
-
-  const digits = trimmed.match(/\d+/)?.[0];
-  return digits || "";
-}
-
-function getRendexContentType(value: unknown) {
-  const normalized = valueToString(value).trim().toLowerCase();
-  return normalized === "series" ||
-    normalized === "serial" ||
-    normalized === "tv" ||
-    normalized.includes("сериал")
-    ? "series"
-    : "movie";
-}
-
-function isLegacyStandaloneVibixPlayer(item: Record<string, unknown>) {
-  const type = valueToString(item.type || item.provider).trim().toLowerCase();
-  const provider = valueToString(item.provider).trim().toLowerCase();
-
-  return type === "vibix" || type === "vibix-iframe" || provider === "vibix";
-}
-
-function buildCollapseKinopoiskUrl(kinopoiskId: string) {
-  const id = kinopoiskId.trim().match(/\d+/)?.[0] || "";
-  return id
-    ? `https://api.ortified.ws/embed/kp/${id}?sharing=false&episodesOpen=false`
-    : "";
-}
-
-function buildCollapseMovieUrl(contentId: string) {
-  const id = contentId.trim().match(/\d+/)?.[0] || "";
-  return id
-    ? `https://api.ortified.ws/embed/movie/${id}?sharing=false&episodesOpen=false`
-    : "";
-}
-
-function buildCollapseImdbUrl(imdbId: string) {
-  const match = imdbId.trim().match(/tt\d+|\d+/i)?.[0] || "";
-  if (!match) return "";
-
-  const id = match.toLowerCase().startsWith("tt")
-    ? match.toLowerCase()
-    : `tt${match}`;
-  return `https://api.ortified.ws/embed/imdb/${id}?sharing=false&episodesOpen=false`;
-}
-
-function buildCollapsePlayer(
-  name: string,
-  kind: string,
-  rawId: string,
-  index: number,
-) {
-  const normalizedKind = kind.trim().toLowerCase() || "movie";
-  const embedUrl =
-    normalizedKind === "kp" || normalizedKind === "kinopoisk"
-      ? buildCollapseKinopoiskUrl(rawId)
-      : normalizedKind === "imdb"
-        ? buildCollapseImdbUrl(rawId)
-        : buildCollapseMovieUrl(rawId);
-
-  if (!embedUrl) return null;
-
-  const contentId =
-    normalizedKind === "imdb"
-      ? rawId.trim()
-      : rawId.trim().match(/\d+/)?.[0] || rawId.trim();
-
-  return {
-    id: `collapse-${normalizedKind}-${contentId || index + 1}`,
-    name,
-    type: "collapse",
-    provider: "collapse",
-    contentKind: normalizedKind,
-    contentType: normalizedKind,
-    contentId,
-    embedUrl,
-  };
-}
-
 function buildPlayerTextFromInputs(
-  rendexInput: string,
-  kinopoiskInput: string,
-  movieType: string,
+  rendexInput: string, kinopoiskInput: string, movieType: string,
 ) {
-  const rendexId = extractRendexVideoId(rendexInput);
-  const kinopoiskId = extractRendexVideoId(kinopoiskInput);
-  const rendexType = getRendexContentType(movieType);
   const lines: string[] = [];
-
-  if (kinopoiskId) {
-    lines.push(`Основной | collapse | kp | ${kinopoiskId}`);
+  if (/^[1-9]\d*$/.test(kinopoiskInput.trim())) {
+    lines.push(`Основной | collapse | kp | ${kinopoiskInput.trim()}`);
   }
-
-  if (rendexId) {
-    lines.push(
-      `${kinopoiskId ? "Запасной 1" : "Основной"} | rendex | ${rendexType} | ${rendexId}`,
-    );
+  if (rendexInput.trim()) {
+    const input = /<ins\b/i.test(rendexInput)
+      ? rendexInput : `Vibix | rendex | ${movieType === "Сериал" ? "series" : "movie"} | ${rendexInput.trim()}`;
+    lines.push(serializeAdminPlayers(parseAdminPlayers(input, movieType)));
   }
-
-  if (kinopoiskId) {
-    lines.push(
-      `${rendexId ? "Запасной 2" : "Запасной 1"} | iframe | https://tarantino.factorios.live/show/kinopoisk/${kinopoiskId}`,
-    );
+  if (/^[1-9]\d*$/.test(kinopoiskInput.trim())) {
+    lines.push(`Запасной | iframe | https://tarantino.factorios.live/show/kinopoisk/${kinopoiskInput.trim()}`);
   }
-
   return lines.join("\n");
-}
-
-function parsePlayers(
-  value: FormDataEntryValue | null,
-  fallbackMovieType?: string,
-): Record<string, unknown>[] {
-  if (typeof value !== "string") {
-    return [];
-  }
-
-  return value
-    .split("\n")
-    .map((line, index) => {
-      const trimmed = line.trim();
-
-      if (!trimmed) {
-        return null;
-      }
-
-      const parts = trimmed
-        .split("|")
-        .map((part) => part.trim())
-        .filter(Boolean);
-      const name = parts[0] || `Плеер ${index + 1}`;
-      const type = (parts[1] || "").toLowerCase();
-
-      if (type === "collapse" || type === "collaps") {
-        const possibleUrl = parts.slice(2).join("|").trim();
-
-        if (/^https?:\/\//i.test(possibleUrl)) {
-          return {
-            id: `collapse-iframe-${index + 1}`,
-            name,
-            type: "collapse-iframe",
-            provider: "collapse",
-            embedUrl: possibleUrl,
-          };
-        }
-
-        const knownKind = ["movie", "film", "kp", "kinopoisk", "imdb"].includes(
-          (parts[2] || "").toLowerCase(),
-        );
-        const contentKind = knownKind ? parts[2] : "movie";
-        const contentId = knownKind
-          ? parts.slice(3).join("|").trim()
-          : parts.slice(2).join("|").trim();
-        return buildCollapsePlayer(name, contentKind, contentId, index);
-      }
-
-      if (type === "collapse-iframe" || type === "collaps-iframe") {
-        const embedUrl = parts.slice(2).join("|").trim();
-        if (!embedUrl) return null;
-
-        return {
-          id: `collapse-iframe-${index + 1}`,
-          name,
-          type: "collapse-iframe",
-          provider: "collapse",
-          embedUrl,
-        };
-      }
-
-      if (type === "vibix" || type === "vibix-iframe") {
-        return null;
-      }
-
-      if (type === "rendex") {
-        const explicitType =
-          parts[2] &&
-          ["movie", "film", "series", "serial", "tv"].includes(
-            parts[2].toLowerCase(),
-          )
-            ? parts[2]
-            : fallbackMovieType;
-        const rawContentId =
-          explicitType === parts[2]
-            ? parts.slice(3).join("|")
-            : parts.slice(2).join("|");
-        const contentId = extractRendexVideoId(rawContentId);
-        if (!contentId) return null;
-
-        return {
-          id: `rendex-${contentId}`,
-          name,
-          type: "rendex",
-          provider: "rendex",
-          publisherId: "678053396",
-          contentType: getRendexContentType(explicitType),
-          contentId,
-          rendexVideoId: contentId,
-          design: "1",
-          color1: "#56CEAA",
-          color2: "#FFFFFF",
-          color3: "#AEC7BC",
-          color4: "#42BD88",
-          color5: "#000000",
-          embedUrl: "",
-        };
-      }
-
-      const embedUrl =
-        type === "iframe"
-          ? parts.slice(2).join("|").trim()
-          : parts.slice(1).join("|").trim();
-
-      if (!embedUrl) {
-        return null;
-      }
-
-      return {
-        id: `player-${index + 1}`,
-        name,
-        type: "iframe",
-        embedUrl,
-      };
-    })
-    .filter(Boolean) as Record<string, unknown>[];
-}
-
-function playersToText(players: unknown, fallbackMovieType = "") {
-  if (!Array.isArray(players)) {
-    return "";
-  }
-
-  return players
-    .map((player) => {
-      if (!player || typeof player !== "object") {
-        return "";
-      }
-
-      const item = player as Record<string, unknown>;
-      if (isLegacyStandaloneVibixPlayer(item)) {
-        return "";
-      }
-
-      const name =
-        typeof item.name === "string" && item.name.trim()
-          ? item.name.trim()
-          : "Плеер";
-      const type =
-        typeof item.type === "string" ? item.type.trim().toLowerCase() : "";
-      const contentId =
-        typeof item.contentId === "string"
-          ? item.contentId.trim()
-          : typeof item.rendexVideoId === "string"
-            ? item.rendexVideoId.trim()
-            : "";
-      const contentType =
-        typeof item.contentType === "string"
-          ? item.contentType.trim()
-          : typeof item.content_type === "string"
-            ? item.content_type.trim()
-            : "";
-      const embedUrl =
-        typeof item.embedUrl === "string" ? item.embedUrl.trim() : "";
-
-      if (type === "collapse" && contentId)
-        return `${name} | collapse | ${contentType || "movie"} | ${contentId}`;
-      if ((type === "collapse" || type === "collapse-iframe") && embedUrl)
-        return `${name} | collapse-iframe | ${embedUrl}`;
-      if (type === "rendex" && contentId)
-        return `${name} | rendex | ${getRendexContentType(contentType || fallbackMovieType)} | ${contentId}`;
-      if (type === "iframe" && embedUrl)
-        return `${name} | iframe | ${embedUrl}`;
-      return embedUrl ? `${name} | ${embedUrl}` : "";
-    })
-    .filter(Boolean)
-    .join("\n");
 }
 
 function safeJson(value: unknown) {
@@ -400,7 +140,7 @@ export default function MovieAdminEditForm({
     valueToString(movie.rendexVideoId || movie.rendex_video_id),
   );
   const [playersText, setPlayersText] = useState(
-    playersToText(movie.players, valueToString(movie.type)),
+    serializeAdminPlayers(movie.players, valueToString(movie.type)),
   );
 
   const factsJson = useMemo(() => safeJson(movie.facts), [movie.facts]);
@@ -421,9 +161,11 @@ export default function MovieAdminEditForm({
       }
 
       const extraJson = parseExtraJson(formData.get("extraJson"));
-      const players = parsePlayers(
+      const players = parseAdminPlayers(
         formData.get("players"),
         valueToString(formData.get("type")),
+        movie.players,
+        formData.get("verifyVibix") === "on" ? movie : undefined,
       );
       const facts = parseJsonArray(formData.get("factsJson"), "Факты");
       const cast = parseJsonArray(formData.get("castJson"), "Актёры");
@@ -448,7 +190,8 @@ export default function MovieAdminEditForm({
         countries: parseCsv(formData.get("countries")),
       };
 
-      if (players.length > 0) payload.players = players;
+      // An explicitly emptied editor must be able to remove old mappings.
+      payload.players = players;
       if (facts) payload.facts = facts;
       if (cast) payload.cast = cast;
       if (posterFallbacks.length > 0) payload.posterFallbacks = posterFallbacks;
@@ -734,20 +477,23 @@ export default function MovieAdminEditForm({
               <button
                 type="button"
                 onClick={() => {
-                  const generated = buildPlayerTextFromInputs(
-                    rendexInput,
-                    kinopoiskIdPreview,
-                    typePreview,
-                  );
-                  if (generated) setPlayersText(generated);
+                    try {
+                      const generated = buildPlayerTextFromInputs(rendexInput, kinopoiskIdPreview, typePreview);
+                      if (generated) setPlayersText(serializeAdminPlayers(mergePlayerOptions(
+                        parseAdminPlayers(playersText, typePreview, movie.players),
+                        parseAdminPlayers(generated, typePreview),
+                      )));
+                    } catch (error) {
+                      setSaveState("error");
+                      setMessage(error instanceof Error ? error.message : "Некорректные параметры плеера.");
+                    }
                 }}
                 className="generate-player-button"
               >
                 Сгенерировать плееры
               </button>
               <span>
-                Заполнит поле ниже: Collapse основным, Rendex и Factorios
-                запасными.
+                  Добавит варианты в список ниже, сохранив существующие источники.
               </span>
             </div>
 
@@ -764,10 +510,16 @@ export default function MovieAdminEditForm({
                 }
               />
               <FieldHint>
-                Одна строка — один плеер. Если поле пустое, текущие плееры не
-                будут добавлены в override.
+                Одна строка — один плеер. Rendex поддерживает movie, series, kp и imdb (с tt).
+                Очищенное поле удаляет список плееров из override.
               </FieldHint>
             </label>
+              <label className="field full">
+                <span>
+                  <input type="checkbox" name="verifyVibix" /> Подтверждаю: все указанные привязки Vibix проверены для этого произведения в официальном кабинете.
+                </span>
+                <FieldHint>Без подтверждения новые внутренние ID остаются непроверенными. Существующие настройки и их происхождение сохраняются.</FieldHint>
+              </label>
           </div>
         </div>
 
