@@ -19,6 +19,24 @@ const write = (name, value) => {
 };
 const lines = value => value.split(/\r?\n/).filter(Boolean).sort();
 const expectedFiles = [...Object.keys(spec.application), ...spec.ciFiles].sort();
+const baseline = 'ee763fca416ddc878d6069479a74dc4d97960514';
+const approvedCommit = 'c66724ab9038ad126e81641f8ababf585cb35e15';
+const manifestFile = '.github/ci/admin-rating-poster-source.json';
+const approvedManifestHash = '1d4986cf336551479cf85de09bbb22f5babbd39f0fc190dba88038341e550cb8';
+const correctionFiles = [
+  '.github/ci/admin-rating-poster-release.mjs',
+  '.github/workflows/admin-rating-poster-linux-release.yml',
+];
+
+export function verifyApprovedHistory(commit, readGit = git) {
+  assert.equal(spec.baseCommit, baseline, 'Baseline changed');
+  assert.deepEqual(readGit(['rev-list', '--parents', '-n', '1', approvedCommit]).split(' '), [approvedCommit, baseline], 'Approved first commit has wrong parent');
+  assert.deepEqual(readGit(['rev-list', '--parents', '-n', '1', commit]).split(' '), [commit, approvedCommit], 'Expected exactly one CI-only commit on approved first commit');
+  assert.deepEqual(readGit(['rev-list', '--reverse', `${baseline}..${commit}`]).split(/\r?\n/), [approvedCommit, commit], 'Unexpected commits or merge ancestry');
+  assert.deepEqual(lines(readGit(['diff', '--name-only', baseline, approvedCommit])), expectedFiles, 'Original candidate file set changed');
+  assert.deepEqual(lines(readGit(['diff', '--name-only', approvedCommit, commit])), correctionFiles, 'Correction must change exactly the two approved CI files');
+  assert.deepEqual(lines(readGit(['diff', '--name-only', baseline, commit])), expectedFiles, 'Release file set changed');
+}
 
 export function validateApplication(read) {
   for (const [file, hashes] of Object.entries(spec.application)) {
@@ -28,11 +46,15 @@ export function validateApplication(read) {
 
 export function verifySource(local = false) {
   const commit = git(['rev-parse', 'HEAD']);
+  assert.equal(spec.baseCommit, baseline, 'Baseline changed');
+  assert.equal(sha(fs.readFileSync(path.join(repo, manifestFile), 'utf8').replaceAll('\r\n', '\n')), approvedManifestHash, 'Approved manifest changed');
+  assert.equal(git(['rev-parse', `${approvedCommit}:${manifestFile}`]), git(['rev-parse', `HEAD:${manifestFile}`]), 'Committed manifest changed');
   assert.equal(git(['diff', '--cached', '--name-only']), '', 'Staged/uncommitted index');
   if (local) {
-    assert.equal(commit, spec.baseCommit);
+    assert.equal(commit, approvedCommit);
     assert.equal(git(['branch', '--show-current']), spec.branch);
-    assert.deepEqual([...lines(git(['diff', '--name-only', 'HEAD'])), ...lines(git(['ls-files', '--others', '--exclude-standard']))].sort(), expectedFiles);
+    assert.deepEqual(git(['rev-list', '--parents', '-n', '1', commit]).split(' '), [approvedCommit, baseline]);
+    assert.deepEqual([...lines(git(['diff', '--name-only', 'HEAD'])), ...lines(git(['ls-files', '--others', '--exclude-standard']))].sort(), correctionFiles);
   } else {
     assert.equal(process.version, spec.node);
     assert.equal(process.platform, 'linux');
@@ -41,8 +63,7 @@ export function verifySource(local = false) {
     assert.equal(process.env.GITHUB_REF_NAME, spec.branch);
     assert.ok(['push', 'workflow_dispatch'].includes(process.env.GITHUB_EVENT_NAME));
     assert.equal(commit, process.env.GITHUB_SHA, 'Checkout differs from event SHA');
-    assert.deepEqual(git(['rev-list', '--parents', '-n', '1', 'HEAD']).split(' '), [commit, spec.baseCommit], 'Expected one non-merge commit on approved baseline');
-    assert.deepEqual(lines(git(['diff', '--name-only', spec.baseCommit, 'HEAD'])), expectedFiles);
+    verifyApprovedHistory(commit);
     assert.equal(git(['status', '--porcelain']), '', 'Dirty CI source');
     validateApplication(file => execFileSync('git', ['show', `HEAD:${file}`], { cwd: repo }));
   }

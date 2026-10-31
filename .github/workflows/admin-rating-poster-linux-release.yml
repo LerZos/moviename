@@ -16,9 +16,11 @@ jobs:
   verify-build-package:
     runs-on: ubuntu-22.04
     timeout-minutes: 35
-    env:
-      KINOLUMA_CI_OUTPUT: ${{ runner.temp }}/kinoluma-admin-rating-poster
     steps:
+      - name: Set isolated CI output directory
+        shell: bash
+        run: printf 'KINOLUMA_CI_OUTPUT=%s/kinoluma-admin-rating-poster\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+
       - name: Checkout exact event commit
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
