@@ -28,7 +28,11 @@ export function parseAdminPlayers(
     }
     return result;
   });
-  return parsed.map((player) => {
+  // Saved records the editor text cannot express (legacy or disabled) are kept as-is, never silently dropped,
+  // unless the admin re-entered the same player, which is then restored from it below.
+  const parsedKeys = new Set(parsed.map(stablePlayerKey));
+  const unrepresented = original.filter((player) => !playersToText([player]) && !parsedKeys.has(stablePlayerKey(player)));
+  return [...parsed.map((player) => {
     const existing = original.find((item) => stablePlayerKey(item) === stablePlayerKey(player));
     // Preserve styles, provenance and alternative providers on text round-trip.
     const restored = existing ? { ...player, ...existing, name: player.name } : player;
@@ -42,5 +46,5 @@ export function parseAdminPlayers(
       playerKey: stablePlayerKey(restored),
     };
     return { ...restored, vibixProvenance };
-  });
+  }), ...unrepresented];
 }

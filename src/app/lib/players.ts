@@ -889,7 +889,7 @@ function normalizePlayer(
     );
     if (!contentType) return null;
     const contentId = parseVibixId(contentType,
-      item.contentId || item.content_id || item.dataId || item.data_id || item.id,
+      item.contentId || item.content_id || item.dataId || item.data_id || item.rendexVideoId || item.id,
     );
     if (!contentId) return null;
 

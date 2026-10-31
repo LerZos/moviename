@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import CleanDocumentGuard from "../components/CleanDocumentGuard";
 import AdminAccessGuard from "./AdminAccessGuard";
 
 export const metadata: Metadata = {
@@ -14,5 +15,9 @@ export const metadata: Metadata = {
 };
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  return <AdminAccessGuard>{children}</AdminAccessGuard>;
+  return (
+    <CleanDocumentGuard>
+      <AdminAccessGuard>{children}</AdminAccessGuard>
+    </CleanDocumentGuard>
+  );
 }

@@ -35,12 +35,24 @@ const APP_BLOBS = {
   "src/app/movie/[slug]/layout.tsx": "d78da4d107b7a0ea5141eaeefb1cba94516a3fe4",
   "src/app/movie/[slug]/page.tsx": "353a0b870055575667803950bbc229ffc1be8e3d",
 };
+// Reviewed pre-release hardening (SDK-free admin/profile documents, legacy players compatibility). These blobs
+// replace the release-commit blobs of the same path once committed after the release commit.
+const HARDENING_BLOBS = {
+  "scripts/vibix-hardening.test.mjs": "d8cdc593a444a16735ff4703c6ba7f74f0fda886",
+  "src/app/admin/layout.tsx": "893cf4310f312066aa1f23671e8d88930b359a55",
+  "src/app/components/CleanDocumentGuard.tsx": "e89edd455dd8cc539b76e41b9a00826b7941721b",
+  "src/app/lib/adminPlayers.ts": "36875cd7d19295218d740904ab50f8838cfbc0a4",
+  "src/app/lib/players.ts": "525c165649492c792ba3f5511deec27a107bc124",
+  "src/app/lib/thirdPartySdk.ts": "edbfb50a8a82b0d565790306010c169851a2c244",
+  "src/app/profile/layout.tsx": "4f1fa5f621878cddae04676a9e5d89bcc52c21ef",
+};
 const CI_FILES = [
   ".github/ci/verify-vibix-source.mjs",
   ".github/workflows/vibix-linux-release.yml",
 ];
 const MODIFIED = [
   "scripts/generate-kinopoisk-requested-pack.mjs",
+  "src/app/admin/layout.tsx",
   "src/app/admin/movies/[slug]/edit/MovieAdminEditForm.tsx",
   "src/app/api/player/vibix/route.ts",
   "src/app/data/generatedKinopoiskRequested.ts",
@@ -48,12 +60,14 @@ const MODIFIED = [
   "src/app/movie/[slug]/MoviePageClient.tsx",
   "src/app/movie/[slug]/page.tsx",
 ];
-// Poster RC, SEO and Batch E.3 surfaces that a Vibix release must not touch.
+// Poster RC, SEO, Batch E.3 and Mobile UX surfaces that a Vibix release must not touch.
 const PROTECTED = [
   "src/app/layout.tsx", "src/app/lib/movies/movieOverrides.ts",
   "src/app/api/admin/movies/[slug]/override/route.ts", "src/app/lib/seo.ts",
   "src/app/sitemap.ts", "src/app/robots.ts", "src/app/data/movies.ts",
   "src/app/data/canonicalIdentity.ts", "package.json", "package-lock.json",
+  "src/app/HomeClient.tsx", "src/app/catalog/[category]/CatalogPageClient.tsx",
+  "src/app/components/MobileBottomNav.tsx", "src/app/profile/page.tsx",
 ];
 const PROTECTED_PREFIXES = ["src/app/lib/episodeGuides/", "scripts/episode-guides/", ".github/workflows/batch-"];
 const SPIDER_MAN = {
@@ -101,6 +115,22 @@ function vibixContract(show) {
     providers: "UNCHANGED_COUNTS", verifiedMappings: 1 };
 }
 
+// Admin and profile never render in a document where the movie-only SDK already executed.
+function hardeningContract(show) {
+  assert.match(show("src/app/admin/layout.tsx"),
+    /<CleanDocumentGuard>\s*<AdminAccessGuard>\{children\}<\/AdminAccessGuard>\s*<\/CleanDocumentGuard>/, "Admin must render through CleanDocumentGuard");
+  assert.match(show("src/app/profile/layout.tsx"), /<CleanDocumentGuard>\{children\}<\/CleanDocumentGuard>/, "Profile must render through CleanDocumentGuard");
+  const guard = show("src/app/components/CleanDocumentGuard.tsx");
+  assert.match(guard, /^"use client";/, "Guard must be a client component");
+  assert.match(guard, /window\.location\.reload\(\)/, "Guard must start a fresh document");
+  const detector = show("src/app/lib/thirdPartySdk.ts");
+  for (const marker of ["RendexSDK", "GlareGraphics", "__RENDEX_SDK_V2_LOADED__", "graphicslab.io"]) {
+    assert.ok(detector.includes(marker), "SDK detector must cover " + marker);
+  }
+  return { guardedRoutes: ["/admin", "/profile"], mechanism: "reload into a fresh document after the SDK ran",
+    legacyPlayers: "unrepresentable saved records preserved by the admin editor" };
+}
+
 function sourceGate(local) {
   const ref = "HEAD";
   if (!local) assert.equal(process.env.GITHUB_REF_NAME ?? git("branch", "--show-current"), BRANCH);
@@ -109,12 +139,15 @@ function sourceGate(local) {
   assert.equal(git("merge-base", BASE, "HEAD"), BASE, "Wrong merge base");
   const commits = git("rev-list", "--reverse", BASE + "..HEAD").split("\n");
   assert.equal(commits[0], RELEASE_COMMIT, "First commit after base must be the reviewed Vibix commit");
+  const followUpFiles = [...CI_FILES, ...Object.keys(HARDENING_BLOBS)];
+  let hardeningCommitted = false;
   let parent = BASE;
   for (const [index, commit] of commits.entries()) {
     assert.equal(git("show", "-s", "--format=%P", commit), parent, "Merges are forbidden");
     if (index > 0) {
       const repaired = git("diff", "--name-only", parent, commit).split("\n");
-      assert.ok(repaired.every((file) => CI_FILES.includes(file)), "Only CI repairs after release commit");
+      assert.ok(repaired.every((file) => followUpFiles.includes(file)), "Only CI repairs and reviewed hardening after release commit");
+      if (repaired.some((file) => HARDENING_BLOBS[file])) hardeningCommitted = true;
     }
     parent = commit;
   }
@@ -122,7 +155,15 @@ function sourceGate(local) {
   // Locally the CI files are reviewed as uncommitted additions before the CI commit exists.
   if (local && !committedCi) for (const file of CI_FILES) assert.ok(existsSync(file), "Missing CI file: " + file);
   else assert.ok(committedCi, "CI files must be committed for a release run");
-  const files = [...Object.keys(APP_BLOBS), ...(committedCi ? CI_FILES : [])].sort();
+  // Locally the hardening is reviewed in the working tree (normalized blobs) before its commit exists.
+  if (!hardeningCommitted) {
+    assert.ok(local, "Hardening must be committed for a release run");
+    for (const [file, blob] of Object.entries(HARDENING_BLOBS)) {
+      assert.equal(git("hash-object", "--", file), blob, "Unreviewed hardening edit: " + file);
+    }
+  }
+  const pinned = hardeningCommitted ? { ...APP_BLOBS, ...HARDENING_BLOBS } : APP_BLOBS;
+  const files = [...new Set([...Object.keys(pinned), ...(committedCi ? CI_FILES : [])])].sort();
   const rows = git("diff", "--no-renames", "--name-status", BASE, ref).split("\n").map((row) => row.split("\t"));
   assert.deepEqual(rows.map(([, file]) => file).sort(), files, "Unexpected or missing release file");
   for (const [status, file] of rows) {
@@ -135,7 +176,7 @@ function sourceGate(local) {
       "Credential material: " + file);
     assert.ok(!/(?:api[_-]?key|access[_-]?token|service[_-]?role[_-]?key|bearer)\s*[:=]?\s*["'][a-zA-Z0-9_-]{24,}["']/i.test(content),
       "Literal credential: " + file);
-    if (APP_BLOBS[file]) assert.equal(git("rev-parse", ref + ":" + file), APP_BLOBS[file], "Unreviewed application edit: " + file);
+    if (pinned[file]) assert.equal(git("rev-parse", ref + ":" + file), pinned[file], "Unreviewed application edit: " + file);
   }
   const tracked = git("ls-tree", "-r", "--name-only", ref).split("\n");
   assert.ok(!tracked.some((file) => /(^|\/)(\.env(?:\..*)?|\.deploy-temp|\.qa-tmp|\.claude)(\/|$)/.test(file)), "Forbidden tracked runtime/config file");
@@ -143,23 +184,27 @@ function sourceGate(local) {
   try { demoPublisher = git("grep", "-l", "674953133", ref, "--", "src"); } catch { /* git grep exits 1 when nothing matches */ }
   assert.equal(demoPublisher, "", "Vibix demo publisher in source");
   const vibix = vibixContract((file) => git("show", ref + ":" + file));
+  const hardening = { ...hardeningContract(hardeningCommitted ? (file) => git("show", ref + ":" + file) : read),
+    committed: hardeningCommitted, files: Object.keys(HARDENING_BLOBS) };
   const diff = execFileSync("git", ["diff", "--binary", BASE, ref], { maxBuffer: 64 * 1024 * 1024 });
   const report = {
     schemaVersion: 1, releaseName: "kinoluma-vibix-linux-candidate",
     baseCommit: BASE, approvedRecoveryTreeSha1: BASE_TREE, baseIsAncestor: true,
     mergeBase: BASE, releaseCommit: git("rev-parse", "HEAD"), reviewedVibixCommit: RELEASE_COMMIT,
     releaseTreeSha1: git("rev-parse", "HEAD^{tree}"), local, ciFilesCommitted: committedCi,
-    changedFiles: files, changedAppFiles: Object.keys(APP_BLOBS),
-    changedAppFilesCount: Object.keys(APP_BLOBS).length, trackedDiffSha256: hash(diff),
+    changedFiles: files, changedAppFiles: Object.keys(pinned).sort(),
+    changedAppFilesCount: Object.keys(pinned).length, trackedDiffSha256: hash(diff),
     protectedSource: { posterRc: "UNCHANGED", seo: "UNCHANGED", batchE3: "ABSENT", episodeGuides: "UNCHANGED",
-      canonicalIdentity: "UNCHANGED", rootLayout: "UNCHANGED", lockfile: "UNCHANGED" },
-    vibix,
+      canonicalIdentity: "UNCHANGED", rootLayout: "UNCHANGED", lockfile: "UNCHANGED", mobileUx: "UNCHANGED" },
+    vibix, hardening,
     batchB: { totalImageMutations: 481, inheritedUnchangedFrom: BASE },
     manualOverrides: { preserved: 9, note: "Inherited source evidence; DB not queried" },
     credits: { inheritedFrom: BASE, allowlistedCards: 369 },
     the100: { slug: "the-100-2014", seasons: 7, episodes: 100, inheritedUnchangedFrom: BASE },
-    knownLimits: ["localhost playback blocked by provider", "SDK persists after SPA navigation movie -> /admin",
-      "admin UI not browser-verified"],
+    knownLimits: ["localhost playback blocked by provider", "admin UI not browser-verified",
+      "SDK runs first-party on movie pages (isolated-origin player not implemented)",
+      "home sign-in modal not guarded after SPA navigation from a movie page",
+      "legacy movie_overrides.players not audited against real records"],
     errors: [], pass: true,
   };
   save(process.argv[3] && !process.argv[3].startsWith("--") ? process.argv[3] : "vibix-source-verification.json", report);
@@ -187,7 +232,8 @@ async function providerGate() {
 async function lintGate() {
   const { ESLint } = await import("eslint");
   const eslint = new ESLint();
-  const files = [...Object.keys(APP_BLOBS), CI_FILES[0]].filter((file) => /\.(?:ts|tsx|mjs)$/.test(file));
+  const files = [...new Set([...Object.keys(APP_BLOBS), ...Object.keys(HARDENING_BLOBS), CI_FILES[0]])]
+    .filter((file) => /\.(?:ts|tsx|mjs)$/.test(file));
   let inheritedErrors = 0;
   let inheritedWarnings = 0;
   for (const file of files) {
@@ -273,6 +319,8 @@ async function runtimeGate() {
     const html = await response.text();
     // Serialized player data may mention scriptSrc; only actual script/preload tags load the SDK.
     assert.ok(!/<(?:script|link)\b[^>]*rendex-sdk/.test(html), "SDK leaked outside movie pages: " + route);
+    // A fresh document renders guarded routes directly; the reload placeholder is client-only.
+    assert.ok(!html.includes("Открываю страницу"), "Clean-document guard placeholder in SSR: " + route);
     outside[route] = response.status;
   }
   const sitemap = await (await fetch(origin + "/sitemap.xml")).text();
