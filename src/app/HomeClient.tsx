@@ -744,7 +744,14 @@ function MovieCard({
           {item.title}
         </button>
 
-        <p className="movie-card-original mh-clamp-1">{item.originalTitle}</p>
+        <Link
+          href={`/movie/${item.slug}`}
+          prefetch={false}
+          className="movie-card-original movie-card-page-link mh-clamp-1"
+          title={`Открыть страницу «${item.title}»`}
+        >
+          {item.originalTitle || item.title}
+        </Link>
 
         <p className="movie-card-description mh-clamp-2">{item.description}</p>
 
@@ -3486,6 +3493,37 @@ export default function Home({
           line-height: 18px;
         }
 
+        .home-card-details {
+          display: block;
+          width: 100%;
+          border: 0;
+          padding: 0;
+          background: transparent;
+          color: inherit;
+          font: inherit;
+          text-align: inherit;
+          cursor: pointer;
+        }
+
+        .home-card-page-link {
+          display: block;
+          min-width: 0;
+          min-height: 24px;
+        }
+
+        .home-card-page-link:hover,
+        .movie-card-page-link:hover {
+          text-decoration: underline;
+        }
+
+        .home-card-details:focus-visible,
+        .home-card-page-link:focus-visible,
+        .movie-card-page-link:focus-visible {
+          outline: 2px solid #ffffff;
+          outline-offset: -2px;
+          border-radius: 3px;
+        }
+
         .movie-card-description {
           margin-top: 10px;
           height: 42px;
@@ -6083,7 +6121,7 @@ export default function Home({
           .desktop-mock-card-rating { right: 12px; min-width: 48px; text-align: center; background: rgba(3,3,3,0.74); color: #ffd76a; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12), 0 12px 30px rgba(0,0,0,0.32); backdrop-filter: blur(12px); font-size: 12px; }
           .desktop-mock-card-body { display: grid; gap: 9px; padding: 16px 15px 18px; border-top: 1px solid rgba(255,255,255,0.08); background: linear-gradient(180deg, rgba(255,255,255,0.018), rgba(255,255,255,0.006)); }
           .desktop-mock-card h3 { display: -webkit-box; min-height: 38px; margin: 0; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; color: #fff; font-size: 17px; font-weight: 1000; letter-spacing: -0.025em; line-height: 1.08; }
-          .desktop-mock-card-body p { margin: -2px 0 0; overflow: hidden; color: rgba(255,255,255,0.42); font-size: 12px; font-weight: 850; text-overflow: ellipsis; white-space: nowrap; }
+          .desktop-mock-card-body p, .desktop-mock-card-body .home-card-page-link { margin: -2px 0 0; overflow: hidden; color: rgba(255,255,255,0.42); font-size: 12px; font-weight: 850; text-overflow: ellipsis; white-space: nowrap; }
           .desktop-mock-meta { display: flex; justify-content: space-between; gap: 12px; color: rgba(255,255,255,0.50); font-size: 12px; font-weight: 950; }
           .desktop-mock-meta span:last-child { overflow: hidden; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
           .desktop-mock-pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 7px; width: fit-content; max-width: 100%; margin: 18px auto 0; padding: 12px 14px 2px; }
@@ -6541,7 +6579,7 @@ export default function Home({
           .desktop-mock-card-body { position: relative !important; gap: 7px !important; padding: 15px 15px 17px !important; }
           .desktop-mock-card h3 { min-height: auto !important; margin-bottom: 3px !important; }
           .desktop-mock-card h3::after { content: ""; display: block; width: 88%; height: 1px; margin: 11px auto 0; background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.16) 16%, rgba(255,255,255,0.48) 50%, rgba(255,255,255,0.16) 84%, transparent 100%); opacity: 0.86; }
-          .desktop-mock-card-body p { margin: 0 !important; }
+          .desktop-mock-card-body p, .desktop-mock-card-body .home-card-page-link { margin: 0 !important; }
 
 
 
@@ -7107,7 +7145,8 @@ export default function Home({
             background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
           }
 
-          .mobile-v2-card-body em {
+          .mobile-v2-card-body em,
+          .mobile-v2-card-body .home-card-page-link {
             overflow: hidden;
             color: rgba(255,255,255,0.42);
             font-size: 11px;
@@ -7410,14 +7449,14 @@ export default function Home({
               Сериалы
             </Link>
             <Link
-              href="/anime"
+              href="/catalog/anime"
               className="text-left transition duration-200 hover:text-white"
               draggable={false}
             >
               Аниме
             </Link>
             <Link
-              href="/cartoon"
+              href="/catalog/cartoons"
               className="text-left transition duration-200 hover:text-white"
               draggable={false}
             >
@@ -7690,13 +7729,16 @@ export default function Home({
 
               <div className={`desktop-mock-grid ${isDesktopCatalogSwitching ? "is-switching" : ""}`}>
                 {displayedDesktopCatalogItems.map((item) => (
-                  <button
+                  <div
                     key={`desktop-card-${item.id}`}
-                    type="button"
                     className="desktop-mock-card"
-                    onClick={() => openDetails(item)}
-                    aria-label={`Открыть: ${item.title}`}
                   >
+                    <button
+                      type="button"
+                      className="home-card-details"
+                      onClick={() => openDetails(item)}
+                      aria-label={`Открыть: ${item.title}`}
+                    >
                     <div className="desktop-mock-card-poster">
                       <PosterImage
                         src={item.poster}
@@ -7716,15 +7758,18 @@ export default function Home({
                       <span className="desktop-mock-card-type">{item.type}</span>
                       <span className="desktop-mock-card-rating">{getRatingBadgeText(item)}</span>
                     </div>
+                    </button>
                     <div className="desktop-mock-card-body">
                       <div className="desktop-mock-meta">
                         <span>{item.year}</span>
                         <span>{item.genres[0]}</span>
                       </div>
-                      <h3>{item.title}</h3>
-                      <p>{item.originalTitle}</p>
+                      <h3><button type="button" className="home-card-details" onClick={() => openDetails(item)}>{item.title}</button></h3>
+                      <Link href={`/movie/${item.slug}`} prefetch={false} className="home-card-page-link" title={`Открыть страницу «${item.title}»`}>
+                        {item.originalTitle || item.title}
+                      </Link>
                     </div>
-                  </button>
+                  </div>
                 ))}
               </div>
 
@@ -7948,13 +7993,16 @@ export default function Home({
             </div>
             <div className={"mobile-v2-grid " + (isDesktopCatalogSwitching ? "is-switching" : "")}>
               {displayedDesktopCatalogItems.slice(0, 6).map((item) => (
-                <button
+                <div
                   key={"mobile-v2-card-" + item.id}
-                  type="button"
                   className="mobile-v2-card"
-                  onClick={() => openDetails(item)}
-                  aria-label={"\u041e\u0442\u043a\u0440\u044b\u0442\u044c: " + item.title}
                 >
+                  <button
+                    type="button"
+                    className="home-card-details"
+                    onClick={() => openDetails(item)}
+                    aria-label={"\u041e\u0442\u043a\u0440\u044b\u0442\u044c: " + item.title}
+                  >
                   <div className="mobile-v2-card-poster">
                     <PosterImage
                       src={item.poster}
@@ -7970,12 +8018,15 @@ export default function Home({
                     <span className="mobile-v2-pill mobile-v2-pill-dark">{item.type}</span>
                     <span className="mobile-v2-pill mobile-v2-pill-light">{getRatingBadgeText(item)}</span>
                   </div>
+                  </button>
                   <div className="mobile-v2-card-body">
                     <span className="mobile-v2-card-meta">{item.year} · {item.genres[0]}</span>
-                    <strong>{item.title}</strong>
-                    <em>{item.originalTitle}</em>
+                    <strong><button type="button" className="home-card-details" onClick={() => openDetails(item)}>{item.title}</button></strong>
+                    <Link href={`/movie/${item.slug}`} prefetch={false} className="home-card-page-link" title={`Открыть страницу «${item.title}»`}>
+                      {item.originalTitle || item.title}
+                    </Link>
                   </div>
-                </button>
+                </div>
               ))}
             </div>
             <div className="mobile-v2-page-actions">

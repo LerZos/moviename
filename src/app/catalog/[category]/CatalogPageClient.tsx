@@ -375,7 +375,14 @@ function CatalogMovieCard({
           {item.title}
         </button>
 
-        <p className="catalog-card-original">{item.originalTitle}</p>
+        <Link
+          href={`/movie/${item.slug}`}
+          prefetch={false}
+          className="catalog-card-original catalog-card-page-link"
+          title={`Открыть страницу «${item.title}»`}
+        >
+          {item.originalTitle || item.title}
+        </Link>
         <p className="catalog-card-description">{item.description}</p>
 
         <div className="catalog-card-tags">
@@ -1811,6 +1818,20 @@ const catalogStyles = `
     font-weight: 700;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .catalog-card-page-link {
+    display: block;
+  }
+
+  .catalog-card-page-link:hover {
+    text-decoration: underline;
+  }
+
+  .catalog-card-page-link:focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: -2px;
+    border-radius: 3px;
   }
 
   .catalog-card-description {

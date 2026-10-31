@@ -1,3 +1,20 @@
+import Link from "next/link";
+
+import { movieCardIndex } from "./data/movieCardIndex";
+
+const quickMovieSlugs = [
+  "inception",
+  "interstellar",
+  "the-matrix",
+  "the-shawshank-redemption",
+  "the-godfather",
+  "chelovek-pauk-2002",
+];
+
+const quickMovies = quickMovieSlugs
+  .map((slug) => movieCardIndex.find((movie) => movie.slug === slug))
+  .filter((movie) => movie !== undefined);
+
 export default function Loading() {
   return (
     <main className="kinoluma-loading-page">
@@ -13,6 +30,24 @@ export default function Loading() {
             <span>Каталог загружается</span>
           </div>
         </div>
+
+        {/* Только без JavaScript: при обычной навигации загрузочный экран не меняется. */}
+        <noscript>
+          <nav className="loading-film-navigation" aria-label="Быстрый переход к фильмам">
+            <h2>Откройте карточку фильма</h2>
+            <p>Каталог работает с JavaScript, но страницы фильмов можно открыть сразу.</p>
+            <ul className="loading-film-grid">
+              {quickMovies.map((movie) => (
+                <li key={movie.slug}>
+                  <Link href={`/movie/${movie.slug}`} prefetch={false} className="loading-film-link">
+                    <span>{movie.title}</span>
+                    <small>{movie.year}</small>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </noscript>
 
         <div className="loading-hero-card">
           <div className="skeleton poster" />
@@ -112,6 +147,73 @@ const loadingStyles = `
     border: 1px solid rgba(255,255,255,0.10);
     background: linear-gradient(145deg, rgba(26,26,26,0.88), rgba(6,6,6,0.95));
     box-shadow: 0 34px 90px rgba(0,0,0,0.52);
+  }
+
+  .loading-film-navigation {
+    margin-top: 20px;
+    padding: 20px;
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 24px;
+    background: rgba(255,255,255,0.035);
+  }
+
+  .loading-film-navigation h2 {
+    margin: 0;
+    color: #ffffff;
+    font-size: 22px;
+    font-weight: 900;
+  }
+
+  .loading-film-navigation p {
+    margin: 8px 0 16px;
+    color: #b5b5b5;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .loading-film-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .loading-film-grid li {
+    min-width: 0;
+  }
+
+  .loading-film-link {
+    display: flex;
+    min-height: 64px;
+    height: 100%;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    padding: 12px;
+    border: 1px solid rgba(255,255,255,0.16);
+    border-radius: 14px;
+    color: #ededed;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+    text-decoration: none;
+  }
+
+  .loading-film-link small {
+    color: #b5b5b5;
+    font-size: 12px;
+  }
+
+  .loading-film-link:hover {
+    border-color: #ffffff;
+  }
+
+  .loading-film-link:focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: 2px;
   }
 
   .loading-copy {
@@ -218,6 +320,14 @@ const loadingStyles = `
   }
 
   @media (max-width: 760px) {
+    .loading-film-navigation {
+      padding: 14px;
+    }
+
+    .loading-film-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .loading-shell {
       width: min(100% - 24px, 1180px);
       padding-bottom: calc(104px + env(safe-area-inset-bottom));
