@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "release": "admin-rating-poster-integrated",
+  "repository": "LerZos/moviename",
+  "branch": "codex/admin-rating-poster-linux-20261101",
+  "baseCommit": "ee763fca416ddc878d6069479a74dc4d97960514",
+  "node": "v22.23.0",
+  "npm": "10.9.8",
+  "applicationHashDefinition": "SHA-256 of UTF-8 source with CRLF converted to LF; approved Windows bytes recorded separately",
+  "application": {
+    "scripts/admin-poster.test.mjs": {
+      "sha256LF": "5b836f5469766ab7905de24d20437a27894ef7be20d22a75e5c784b5bd3a199b",
+      "approvedWindowsSha256": "7775d91e21d84bd6d64001896b72ea43ae8c849144408e28cf2f012d48cc6567"
+    },
+    "scripts/admin-rating-integrated.test.mjs": {
+      "sha256LF": "2efe32ca929df39987044a721340715d773ee45c5396ba31c8e69c0a11df400b",
+      "approvedWindowsSha256": "2efe32ca929df39987044a721340715d773ee45c5396ba31c8e69c0a11df400b"
+    },
+    "scripts/admin-rating.test.mjs": {
+      "sha256LF": "1495458153565e8ac404e313f8dd426ca036838f6535ddeb12c7dbbd5615833c",
+      "approvedWindowsSha256": "afe09c2e4bb17054c2bb6f24c9f24eea702683cc19ba66d1da87c1c4f0953530"
+    },
+    "scripts/batch-c3-credits.test.mjs": {
+      "sha256LF": "9f69cde6d5254b9250cead3a124cc2f6004e53c89d727a67006dd46d0824d9ef",
+      "approvedWindowsSha256": "ef911d15cb24fd9a594153f19a7cc0dd151a3c7d9370520d52a981685ea551f3"
+    },
+    "scripts/episode-guides/integration.test.mjs": {
+      "sha256LF": "9e8687bfa9b53c84e9bc3308d0c63851703e411af1d494b0e9bafa3b542ead3c",
+      "approvedWindowsSha256": "62f68c46d9be80343fb252c72899420ae7e89a63ee99ac05f24c498d849982f0"
+    },
+    "src/app/admin/import/ImportDashboardClient.tsx": {
+      "sha256LF": "607b71500ce0c4b2909e355d9897b542651808f992eb177e7489bf5b5dc1714f",
+      "approvedWindowsSha256": "908c80613c3c2ffc164e4b019e75b6ebd3793f436a2b54693cf4ab9815ed43a9"
+    },
+    "src/app/admin/movies/[slug]/edit/MovieAdminEditForm.tsx": {
+      "sha256LF": "96aebadaa4c62a95974a04f9af57aa6441144d6d3305065e96752dc73a13be46",
+      "approvedWindowsSha256": "611c4a14e692b54dc2e4dfc37aae7ab28f4cca89e44d201a1664837150bc5b77"
+    },
+    "src/app/admin/movies/[slug]/edit/page.tsx": {
+      "sha256LF": "6f842cfe2166a050dca782b8007ba94cc1999841e2d4b2e2622ad620ba4556c5",
+      "approvedWindowsSha256": "4fa7b2e7537efccc493047ed2645ac79468af6e9a481cf04f9e4e979d4b1da4b"
+    },
+    "src/app/api/admin/import/create-draft/route.ts": {
+      "sha256LF": "1ff257898b5d5b601effc8deb9bfdc070840a405718df3a8115891d1acc63574",
+      "approvedWindowsSha256": "18a0967ab8a74364005a55c988c5f536d1f6ef0c5dd516da5827babd890607a3"
+    },
+    "src/app/api/admin/import/draft-action/route.ts": {
+      "sha256LF": "26954bce5ed07acdc7bd8025ab46372262c053ade849d90055f9e0a0fb1e33ac",
+      "approvedWindowsSha256": "6415f2b7b414f28c9a6d32617e6d1fc150dfda16ee2a8aee1373ad4e9deb343a"
+    },
+    "src/app/api/admin/import/list/route.ts": {
+      "sha256LF": "ff310dd99ea9cc2fa39d770806c38eb7ab3182b29cd2389d3049fd85befa3518",
+      "approvedWindowsSha256": "baf34ba891ec5123d5b76d224367e52e017867a73b4a6ad686a4b250cfb23740"
+    },
+    "src/app/api/admin/import/update-draft/route.ts": {
+      "sha256LF": "b0b5e76240a42d1e2cccaa2315710286c0f4e84c0fca51dd0379d009ed0ae740",
+      "approvedWindowsSha256": "88bd753615759a6ee3578abaa7cb1dfb6dd4bc0ecb9e69ed7e6a364840ae174e"
+    },
+    "src/app/api/admin/movies/[slug]/override/route.ts": {
+      "sha256LF": "cc2790e0c65f5342288ac5b582cc66bbe1327dd9ab37bed0ac643d8e53bca328",
+      "approvedWindowsSha256": "c6dc78601e5d73c49369574a79528f4a16a30b84ab48bb174d6d6e1fd0c458d3"
+    },
+    "src/app/lib/movies/movieOverrides.ts": {
+      "sha256LF": "fe9c755983c2958ebbd33fd616497cf54f318cb9c4b53f2fca345a59f0e0076e",
+      "approvedWindowsSha256": "f5b399a0e07d40d9f319716cd4b9997ab9f1292463b6a56673023fe8bcca8c0e"
+    },
+    "src/app/lib/movies/rating.ts": {
+      "sha256LF": "459109dd10054a273a3288526a423814fd773601a244eb337b944a0db10c1d34",
+      "approvedWindowsSha256": "ab8cf6ce71fde5eeaca13accedff050890d1927585d6c0c9ada1e9f4cb221c2e"
+    }
+  },
+  "ciFiles": [
+    ".github/ci/admin-rating-poster-source.json",
+    ".github/ci/admin-rating-poster-release.mjs",
+    ".github/ci/admin-rating-poster-network-guard.mjs",
+    ".github/workflows/admin-rating-poster-linux-release.yml"
+  ],
+  "productionEligible": false,
+  "requiresIntegrationAfterVibix": true
+}

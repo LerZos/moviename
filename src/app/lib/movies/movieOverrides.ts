@@ -11,7 +11,8 @@ import {
 } from "../../data/movies";
 import { hasRealSupabaseAdminCredentials, getSupabaseAdmin } from "../supabase/admin";
 import {
-  getManualRatingFromRawJson,
+  getDraftRatingState,
+  type MovieRatingState,
   resolveManualMovieRating,
 } from "./rating";
 import { attachVerifiedCredits } from "./verifiedCredits";
@@ -302,22 +303,7 @@ function getRawSourceRecords(rawJson: unknown) {
 }
 
 function getRatingFromRawJson(rawJson: unknown) {
-  const { tmdb, kinopoisk, candidate } = getRawSourceRecords(rawJson);
-  const kinopoiskRating = asRecord(kinopoisk.rating);
-  const manualRating = getManualRatingFromRawJson(rawJson);
-  const kpRating = getNumber(kinopoiskRating.kp);
-  const imdbRating = getNumber(kinopoiskRating.imdb);
-  const tmdbRating =
-    getNumber(tmdb.vote_average) ?? getNumber(candidate.vote_average);
-  const tmdbVoteCount =
-    getNumber(tmdb.vote_count) ?? getNumber(candidate.vote_count) ?? 0;
-
-  const automaticRating =
-    (kpRating && kpRating > 0 ? kpRating : null) ??
-    (imdbRating && imdbRating > 0 ? imdbRating : null) ??
-    (tmdbRating && tmdbRating > 0 && tmdbVoteCount > 0 ? tmdbRating : 0);
-
-  return resolveManualMovieRating(automaticRating, manualRating);
+  return getDraftRatingState(rawJson).effectiveRating;
 }
 
 function getDurationFromRawJson(rawJson: unknown) {
@@ -603,6 +589,11 @@ function applyOverride(
     canonicalMovieId: movie.canonicalMovieId,
   } as Movie;
 
+  // A manual poster must not silently fall back to stale provider artwork.
+  if (cleanString(override.poster)) {
+    mergedMovie.posterFallbacks = cleanStringArray(override.posterFallbacks);
+  }
+
   if (Object.prototype.hasOwnProperty.call(override, "rating")) {
     mergedMovie.rating = getSafeOverrideRating(movie.rating, override.rating);
   }
@@ -695,14 +686,22 @@ export const getCachedPublicMovies = getPublicMovies;
 export async function getPublicBaseMovieBySlug(
   slug: string,
 ): Promise<Movie | null> {
+  return (await getBaseMovieDetails(slug)).movie;
+}
+
+async function getBaseMovieDetails(slug: string, strict = false): Promise<{ movie: Movie | null; rating: MovieRatingState }> {
   const fallbackMovie = getBaseMovieBySlug(slug);
+  const fallback = {
+    movie: fallbackMovie ? sanitizeMovieForPublicDisplay(fallbackMovie) : null,
+    rating: { effectiveRating: fallbackMovie?.rating ?? 0, manualRating: null, source: "catalog" as const },
+  };
 
   // В обычном режиме каталог уже лежит в data/movies.ts. Не ходим в Supabase
   // за movie_drafts на каждую страницу фильма: это давало задержку на серверном
   // рендере. Если опубликованные drafts действительно нужны публично, включи
   // KINOLUMA_LOAD_PUBLISHED_DRAFTS=true.
   if (!shouldLoadPublishedDraftMovies()) {
-    return fallbackMovie ? sanitizeMovieForPublicDisplay(fallbackMovie) : null;
+    return fallback;
   }
 
   try {
@@ -716,36 +715,59 @@ export async function getPublicBaseMovieBySlug(
       .maybeSingle();
 
     if (error) {
+      if (strict) throw new MovieOverrideReadError();
       warnSupabaseReadFallback(
         "Не удалось загрузить опубликованный movie_draft",
         error,
       );
-      return fallbackMovie ? sanitizeMovieForPublicDisplay(fallbackMovie) : null;
+      return fallback;
     }
 
     const draftMovie = data ? draftToMovie(data as MovieDraftRow) : null;
 
     if (draftMovie) {
-      return draftMovie;
+      return { movie: draftMovie, rating: getDraftRatingState((data as MovieDraftRow).raw_json) };
     }
   } catch (error) {
+    if (strict) throw new MovieOverrideReadError();
     warnSupabaseReadFallback(
       "Не удалось загрузить опубликованный movie_draft",
       error,
     );
   }
 
-  return fallbackMovie ? sanitizeMovieForPublicDisplay(fallbackMovie) : null;
+  return fallback;
 }
 
+// One strict override read supplies both the displayed movie and editable intent.
+export async function getMovieEditorData(slug: string) {
+  const base = await getBaseMovieDetails(slug, true);
+  if (!base.movie) return null;
+  const override = await getMovieOverrideData(slug);
+  if (isHiddenOverride(override)) return null;
+  const movie = sanitizeMovieForPublicDisplay(attachVerifiedCredits(
+    applyOverride(await attachVerifiedEpisodeGuide(base.movie), override), override,
+  ));
+  const manual = resolveManualMovieRating(0, override?.rating) || null;
+  return { movie, editor: { manualRating: manual, baseRating: base.rating } };
+}
+
+export class MovieOverrideReadError extends Error {
+  constructor() {
+    super("Не удалось достоверно прочитать текущие правки.");
+    this.name = "MovieOverrideReadError";
+  }
+}
+
+// Administrative read/merge/write must never treat a failed read as an absent row.
 export async function getMovieOverrideData(
   slug: string,
 ): Promise<MovieOverrideData | null> {
-  if (!hasRealSupabaseAdminCredentials() || shouldDisableSupabaseReadsDuringBuild()) {
-    return null;
-  }
-
   try {
+    if (!hasRealSupabaseAdminCredentials() || shouldDisableSupabaseReadsDuringBuild()) {
+      throw new MovieOverrideReadError();
+    }
+
     const { data, error } = await getSupabaseAdmin()
       .from("movie_overrides")
       .select("data")
@@ -753,15 +775,28 @@ export async function getMovieOverrideData(
       .maybeSingle();
 
     if (error) {
-      warnSupabaseReadFallback("Не удалось загрузить movie_overrides", error);
-      return null;
+      throw new MovieOverrideReadError();
     }
 
-    if (!data?.data || typeof data.data !== "object") {
-      return null;
+    if (data === null) return null;
+
+    if (!data?.data || typeof data.data !== "object" || Array.isArray(data.data)) {
+      throw new MovieOverrideReadError();
     }
 
     return data.data as MovieOverrideData;
+  } catch {
+    throw new MovieOverrideReadError();
+  }
+}
+
+async function getPublicMovieOverrideData(slug: string): Promise<MovieOverrideData | null> {
+  if (!hasRealSupabaseAdminCredentials() || shouldDisableSupabaseReadsDuringBuild()) {
+    return null;
+  }
+
+  try {
+    return await getMovieOverrideData(slug);
   } catch (error) {
     warnSupabaseReadFallback("Не удалось загрузить movie_overrides", error);
     return null;
@@ -770,6 +805,7 @@ export async function getMovieOverrideData(
 
 export async function getMovieWithOverrides(
   slug: string,
+  { allowReadFallback = false }: { allowReadFallback?: boolean } = {},
 ): Promise<Movie | null> {
   const baseMovie = await getPublicBaseMovieBySlug(slug);
 
@@ -777,7 +813,10 @@ export async function getMovieWithOverrides(
     return null;
   }
 
-  const override = await getMovieOverrideData(slug);
+  // The editor must not render an editable provider fallback after a failed read.
+  const override = allowReadFallback
+    ? await getPublicMovieOverrideData(slug)
+    : await getMovieOverrideData(slug);
 
   if (isHiddenOverride(override)) {
     return null;
@@ -793,14 +832,16 @@ export async function getMovieWithOverrides(
 // и сама страница запрашивают один slug. Постоянный Data Cache здесь не нужен,
 // потому что Full Route Cache уже хранит готовую страницу, а админка инвалидирует
 // конкретный URL фильма. Это также не переносит старые локальные данные между deployment.
-export const getCachedMovieWithOverrides = cache(getMovieWithOverrides);
+export const getCachedMovieWithOverrides = cache((slug: string) =>
+  getMovieWithOverrides(slug, { allowReadFallback: true }),
+);
 
 export async function saveMovieOverride(
   slug: string,
   data: MovieOverrideData,
   updatedBy: string,
 ) {
-  const { error } = await getSupabaseAdmin().from("movie_overrides").upsert(
+  const { data: saved, error } = await getSupabaseAdmin().from("movie_overrides").upsert(
     {
       slug,
       data,
@@ -808,10 +849,21 @@ export async function saveMovieOverride(
       updated_at: new Date().toISOString(),
     },
     { onConflict: "slug" },
-  );
+  ).select("slug, data").single();
 
   if (error) {
     throw error;
   }
+
+  if (!saved || saved.slug !== slug || !saved.data || typeof saved.data !== "object" || Array.isArray(saved.data)) {
+    throw new Error("Сохранение правок не подтверждено базой данных");
+  }
+  if (saved.data.poster !== data.poster) {
+    throw new Error("База данных не подтвердила сохранение постера");
+  }
+  if (Object.hasOwn(saved.data, "rating") !== Object.hasOwn(data, "rating") || saved.data.rating !== data.rating) {
+    throw new Error("База данных не подтвердила сохранение рейтинга");
+  }
+  return saved.data as MovieOverrideData;
 
 }

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-import { getMovieWithOverrides } from '../../../../lib/movies/movieOverrides';
+import { getMovieEditorData } from '../../../../lib/movies/movieOverrides';
 import MovieAdminEditForm from './MovieAdminEditForm';
 
 type EditMoviePageProps = {
@@ -12,11 +12,12 @@ export const dynamic = 'force-dynamic';
 
 export default async function EditMoviePage({ params }: EditMoviePageProps) {
   const { slug } = await params;
-  const movie = await getMovieWithOverrides(slug);
+  const data = await getMovieEditorData(slug);
 
-  if (!movie) {
+  if (!data) {
     notFound();
   }
+  const { movie, editor } = data;
 
   return (
     <main className="admin-edit-page min-h-screen bg-[#030303] text-white">
@@ -71,7 +72,7 @@ export default async function EditMoviePage({ params }: EditMoviePageProps) {
           </div>
         </section>
 
-        <MovieAdminEditForm slug={slug} movie={movie} />
+        <MovieAdminEditForm slug={slug} movie={movie} editor={editor} />
       </div>
 
       <style>{`

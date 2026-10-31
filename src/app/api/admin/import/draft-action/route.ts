@@ -3,8 +3,7 @@ import { revalidatePath } from 'next/cache';
 import { getSupabaseAdmin } from '../../../../lib/supabase/admin';
 import { assertAdminSecret } from '../../../../lib/import/adminAuth';
 import {
-  getManualRatingFromRawJson,
-  resolveManualMovieRating,
+  getDraftRatingState,
 } from '../../../../lib/movies/rating';
 
 export const runtime = 'nodejs';
@@ -26,11 +25,6 @@ type PublishDraftCheckRow = Record<string, unknown> & {
   backdrop_url?: string | null;
 };
 
-function asRecord(value: unknown): Record<string, unknown> {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
-  return value as Record<string, unknown>;
-}
-
 function getNumber(value: unknown) {
   if (typeof value === 'number' && Number.isFinite(value)) return value;
   if (typeof value !== 'string') return null;
@@ -40,22 +34,7 @@ function getNumber(value: unknown) {
 }
 
 function getMovieRatingFromRawJson(rawJson: unknown) {
-  const raw = asRecord(rawJson);
-  const tmdb = asRecord(raw.tmdb);
-  const kinopoisk = asRecord(raw.kinopoisk);
-  const candidate = asRecord(raw.candidate);
-  const kinopoiskRating = asRecord(kinopoisk.rating);
-  const kpRating = getNumber(kinopoiskRating.kp);
-  const imdbRating = getNumber(kinopoiskRating.imdb);
-  const tmdbRating = getNumber(tmdb.vote_average) ?? getNumber(candidate.vote_average);
-  const tmdbVoteCount = getNumber(tmdb.vote_count) ?? getNumber(candidate.vote_count) ?? 0;
-  const manualRating = getManualRatingFromRawJson(rawJson);
-  const automaticRating =
-    (kpRating && kpRating > 0 ? kpRating : null) ??
-    (imdbRating && imdbRating > 0 ? imdbRating : null) ??
-    (tmdbRating && tmdbRating > 0 && tmdbVoteCount > 0 ? tmdbRating : 0);
-
-  return resolveManualMovieRating(automaticRating, manualRating);
+  return getDraftRatingState(rawJson).effectiveRating;
 }
 
 function getPublishRating(draft: PublishDraftCheckRow) {

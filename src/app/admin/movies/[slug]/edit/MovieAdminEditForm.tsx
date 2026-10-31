@@ -1,15 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 
 import { supabase } from "../../../../lib/supabase";
 import type { Movie } from "../../../../data/movies";
-import { parseManualRatingInput } from "../../../../lib/movies/rating";
+import { parseManualRatingInput, formatMovieRating, RATING_SOURCE_LABELS, type MovieRatingState } from "../../../../lib/movies/rating";
 
 type MovieAdminEditFormProps = {
   slug: string;
   movie: Movie & Record<string, unknown>;
+  editor: { manualRating: number | null; baseRating: MovieRatingState };
 };
 
 type SaveState = "idle" | "saving" | "deleting" | "saved" | "error";
@@ -375,6 +376,7 @@ function FieldHint({ children }: { children: ReactNode }) {
 export default function MovieAdminEditForm({
   slug,
   movie,
+  editor,
 }: MovieAdminEditFormProps) {
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [message, setMessage] = useState("");
@@ -390,7 +392,7 @@ export default function MovieAdminEditForm({
   );
   const [yearPreview, setYearPreview] = useState(valueToString(movie.year));
   const [ratingPreview, setRatingPreview] = useState(
-    valueToString(movie.rating),
+    valueToString(editor.manualRating),
   );
   const [typePreview, setTypePreview] = useState(valueToString(movie.type));
   const [kinopoiskIdPreview, setKinopoiskIdPreview] = useState(
@@ -405,9 +407,33 @@ export default function MovieAdminEditForm({
 
   const factsJson = useMemo(() => safeJson(movie.facts), [movie.facts]);
   const castJson = useMemo(() => safeJson(movie.cast), [movie.cast]);
+  const savedValues = useRef<Record<string, unknown>>({
+    title: valueToString(movie.title).trim(),
+    originalTitle: valueToString(movie.originalTitle).trim(),
+    type: valueToString(movie.type).trim(),
+    year: parseNumber(valueToString(movie.year)),
+    rating: editor.manualRating,
+    description: valueToString(movie.description).trim(),
+    longDescription: valueToString(movie.longDescription).trim(),
+    poster: valueToString(movie.poster).trim(),
+    backdrop: valueToString(movie.backdrop).trim(),
+    trailerUrl: valueToString(movie.trailerUrl).trim(),
+    kinopoiskId: parseNumber(valueToString(movie.kinopoiskId)),
+    tmdbId: parseNumber(valueToString(movie.tmdbId)),
+    imdbId: valueToString(movie.imdbId).trim(),
+    genres: parseCsv(arrayToText(movie.genres)),
+    countries: parseCsv(arrayToText(movie.countries)),
+    posterFallbacks: parseCsv(arrayToText(movie.posterFallbacks)),
+    players: parsePlayers(playersToText(movie.players, valueToString(movie.type)), valueToString(movie.type)),
+    facts: parseJsonArray(safeJson(movie.facts), "Факты"),
+    cast: parseJsonArray(safeJson(movie.cast), "Актёры"),
+  });
+  const submitInFlight = useRef(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submitInFlight.current) return;
+    submitInFlight.current = true;
     setSaveState("saving");
     setMessage("");
 
@@ -435,7 +461,7 @@ export default function MovieAdminEditForm({
         originalTitle: valueToString(formData.get("originalTitle")).trim(),
         type: valueToString(formData.get("type")).trim(),
         year: parseNumber(formData.get("year")),
-        rating: parseManualRatingInput(formData.get("rating")) ?? null,
+        rating: parseManualRatingInput(formData.get("rating")) || null,
         description: valueToString(formData.get("description")).trim(),
         longDescription: valueToString(formData.get("longDescription")).trim(),
         poster: valueToString(formData.get("poster")).trim(),
@@ -449,9 +475,20 @@ export default function MovieAdminEditForm({
       };
 
       if (players.length > 0) payload.players = players;
+      payload.posterFallbacks = posterFallbacks;
       if (facts) payload.facts = facts;
       if (cast) payload.cast = cast;
-      if (posterFallbacks.length > 0) payload.posterFallbacks = posterFallbacks;
+
+      // Compare against the last acknowledged form values, not effective data.
+      // Updating the baseline after success also permits change → save → revert.
+      for (const key of Object.keys(payload)) {
+        if (JSON.stringify(payload[key]) === JSON.stringify(savedValues.current[key])) delete payload[key];
+      }
+      if (!Object.keys(payload).length) {
+        setSaveState("idle");
+        setMessage("Нет изменений для сохранения.");
+        return;
+      }
 
       const response = await fetch(`/api/admin/movies/${slug}/override`, {
         method: "PUT",
@@ -464,13 +501,25 @@ export default function MovieAdminEditForm({
 
       const result = await response.json().catch(() => null);
 
-      if (!response.ok) {
+      if (!response.ok || result?.ok !== true) {
         throw new Error(result?.error || "Не удалось сохранить правки");
       }
 
+      if (payload.poster && result?.data?.poster !== payload.poster) {
+        throw new Error("Сервер не подтвердил новый URL постера. Введённое значение сохранено в форме; повторите сохранение.");
+      }
+      if (Object.hasOwn(payload, "poster") && !payload.poster && Object.hasOwn(result?.data ?? {}, "poster")) {
+        throw new Error("Сервер не подтвердил сброс постера.");
+      }
+      if (Object.hasOwn(payload, "rating") && (!result?.data ||
+        (payload.rating === null ? Object.hasOwn(result.data, "rating") : result.data.rating !== payload.rating))) {
+        throw new Error("Сервер не подтвердил ручной рейтинг. Повторите сохранение.");
+      }
+      savedValues.current = { ...savedValues.current, ...payload };
+
       setSaveState("saved");
       setMessage(
-        "Сохранено. Страница фильма обновлена, можно открыть карточку и проверить правки.",
+        "Сохранено. Откройте карточку заново, чтобы увидеть обновлённые данные.",
       );
     } catch (error) {
       setSaveState("error");
@@ -479,6 +528,8 @@ export default function MovieAdminEditForm({
           ? error.message
           : "Неизвестная ошибка сохранения",
       );
+    } finally {
+      submitInFlight.current = false;
     }
   }
 
@@ -586,14 +637,20 @@ export default function MovieAdminEditForm({
             </label>
 
             <label className="field">
-              <span>Рейтинг</span>
+              <span>Ручной рейтинг карточки</span>
               <input
                 name="rating"
                 value={ratingPreview}
                 onChange={(event) => setRatingPreview(event.target.value)}
                 inputMode="decimal"
                 className="edit-input"
+                aria-describedby="rating-source-hint"
               />
+              <p id="rating-source-hint" className="field-hint">
+                Без этой правки: {formatMovieRating(editor.baseRating.effectiveRating)} · {RATING_SOURCE_LABELS[editor.baseRating.source]}.
+                {" "}Пустое поле или 0 снимает только ручной рейтинг карточки.
+                {editor.baseRating.source === "draft_manual" && " Ручной рейтинг Import Admin останется; он редактируется отдельно в импорте."}
+              </p>
             </label>
 
             <label className="field">
@@ -667,6 +724,7 @@ export default function MovieAdminEditForm({
                 className="edit-input"
                 placeholder="https://..."
               />
+              <FieldHint>Ручной URL имеет приоритет. Очистите поле и сохраните, чтобы вернуть постер каталога.</FieldHint>
             </label>
 
             <label className="field full">
@@ -862,6 +920,7 @@ export default function MovieAdminEditForm({
             <div className="poster-frame">
               {posterPreview ? (
                 <img
+                  key={posterPreview}
                   src={posterPreview}
                   alt={titlePreview || "Постер"}
                   onError={(event) => {

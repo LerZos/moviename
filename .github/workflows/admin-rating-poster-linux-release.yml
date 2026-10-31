@@ -1,0 +1,76 @@
+name: KinoLuma Admin Rating + Poster RC Linux candidate
+
+on:
+  push:
+    branches: [codex/admin-rating-poster-linux-20261101]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kinoluma-admin-rating-poster-linux
+  cancel-in-progress: false
+
+jobs:
+  verify-build-package:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 35
+    env:
+      KINOLUMA_CI_OUTPUT: ${{ runner.temp }}/kinoluma-admin-rating-poster
+    steps:
+      - name: Checkout exact event commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node 22.23.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22.23.0
+          package-manager-cache: false
+
+      - name: Verify exact source, parent and approved file hashes
+        run: node .github/ci/admin-rating-poster-release.mjs source
+
+      - name: Install locked Linux dependencies
+        run: |
+          npm install --global npm@10.9.8
+          test "$(node --version)" = "v22.23.0"
+          test "$(npm --version)" = "10.9.8"
+          npm ci --include=optional --no-audit --no-fund
+
+      - name: TypeScript, scoped ESLint, rating/poster P1/P2 and server regressions
+        run: node .github/ci/admin-rating-poster-release.mjs checks
+
+      - name: Build Next.js standalone with fixture config and outbound network blocked
+        run: node .github/ci/admin-rating-poster-release.mjs build
+
+      - name: Verify unchanged source after checks and build
+        run: node .github/ci/admin-rating-poster-release.mjs source-final
+
+      - name: Scan client bundle, package, extract and test exact standalone artifact
+        run: node .github/ci/admin-rating-poster-release.mjs package
+
+      - name: Upload verified Linux candidate
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: kinoluma-admin-rating-poster-${{ github.sha }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/kinoluma-admin-rating-poster/dist/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+
+      - name: Upload check evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: kinoluma-admin-rating-poster-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/kinoluma-admin-rating-poster/*.json
+            ${{ runner.temp }}/kinoluma-admin-rating-poster/*.log
+            ${{ runner.temp }}/kinoluma-admin-rating-poster/*.jsonl
+          if-no-files-found: warn
+          retention-days: 14

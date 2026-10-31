@@ -1,5 +1,9 @@
 "use client";
 
+import Link from "next/link";
+
+import { parseManualRatingInput, formatMovieRating, RATING_SOURCE_LABELS, type RatingSource } from "../../lib/movies/rating";
+
 import {
   type FormEvent,
   type ReactNode,
@@ -63,6 +67,8 @@ type Draft = {
   kinopoisk_id: number | null;
   imdb_id: string | null;
   movie_rating: number | null;
+  manual_rating: number | null;
+  rating_source: RatingSource;
   actors: string[] | null;
   directors: string[] | null;
   description: string | null;
@@ -439,7 +445,7 @@ function draftToManualForm(draft: Draft): ManualDraftForm {
     kinopoisk_id: draft.kinopoisk_id?.toString() ?? "",
     tmdb_id: draft.tmdb_id?.toString() ?? "",
     imdb_id: draft.imdb_id ?? "",
-    rating: draft.movie_rating?.toString() ?? "",
+    rating: draft.manual_rating?.toString() ?? "",
     type: draft.type ?? "",
     status: draft.status ?? "",
     genres: (draft.genres ?? []).join(", "),
@@ -859,6 +865,7 @@ export default function ImportDashboardClient() {
           ? {
               ...current,
               ...autofillValues,
+              rating: current.rating,
               status: current.status || autofillValues.status || "draft",
             }
           : current,
@@ -880,16 +887,31 @@ export default function ImportDashboardClient() {
 
     if (!editForm) return;
 
+    let values: Partial<ManualDraftForm> = editForm;
+    if (!isCreatingDraft && editingDraft) {
+      const initial = draftToManualForm(editingDraft);
+      values = Object.fromEntries(Object.entries(editForm).filter(([key, value]) => value !== initial[key as keyof ManualDraftForm]));
+    }
+    try {
+      if (Object.hasOwn(values, "rating")) parseManualRatingInput(values.rating);
+    } catch {
+      setError("Рейтинг должен быть числом от 0 до 10");
+      return;
+    }
+    if (!Object.keys(values).length) {
+      setMessage("Нет изменений для сохранения.");
+      return;
+    }
     const ok = isCreatingDraft
       ? await runPost(
           "/api/admin/import/create-draft",
-          { values: editForm },
+          { values },
           "Фильм добавлен в черновики",
         )
       : editingDraft
         ? await runPost(
             "/api/admin/import/update-draft",
-            { draftId: editingDraft.id, values: editForm },
+            { draftId: editingDraft.id, values },
             "Черновик обновлён вручную",
           )
         : false;
@@ -935,7 +957,7 @@ export default function ImportDashboardClient() {
 
       <header className="topbar">
         <div className="topbar-inner">
-          <a href="/" className="brand" aria-label="KinoLuma">
+          <Link href="/" className="brand" aria-label="KinoLuma">
             <img
               src="/kinoluma-icon.png"
               alt="KinoLuma"
@@ -945,7 +967,7 @@ export default function ImportDashboardClient() {
               <p className="logo-title">KinoLuma</p>
               <p className="logo-subtitle">Import Admin</p>
             </div>
-          </a>
+          </Link>
 
           <div className="top-actions">
             <button
@@ -966,9 +988,9 @@ export default function ImportDashboardClient() {
               <RefreshCcw size={17} strokeWidth={2.4} aria-hidden="true" />
               Обновить
             </button>
-            <a href="/" className="ghost-button">
+            <Link href="/" className="ghost-button">
               <Film size={17} strokeWidth={2.4} aria-hidden="true" />В каталог
-            </a>
+            </Link>
           </div>
         </div>
       </header>
@@ -2084,11 +2106,15 @@ function ManualEditModal({
             placeholder="например tt23289160"
           />
           <EditField
-            label="Рейтинг фильма"
+            label="Ручной рейтинг Import Admin"
             value={form.rating}
             onChange={(value) => onChange("rating", value)}
             placeholder="например 7.4"
           />
+          <p className="wide">
+            Рейтинг черновика: {formatMovieRating(draft?.movie_rating)} · {RATING_SOURCE_LABELS[draft?.rating_source ?? "unknown"]}.
+            {" "}Пустое поле или 0 снимает ручной рейтинг импорта. Отдельная правка в редакторе карточки, если она есть, сохранится.
+          </p>
           <EditChoiceGroup
             label="Тип"
             value={form.type || "film"}
