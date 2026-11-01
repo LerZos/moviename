@@ -46,6 +46,11 @@ const HARDENING_BLOBS = {
   "src/app/lib/thirdPartySdk.ts": "edbfb50a8a82b0d565790306010c169851a2c244",
   "src/app/profile/layout.tsx": "4f1fa5f621878cddae04676a9e5d89bcc52c21ef",
 };
+// Reviewed post-release player order fix: Collapse primary, Vibix first backup, at most two players (as in E.2).
+const PLAYER_ORDER_BLOBS = {
+  "scripts/vibix-player-order.test.mjs": "41137420fbf5314a3a2f1c4733624907ad9ff5c6",
+  "src/app/movie/[slug]/MoviePageClient.tsx": "19ef1846f8f431ad6d9c6c2c257858376820d95a",
+};
 const CI_FILES = [
   ".github/ci/verify-vibix-source.mjs",
   ".github/workflows/vibix-linux-release.yml",
@@ -131,6 +136,13 @@ function hardeningContract(show) {
     legacyPlayers: "unrepresentable saved records preserved by the admin editor" };
 }
 
+function playerOrderContract(show) {
+  const page = show("src/app/movie/[slug]/MoviePageClient.tsx");
+  assert.match(page, /mergePlayerOptions\(generatedPlayers, currentVibixPlan\.players, retainedPlayers\)/, "Collapse must stay primary");
+  assert.match(page, /return normalizePlayerButtonNames\(mergedPlayers\)\.slice\(0, 2\);/, "At most two players");
+  return { primary: "collapse", firstBackup: "vibix", maxPlayers: 2 };
+}
+
 function sourceGate(local) {
   const ref = "HEAD";
   if (!local) assert.equal(process.env.GITHUB_REF_NAME ?? git("branch", "--show-current"), BRANCH);
@@ -139,15 +151,17 @@ function sourceGate(local) {
   assert.equal(git("merge-base", BASE, "HEAD"), BASE, "Wrong merge base");
   const commits = git("rev-list", "--reverse", BASE + "..HEAD").split("\n");
   assert.equal(commits[0], RELEASE_COMMIT, "First commit after base must be the reviewed Vibix commit");
-  const followUpFiles = [...CI_FILES, ...Object.keys(HARDENING_BLOBS)];
+  const followUpFiles = [...CI_FILES, ...Object.keys(HARDENING_BLOBS), ...Object.keys(PLAYER_ORDER_BLOBS)];
   let hardeningCommitted = false;
+  let playerOrderCommitted = false;
   let parent = BASE;
   for (const [index, commit] of commits.entries()) {
     assert.equal(git("show", "-s", "--format=%P", commit), parent, "Merges are forbidden");
     if (index > 0) {
       const repaired = git("diff", "--name-only", parent, commit).split("\n");
-      assert.ok(repaired.every((file) => followUpFiles.includes(file)), "Only CI repairs and reviewed hardening after release commit");
+      assert.ok(repaired.every((file) => followUpFiles.includes(file)), "Only CI repairs and reviewed fixes after release commit");
       if (repaired.some((file) => HARDENING_BLOBS[file])) hardeningCommitted = true;
+      if (repaired.some((file) => PLAYER_ORDER_BLOBS[file])) playerOrderCommitted = true;
     }
     parent = commit;
   }
@@ -162,7 +176,14 @@ function sourceGate(local) {
       assert.equal(git("hash-object", "--", file), blob, "Unreviewed hardening edit: " + file);
     }
   }
-  const pinned = hardeningCommitted ? { ...APP_BLOBS, ...HARDENING_BLOBS } : APP_BLOBS;
+  if (!playerOrderCommitted) {
+    assert.ok(local, "Player order fix must be committed for a release run");
+    for (const [file, blob] of Object.entries(PLAYER_ORDER_BLOBS)) {
+      assert.equal(git("hash-object", "--", file), blob, "Unreviewed player order edit: " + file);
+    }
+  }
+  const pinned = { ...APP_BLOBS, ...(hardeningCommitted ? HARDENING_BLOBS : {}),
+    ...(playerOrderCommitted ? PLAYER_ORDER_BLOBS : {}) };
   const files = [...new Set([...Object.keys(pinned), ...(committedCi ? CI_FILES : [])])].sort();
   const rows = git("diff", "--no-renames", "--name-status", BASE, ref).split("\n").map((row) => row.split("\t"));
   assert.deepEqual(rows.map(([, file]) => file).sort(), files, "Unexpected or missing release file");
@@ -186,6 +207,8 @@ function sourceGate(local) {
   const vibix = vibixContract((file) => git("show", ref + ":" + file));
   const hardening = { ...hardeningContract(hardeningCommitted ? (file) => git("show", ref + ":" + file) : read),
     committed: hardeningCommitted, files: Object.keys(HARDENING_BLOBS) };
+  const playerOrder = { ...playerOrderContract(playerOrderCommitted ? (file) => git("show", ref + ":" + file) : read),
+    committed: playerOrderCommitted, files: Object.keys(PLAYER_ORDER_BLOBS) };
   const diff = execFileSync("git", ["diff", "--binary", BASE, ref], { maxBuffer: 64 * 1024 * 1024 });
   const report = {
     schemaVersion: 1, releaseName: "kinoluma-vibix-linux-candidate",
@@ -196,15 +219,14 @@ function sourceGate(local) {
     changedAppFilesCount: Object.keys(pinned).length, trackedDiffSha256: hash(diff),
     protectedSource: { posterRc: "UNCHANGED", seo: "UNCHANGED", batchE3: "ABSENT", episodeGuides: "UNCHANGED",
       canonicalIdentity: "UNCHANGED", rootLayout: "UNCHANGED", lockfile: "UNCHANGED", mobileUx: "UNCHANGED" },
-    vibix, hardening,
+    vibix, hardening, playerOrder,
     batchB: { totalImageMutations: 481, inheritedUnchangedFrom: BASE },
     manualOverrides: { preserved: 9, note: "Inherited source evidence; DB not queried" },
     credits: { inheritedFrom: BASE, allowlistedCards: 369 },
     the100: { slug: "the-100-2014", seasons: 7, episodes: 100, inheritedUnchangedFrom: BASE },
     knownLimits: ["localhost playback blocked by provider", "admin UI not browser-verified",
       "SDK runs first-party on movie pages (isolated-origin player not implemented)",
-      "home sign-in modal not guarded after SPA navigation from a movie page",
-      "legacy movie_overrides.players not audited against real records"],
+      "home sign-in modal not guarded after SPA navigation from a movie page"],
     errors: [], pass: true,
   };
   save(process.argv[3] && !process.argv[3].startsWith("--") ? process.argv[3] : "vibix-source-verification.json", report);
@@ -232,7 +254,8 @@ async function providerGate() {
 async function lintGate() {
   const { ESLint } = await import("eslint");
   const eslint = new ESLint();
-  const files = [...new Set([...Object.keys(APP_BLOBS), ...Object.keys(HARDENING_BLOBS), CI_FILES[0]])]
+  const files = [...new Set([...Object.keys(APP_BLOBS), ...Object.keys(HARDENING_BLOBS),
+    ...Object.keys(PLAYER_ORDER_BLOBS), CI_FILES[0]])]
     .filter((file) => /\.(?:ts|tsx|mjs)$/.test(file));
   let inheritedErrors = 0;
   let inheritedWarnings = 0;

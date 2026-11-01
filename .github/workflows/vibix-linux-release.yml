@@ -111,7 +111,7 @@ jobs:
           ip link set lo up
           test "$(ip -o link show | wc -l)" -eq 1
           test -z "$(ip route show)"
-          node --test scripts/vibix.test.mjs scripts/vibix-policy.test.mjs scripts/vibix-hardening.test.mjs
+          node --test scripts/vibix.test.mjs scripts/vibix-policy.test.mjs scripts/vibix-hardening.test.mjs scripts/vibix-player-order.test.mjs
           node .github/ci/verify-vibix-source.mjs providers
           node --test scripts/episode-guides/e1.test.mjs scripts/episode-guides/e2.test.mjs scripts/episode-guides/integration.test.mjs scripts/episode-guides/accordion.test.mjs scripts/the-100.test.mjs scripts/episode-accordion-cast.test.mjs
           node scripts/episode-guides/e1-dry-run.mjs --json

@@ -636,14 +636,16 @@ export default function MoviePageClient({
     const retainedPlayers = currentVibixPlan
       ? savedPlayers.filter((player) => !isVibixPlayer(player) || currentVibixPlan.players.some((allowed) => stablePlayerKey(allowed) === stablePlayerKey(player)))
       : savedPlayers;
+    // Collapse stays the primary player and Vibix the first backup.
     const mergedPlayers = currentVibixPlan
       ? preferredVibix
-        ? mergePlayerOptions(currentVibixPlan.players, generatedPlayers, retainedPlayers)
+        ? mergePlayerOptions(generatedPlayers, currentVibixPlan.players, retainedPlayers)
         : mergePlayerOptions(generatedPlayers, retainedPlayers)
       : mergePlayerOptions(generatedPlayers, savedPlayers, vibixPlayer);
 
     if (mergedPlayers.length > 0) {
-      return normalizePlayerButtonNames(mergedPlayers);
+      // As before the Vibix release, offer at most two players; older saved fallbacks stay hidden.
+      return normalizePlayerButtonNames(mergedPlayers).slice(0, 2);
     }
 
     return DEFAULT_PLAYERS;
