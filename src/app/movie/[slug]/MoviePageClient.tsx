@@ -4,6 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import Script from "next/script";
 import VibixPlayer from "../../components/VibixPlayer";
+import PlayerFrameGuard from "../../components/PlayerFrameGuard";
+import { frameNotice, type FrameReachabilityResult } from "../../lib/playerFrameProbe";
 import { useVibixLookup } from "../../lib/useVibixLookup";
 import { isVibixPlayer, isUsableSavedPlayer, mergePlayerOptions, selectedPlayer, stablePlayerKey, VIBIX_STATUS_TEXT, VIBIX_PLAN_TEXT, type VibixPlan, type PlayerSelection } from "../../lib/vibix";
 import MobileBottomNav from "../../components/MobileBottomNav";
@@ -145,11 +147,14 @@ function normalizePlayerButtonNames(players: PlayerProvider[]) {
     const record = getPlayerRecord(player);
     const currentName = String(record.name || "").trim();
     const lowerName = currentName.toLowerCase();
+    // Provider defaults ("Vibix", "Collapse") are not curated names: keep the
+    // same "Основной / Запасной N" labels on every page.
     const isGenericName =
       !currentName ||
       lowerName === "основной" ||
       lowerName.startsWith("запасной") ||
-      lowerName.startsWith("плеер");
+      lowerName.startsWith("плеер") ||
+      ["vibix", "exiim", "rendex", "collapse"].includes(lowerName);
 
     if (index === 0) {
       return { ...record, name: "Основной" } as PlayerProvider;
@@ -744,11 +749,23 @@ export default function MoviePageClient({
   const [watchingItemIds, setWatchingItemIds] = useState<number[]>([]);
   const [isStorageLoaded, setIsStorageLoaded] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [frameCheck, setFrameCheck] = useState<{ key: string; result: FrameReachabilityResult } | null>(null);
+  const [frameRetry, setFrameRetry] = useState(0);
+  const [dismissedFrameKey, setDismissedFrameKey] = useState<string | null>(null);
 
   const activePlayer = selectedPlayer(players, selection, movieKey);
   // Adjust identity-bound state before committing children: no stale iframe is
   // mounted for the next movie and no effect resets a later user selection.
   const activePlayerKey = stablePlayerKey(activePlayer);
+  const alternativePlayer = players.find((player) =>
+    stablePlayerKey(player) !== activePlayerKey && (isVibixPlayer(player) || Boolean(player.embedUrl)));
+  const frameGuardKey = `${movieKey}:${activePlayerKey}:${frameRetry}`;
+  const switchToAlternative = alternativePlayer
+    ? () => setSelection({ movieKey, playerKey: stablePlayerKey(alternativePlayer) })
+    : undefined;
+  const activeFrameNotice = frameCheck?.key === frameGuardKey && dismissedFrameKey !== frameGuardKey
+    ? frameNotice(frameCheck.result)
+    : null;
   if (selection?.movieKey !== movieKey || selection.playerKey !== activePlayerKey) {
     setSelection({ movieKey, playerKey: activePlayerKey });
   }
@@ -1252,6 +1269,7 @@ export default function MoviePageClient({
           id="player"
           ref={playerSectionRef}
           className="section-card player-card animate-in"
+          data-vibix-plan={currentVibixPlan?.status}
         >
           <div className="player-top">
             <div>
@@ -1278,7 +1296,8 @@ export default function MoviePageClient({
             </div>
           </div>
 
-          {currentVibixPlan && VIBIX_PLAN_TEXT[currentVibixPlan.status] ? (
+          {/* Binding review notes are diagnostics: admins only. The status stays on #player as data-vibix-plan. */}
+          {isAdmin && currentVibixPlan && VIBIX_PLAN_TEXT[currentVibixPlan.status] ? (
             <p role="status" aria-live="polite" style={{ color: "#b8b8c2", fontSize: 13, marginBottom: 12 }}>
               {VIBIX_PLAN_TEXT[currentVibixPlan.status]}
             </p>
@@ -1300,25 +1319,34 @@ export default function MoviePageClient({
                 <h3>Плеер загрузится при просмотре</h3>
                 <p>Так страница быстрее открывается, а лишние скрипты не грузятся заранее.</p>
               </div>
-            ) : isVibixPlayer(activePlayer) ? (
-              <VibixPlayer key={`${movieKey}:${stablePlayerKey(activePlayer)}`} player={activePlayer} title={movie.title} movieType={movie.type} />
-            ) : activePlayer.embedUrl ? (
-              <>
-                {isCollapsePlayer(activePlayer) ? (
-                  <Script
-                    id="collapse-actualize"
-                    src={COLLAPSE_ACTUALIZE_SCRIPT_SRC}
-                    strategy="afterInteractive"
-                  />
-                ) : null}
-                <div
-                  key={`${movieKey}:${stablePlayerKey(activePlayer)}`}
-                  className="player-iframe-shell"
-                  dangerouslySetInnerHTML={{
-                    __html: buildPlayerIframeHtml(activePlayer, movie),
-                  }}
-                />
-              </>
+            ) : isVibixPlayer(activePlayer) || activePlayer.embedUrl ? (
+              <PlayerFrameGuard
+                key={frameGuardKey}
+                onResult={(result) => setFrameCheck((current) => result
+                  ? { key: frameGuardKey, result }
+                  : current?.key === frameGuardKey ? null : current)}
+              >
+                {isVibixPlayer(activePlayer) ? (
+                  <VibixPlayer key={`${movieKey}:${stablePlayerKey(activePlayer)}`} player={activePlayer} title={movie.title} movieType={movie.type} />
+                ) : (
+                  <>
+                    {isCollapsePlayer(activePlayer) ? (
+                      <Script
+                        id="collapse-actualize"
+                        src={COLLAPSE_ACTUALIZE_SCRIPT_SRC}
+                        strategy="afterInteractive"
+                      />
+                    ) : null}
+                    <div
+                      key={`${movieKey}:${stablePlayerKey(activePlayer)}`}
+                      className="player-iframe-shell"
+                      dangerouslySetInnerHTML={{
+                        __html: buildPlayerIframeHtml(activePlayer, movie),
+                      }}
+                    />
+                  </>
+                )}
+              </PlayerFrameGuard>
             ) : (
               <div className="player-placeholder">
                 <div className="play-icon">
@@ -1333,6 +1361,30 @@ export default function MoviePageClient({
               </div>
             )}
           </div>
+          {/* Fail open: a frame check is never proof, so the notice sits below a frame that may be playing. */}
+          {isPlayerVisible && activeFrameNotice === "unreachable" ? (
+            <div className="player-frame-notice" role="status" aria-live="polite">
+              <p>Похоже, «{activePlayer.name}» не отвечает в вашей сети. Если видео не запускается, попробуйте другой источник.</p>
+              <div className="player-frame-notice-actions">
+                {alternativePlayer && switchToAlternative ? (
+                  <button type="button" className="player-frame-notice-primary" onClick={switchToAlternative}>
+                    Смотреть в «{alternativePlayer.name}»
+                  </button>
+                ) : null}
+                <button type="button" onClick={() => setFrameRetry((value) => value + 1)}>Повторить</button>
+                <button type="button" className="player-frame-notice-quiet" onClick={() => setDismissedFrameKey(frameGuardKey)}>
+                  Скрыть
+                </button>
+              </div>
+            </div>
+          ) : isPlayerVisible && activeFrameNotice === "hint" && alternativePlayer && switchToAlternative ? (
+            <div className="player-frame-notice" role="status" aria-live="polite">
+              <p>Видео не запускается?</p>
+              <div className="player-frame-notice-actions">
+                <button type="button" onClick={switchToAlternative}>Смотреть в «{alternativePlayer.name}»</button>
+              </div>
+            </div>
+          ) : null}
         </section>
 
         <section id="details" className="details-grid">
@@ -2248,6 +2300,67 @@ const moviePageStyles = `
     height: 100%;
     border: 0;
     background: #000000;
+  }
+
+  .player-frame-guard {
+    position: absolute;
+    inset: 0;
+  }
+
+  .player-frame-notice {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px 14px;
+    margin-top: 12px;
+    padding: 12px 14px;
+    border-radius: 18px;
+    border: 1px solid rgba(255,255,255,0.10);
+    background: rgba(255,255,255,0.035);
+  }
+
+  .player-frame-notice p {
+    flex: 1 1 240px;
+    margin: 0;
+    color: #a3a3a3;
+    font-size: 13px;
+    line-height: 1.5;
+    font-weight: 700;
+  }
+
+  .player-frame-notice-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .player-frame-notice-actions button {
+    min-height: 44px;
+    border-radius: 13px;
+    border: 1px solid rgba(255,255,255,0.16);
+    background: rgba(255,255,255,0.06);
+    color: #ffffff;
+    padding: 0 14px;
+    font-size: 13px;
+    font-weight: 1000;
+  }
+
+  .player-frame-notice-actions .player-frame-notice-primary {
+    background: #ffffff;
+    color: #000000;
+    border-color: #ffffff;
+  }
+
+  .player-frame-notice-actions .player-frame-notice-quiet {
+    border-color: transparent;
+    background: transparent;
+    color: #a3a3a3;
+  }
+
+  .player-frame-notice-actions button:focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: 2px;
   }
 
   .player-iframe-shell > iframe {

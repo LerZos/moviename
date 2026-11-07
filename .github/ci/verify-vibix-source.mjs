@@ -51,6 +51,13 @@ const PLAYER_ORDER_BLOBS = {
   "scripts/vibix-player-order.test.mjs": "41137420fbf5314a3a2f1c4733624907ad9ff5c6",
   "src/app/movie/[slug]/MoviePageClient.tsx": "19ef1846f8f431ad6d9c6c2c257858376820d95a",
 };
+// Reviewed post-release player resilience fix: fail-open frame check, uniform labels, admin-only binding notes.
+const PLAYER_RESILIENCE_BLOBS = {
+  "scripts/player-resilience.test.mjs": "09dcb596c83447259cf97679b5bf73f37369019c",
+  "src/app/components/PlayerFrameGuard.tsx": "9cd9a8b9925b7d702af0e5faa18d3f2138ccc583",
+  "src/app/lib/playerFrameProbe.ts": "2540d6e7e512c6550d13d0e569569d1fc8afe60c",
+  "src/app/movie/[slug]/MoviePageClient.tsx": "8b5e415afcedc4046980a135bbb5e75f70de66e8",
+};
 const CI_FILES = [
   ".github/ci/verify-vibix-source.mjs",
   ".github/workflows/vibix-linux-release.yml",
@@ -143,6 +150,20 @@ function playerOrderContract(show) {
   return { primary: "collapse", firstBackup: "vibix", maxPlayers: 2 };
 }
 
+function playerResilienceContract(show) {
+  const page = show("src/app/movie/[slug]/MoviePageClient.tsx");
+  assert.match(page, /\{isAdmin && currentVibixPlan && VIBIX_PLAN_TEXT\[currentVibixPlan\.status\] \?/, "Binding notes must be admin-only");
+  assert.match(page, /<PlayerFrameGuard\b/, "Players must render through the frame guard");
+  const guard = show("src/app/components/PlayerFrameGuard.tsx");
+  assert.match(guard, /^"use client";/, "Guard must be a client component");
+  const probe = show("src/app/lib/playerFrameProbe.ts");
+  for (const source of [guard, probe]) {
+    assert.doesNotMatch(source, /setAttribute\(|\.src\s*=|location\.(href|assign|replace)/, "Frame check must not rewrite provider URLs");
+  }
+  assert.doesNotMatch(guard + page, /player-frame-fallback/, "Frame check results must never cover the player");
+  return { unreachableFrame: "fail-open notice below the player", labels: "Основной / Запасной N", bindingNotes: "admin-only" };
+}
+
 function sourceGate(local) {
   const ref = "HEAD";
   if (!local) assert.equal(process.env.GITHUB_REF_NAME ?? git("branch", "--show-current"), BRANCH);
@@ -151,9 +172,11 @@ function sourceGate(local) {
   assert.equal(git("merge-base", BASE, "HEAD"), BASE, "Wrong merge base");
   const commits = git("rev-list", "--reverse", BASE + "..HEAD").split("\n");
   assert.equal(commits[0], RELEASE_COMMIT, "First commit after base must be the reviewed Vibix commit");
-  const followUpFiles = [...CI_FILES, ...Object.keys(HARDENING_BLOBS), ...Object.keys(PLAYER_ORDER_BLOBS)];
+  const followUpFiles = [...CI_FILES, ...Object.keys(HARDENING_BLOBS), ...Object.keys(PLAYER_ORDER_BLOBS),
+    ...Object.keys(PLAYER_RESILIENCE_BLOBS)];
   let hardeningCommitted = false;
   let playerOrderCommitted = false;
+  let playerResilienceCommitted = false;
   let parent = BASE;
   for (const [index, commit] of commits.entries()) {
     assert.equal(git("show", "-s", "--format=%P", commit), parent, "Merges are forbidden");
@@ -162,6 +185,8 @@ function sourceGate(local) {
       assert.ok(repaired.every((file) => followUpFiles.includes(file)), "Only CI repairs and reviewed fixes after release commit");
       if (repaired.some((file) => HARDENING_BLOBS[file])) hardeningCommitted = true;
       if (repaired.some((file) => PLAYER_ORDER_BLOBS[file])) playerOrderCommitted = true;
+      // MoviePageClient is pinned by both player groups; detect this fix by its own files only.
+      if (repaired.some((file) => PLAYER_RESILIENCE_BLOBS[file] && !PLAYER_ORDER_BLOBS[file])) playerResilienceCommitted = true;
     }
     parent = commit;
   }
@@ -182,8 +207,15 @@ function sourceGate(local) {
       assert.equal(git("hash-object", "--", file), blob, "Unreviewed player order edit: " + file);
     }
   }
+  if (!playerResilienceCommitted) {
+    assert.ok(local, "Player resilience fix must be committed for a release run");
+    for (const [file, blob] of Object.entries(PLAYER_RESILIENCE_BLOBS)) {
+      assert.equal(git("hash-object", "--", file), blob, "Unreviewed player resilience edit: " + file);
+    }
+  }
   const pinned = { ...APP_BLOBS, ...(hardeningCommitted ? HARDENING_BLOBS : {}),
-    ...(playerOrderCommitted ? PLAYER_ORDER_BLOBS : {}) };
+    ...(playerOrderCommitted ? PLAYER_ORDER_BLOBS : {}),
+    ...(playerResilienceCommitted ? PLAYER_RESILIENCE_BLOBS : {}) };
   const files = [...new Set([...Object.keys(pinned), ...(committedCi ? CI_FILES : [])])].sort();
   const rows = git("diff", "--no-renames", "--name-status", BASE, ref).split("\n").map((row) => row.split("\t"));
   assert.deepEqual(rows.map(([, file]) => file).sort(), files, "Unexpected or missing release file");
@@ -209,6 +241,8 @@ function sourceGate(local) {
     committed: hardeningCommitted, files: Object.keys(HARDENING_BLOBS) };
   const playerOrder = { ...playerOrderContract(playerOrderCommitted ? (file) => git("show", ref + ":" + file) : read),
     committed: playerOrderCommitted, files: Object.keys(PLAYER_ORDER_BLOBS) };
+  const playerResilience = { ...playerResilienceContract(playerResilienceCommitted ? (file) => git("show", ref + ":" + file) : read),
+    committed: playerResilienceCommitted, files: Object.keys(PLAYER_RESILIENCE_BLOBS) };
   const diff = execFileSync("git", ["diff", "--binary", BASE, ref], { maxBuffer: 64 * 1024 * 1024 });
   const report = {
     schemaVersion: 1, releaseName: "kinoluma-vibix-linux-candidate",
@@ -219,7 +253,7 @@ function sourceGate(local) {
     changedAppFilesCount: Object.keys(pinned).length, trackedDiffSha256: hash(diff),
     protectedSource: { posterRc: "UNCHANGED", seo: "UNCHANGED", batchE3: "ABSENT", episodeGuides: "UNCHANGED",
       canonicalIdentity: "UNCHANGED", rootLayout: "UNCHANGED", lockfile: "UNCHANGED", mobileUx: "UNCHANGED" },
-    vibix, hardening, playerOrder,
+    vibix, hardening, playerOrder, playerResilience,
     batchB: { totalImageMutations: 481, inheritedUnchangedFrom: BASE },
     manualOverrides: { preserved: 9, note: "Inherited source evidence; DB not queried" },
     credits: { inheritedFrom: BASE, allowlistedCards: 369 },
@@ -255,7 +289,7 @@ async function lintGate() {
   const { ESLint } = await import("eslint");
   const eslint = new ESLint();
   const files = [...new Set([...Object.keys(APP_BLOBS), ...Object.keys(HARDENING_BLOBS),
-    ...Object.keys(PLAYER_ORDER_BLOBS), CI_FILES[0]])]
+    ...Object.keys(PLAYER_ORDER_BLOBS), ...Object.keys(PLAYER_RESILIENCE_BLOBS), CI_FILES[0]])]
     .filter((file) => /\.(?:ts|tsx|mjs)$/.test(file));
   let inheritedErrors = 0;
   let inheritedWarnings = 0;
