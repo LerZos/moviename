@@ -742,6 +742,8 @@ export default function MoviePageClient({
   const [posterIdentity, setPosterIdentity] = useState(`${movie.slug}:${movie.poster}`);
   const smoothScrollFrameRef = useRef<number | null>(null);
   const playerSectionRef = useRef<HTMLElement | null>(null);
+  const playerBoxRef = useRef<HTMLDivElement | null>(null);
+  const [isPlayerBoxOnScreen, setIsPlayerBoxOnScreen] = useState(false);
 
   const [watchLaterIds, setWatchLaterIds] = useState<number[]>([]);
   const [likedItemIds, setLikedItemIds] = useState<number[]>([]);
@@ -799,6 +801,21 @@ export default function MoviePageClient({
 
     return () => observer.disconnect();
   }, [isPlayerVisible, movieKey]);
+
+  // The fixed mobile "Наверх" button hides while the player is on screen so it
+  // never sits over the provider's own controls (see data-player-on-screen CSS).
+  useEffect(() => {
+    const box = playerBoxRef.current;
+    if (!box || typeof IntersectionObserver === "undefined") return;
+
+    const observer = new IntersectionObserver((entries) => {
+      setIsPlayerBoxOnScreen(entries.some((entry) => entry.isIntersecting));
+    });
+
+    observer.observe(box);
+
+    return () => observer.disconnect();
+  }, []);
 
   const visibleFacts = useMemo(
     () => facts.filter((fact) => isVisibleFact(fact) && shouldShowMovieFact(fact.label, credits)),
@@ -1270,6 +1287,7 @@ export default function MoviePageClient({
           ref={playerSectionRef}
           className="section-card player-card animate-in"
           data-vibix-plan={currentVibixPlan?.status}
+          data-player-on-screen={isPlayerBoxOnScreen ? "true" : undefined}
         >
           <div className="player-top">
             <div>
@@ -1307,7 +1325,7 @@ export default function MoviePageClient({
               {VIBIX_STATUS_TEXT[vibixLookup.status]}
             </p>
           ) : null}
-          <div className={isVibixPlayer(activePlayer) ? "player-box player-box-vibix" : "player-box"}>
+          <div ref={playerBoxRef} className={isVibixPlayer(activePlayer) ? "player-box player-box-vibix" : "player-box"}>
             {!isPlayerVisible ? (
               <div className="player-placeholder">
                 <div className="play-icon">
@@ -3434,10 +3452,18 @@ const moviePageStyles = `
     .player-tabs {
       width: 100%;
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      /* At most two players: share the row instead of leaving an empty third column. */
+      grid-template-columns: none;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(0, 1fr);
       gap: 8px;
       overflow: visible;
       padding-bottom: 0;
+    }
+
+    body:has(#player[data-player-on-screen="true"]) .mobile-back-to-top {
+      opacity: 0;
+      pointer-events: none;
     }
 
     .player-tab {

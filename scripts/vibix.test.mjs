@@ -244,7 +244,8 @@ test("actual component SSR retains legacy series default, IMDb strings, theme an
   assert.match(iframe,/title="Vibix — Тест"/);
   assert.match(iframe,/allowFullScreen=""/i);
   assert.match(iframe,/role="status"/);
-  assert.match(iframe,/Загрузка окна Vibix/);
+  assert.match(iframe,/Загрузка плеера…/);
+  assert.doesNotMatch(iframe.replace(/title="[^"]*"/,""),/Vibix/);
   assert.doesNotMatch(iframe,/Видео доступно/);
 });
 

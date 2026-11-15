@@ -58,6 +58,13 @@ const PLAYER_RESILIENCE_BLOBS = {
   "src/app/lib/playerFrameProbe.ts": "2540d6e7e512c6550d13d0e569569d1fc8afe60c",
   "src/app/movie/[slug]/MoviePageClient.tsx": "8b5e415afcedc4046980a135bbb5e75f70de66e8",
 };
+// Reviewed post-release mobile player fix: two-column phone tabs, back-to-top hidden over the player, neutral texts.
+const MOBILE_PLAYER_BLOBS = {
+  "scripts/player-mobile.test.mjs": "926a103c80330d0c8f1a932ebaf0c7d02e4d8b34",
+  "scripts/vibix.test.mjs": "27179c9301a74b25d9d5d000e84babe2d500934b",
+  "src/app/components/VibixPlayer.tsx": "2a46108520282997d1c6d742719ca651519b416a",
+  "src/app/movie/[slug]/MoviePageClient.tsx": "1e13899992ae14d83766569b3dc519ac95876da0",
+};
 const CI_FILES = [
   ".github/ci/verify-vibix-source.mjs",
   ".github/workflows/vibix-linux-release.yml",
@@ -164,6 +171,15 @@ function playerResilienceContract(show) {
   return { unreachableFrame: "fail-open notice below the player", labels: "Основной / Запасной N", bindingNotes: "admin-only" };
 }
 
+function mobilePlayerContract(show) {
+  const page = show("src/app/movie/[slug]/MoviePageClient.tsx");
+  assert.match(page, /grid-auto-flow: column;\s*grid-auto-columns: minmax\(0, 1fr\);/, "Phone tabs must share one row");
+  assert.match(page, /body:has\(#player\[data-player-on-screen="true"\]\) \.mobile-back-to-top \{/, "Back-to-top must hide over the player");
+  assert.doesNotMatch(show("src/app/components/VibixPlayer.tsx"), /"[^"]*[А-Яа-яЁё][^"]*Vibix[^"]*"|"Vibix[^"]*[А-Яа-яЁё][^"]*"/,
+    "Visitor texts must not name the provider");
+  return { phoneTabs: "two equal columns", backToTop: "hidden while the player is on screen", providerName: "not shown" };
+}
+
 function sourceGate(local) {
   const ref = "HEAD";
   if (!local) assert.equal(process.env.GITHUB_REF_NAME ?? git("branch", "--show-current"), BRANCH);
@@ -173,10 +189,11 @@ function sourceGate(local) {
   const commits = git("rev-list", "--reverse", BASE + "..HEAD").split("\n");
   assert.equal(commits[0], RELEASE_COMMIT, "First commit after base must be the reviewed Vibix commit");
   const followUpFiles = [...CI_FILES, ...Object.keys(HARDENING_BLOBS), ...Object.keys(PLAYER_ORDER_BLOBS),
-    ...Object.keys(PLAYER_RESILIENCE_BLOBS)];
+    ...Object.keys(PLAYER_RESILIENCE_BLOBS), ...Object.keys(MOBILE_PLAYER_BLOBS)];
   let hardeningCommitted = false;
   let playerOrderCommitted = false;
   let playerResilienceCommitted = false;
+  let mobilePlayerCommitted = false;
   let parent = BASE;
   for (const [index, commit] of commits.entries()) {
     assert.equal(git("show", "-s", "--format=%P", commit), parent, "Merges are forbidden");
@@ -187,6 +204,7 @@ function sourceGate(local) {
       if (repaired.some((file) => PLAYER_ORDER_BLOBS[file])) playerOrderCommitted = true;
       // MoviePageClient is pinned by both player groups; detect this fix by its own files only.
       if (repaired.some((file) => PLAYER_RESILIENCE_BLOBS[file] && !PLAYER_ORDER_BLOBS[file])) playerResilienceCommitted = true;
+      if (repaired.includes("scripts/player-mobile.test.mjs")) mobilePlayerCommitted = true;
     }
     parent = commit;
   }
@@ -213,9 +231,16 @@ function sourceGate(local) {
       assert.equal(git("hash-object", "--", file), blob, "Unreviewed player resilience edit: " + file);
     }
   }
+  if (!mobilePlayerCommitted) {
+    assert.ok(local, "Mobile player fix must be committed for a release run");
+    for (const [file, blob] of Object.entries(MOBILE_PLAYER_BLOBS)) {
+      assert.equal(git("hash-object", "--", file), blob, "Unreviewed mobile player edit: " + file);
+    }
+  }
   const pinned = { ...APP_BLOBS, ...(hardeningCommitted ? HARDENING_BLOBS : {}),
     ...(playerOrderCommitted ? PLAYER_ORDER_BLOBS : {}),
-    ...(playerResilienceCommitted ? PLAYER_RESILIENCE_BLOBS : {}) };
+    ...(playerResilienceCommitted ? PLAYER_RESILIENCE_BLOBS : {}),
+    ...(mobilePlayerCommitted ? MOBILE_PLAYER_BLOBS : {}) };
   const files = [...new Set([...Object.keys(pinned), ...(committedCi ? CI_FILES : [])])].sort();
   const rows = git("diff", "--no-renames", "--name-status", BASE, ref).split("\n").map((row) => row.split("\t"));
   assert.deepEqual(rows.map(([, file]) => file).sort(), files, "Unexpected or missing release file");
@@ -243,6 +268,8 @@ function sourceGate(local) {
     committed: playerOrderCommitted, files: Object.keys(PLAYER_ORDER_BLOBS) };
   const playerResilience = { ...playerResilienceContract(playerResilienceCommitted ? (file) => git("show", ref + ":" + file) : read),
     committed: playerResilienceCommitted, files: Object.keys(PLAYER_RESILIENCE_BLOBS) };
+  const mobilePlayer = { ...mobilePlayerContract(mobilePlayerCommitted ? (file) => git("show", ref + ":" + file) : read),
+    committed: mobilePlayerCommitted, files: Object.keys(MOBILE_PLAYER_BLOBS) };
   const diff = execFileSync("git", ["diff", "--binary", BASE, ref], { maxBuffer: 64 * 1024 * 1024 });
   const report = {
     schemaVersion: 1, releaseName: "kinoluma-vibix-linux-candidate",
@@ -253,7 +280,7 @@ function sourceGate(local) {
     changedAppFilesCount: Object.keys(pinned).length, trackedDiffSha256: hash(diff),
     protectedSource: { posterRc: "UNCHANGED", seo: "UNCHANGED", batchE3: "ABSENT", episodeGuides: "UNCHANGED",
       canonicalIdentity: "UNCHANGED", rootLayout: "UNCHANGED", lockfile: "UNCHANGED", mobileUx: "UNCHANGED" },
-    vibix, hardening, playerOrder, playerResilience,
+    vibix, hardening, playerOrder, playerResilience, mobilePlayer,
     batchB: { totalImageMutations: 481, inheritedUnchangedFrom: BASE },
     manualOverrides: { preserved: 9, note: "Inherited source evidence; DB not queried" },
     credits: { inheritedFrom: BASE, allowlistedCards: 369 },
@@ -289,7 +316,7 @@ async function lintGate() {
   const { ESLint } = await import("eslint");
   const eslint = new ESLint();
   const files = [...new Set([...Object.keys(APP_BLOBS), ...Object.keys(HARDENING_BLOBS),
-    ...Object.keys(PLAYER_ORDER_BLOBS), ...Object.keys(PLAYER_RESILIENCE_BLOBS), CI_FILES[0]])]
+    ...Object.keys(PLAYER_ORDER_BLOBS), ...Object.keys(PLAYER_RESILIENCE_BLOBS), ...Object.keys(MOBILE_PLAYER_BLOBS), CI_FILES[0]])]
     .filter((file) => /\.(?:ts|tsx|mjs)$/.test(file));
   let inheritedErrors = 0;
   let inheritedWarnings = 0;

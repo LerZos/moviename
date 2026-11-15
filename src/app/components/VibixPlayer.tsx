@@ -29,7 +29,7 @@ export default function VibixPlayer({ player, title, movieType }: { player: Play
   }
   useEffect(() => {
     if (documentLoaded) return;
-    const timer = setTimeout(() => setProblem("Загрузка Vibix задерживается. Можно выбрать другой плеер."), 12000);
+    const timer = setTimeout(() => setProblem("Плеер загружается дольше обычного. Можно выбрать другой источник."), 12000);
     // This observes insertion only, not video availability or successful playback.
     const checkFrame = () => {
       if (container.current?.querySelector("iframe")) { setDocumentLoaded(true); setProblem(""); }
@@ -54,10 +54,10 @@ export default function VibixPlayer({ player, title, movieType }: { player: Play
       allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowFullScreen
       referrerPolicy="strict-origin-when-cross-origin"
       onLoad={() => { setDocumentLoaded(true); setProblem(""); }}
-      onError={() => setProblem("Не удалось загрузить окно Vibix. Можно выбрать другой плеер.")} />)}
+      onError={() => setProblem("Не удалось загрузить плеер. Можно выбрать другой источник.")} />)}
     {(invalid || problem || !documentLoaded) && <div role="status" aria-live="polite"
       style={{ position: "absolute", bottom: 8, left: 12, right: 12, pointerEvents: "none", background: "rgba(0,0,0,.8)", padding: 8, borderRadius: 8, fontSize: 13 }}>
-      {invalid ? "Некорректная конфигурация Vibix." : problem || "Загрузка окна Vibix…"}
+      {invalid ? "Некорректная конфигурация плеера." : problem || "Загрузка плеера…"}
     </div>}
   </div>;
 }
