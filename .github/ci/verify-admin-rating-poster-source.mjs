@@ -162,6 +162,17 @@ async function runtimeGate(origin) {
   assert.match(home, /href="\/\?type=anime"/);
   assert.match(home, /href="\/\?type=cartoon"/);
   assert.equal((await fetchManual("/definitely-missing-route")).status, 404);
+  // Canary breadth: series/anime/cartoon catalogs, genre+type URLs and the admin shells
+  // must render (admin pages gate on the client; they must not crash server-side).
+  for (const page of ["/catalog/series", "/catalog/anime", "/catalog/cartoons", "/?type=film", "/?type=series&genre=drama", "/?type=anime"]) {
+    assert.equal((await fetchManual(page)).status, 200, page);
+  }
+  for (const page of ["/admin/import", "/admin/movies/the-100-2014/edit"]) {
+    const status = (await fetchManual(page)).status;
+    assert.ok(status < 500, `${page} -> ${status}`);
+  }
+  const series = await (await fetchManual("/movie/the-100-2014")).text();
+  assert.match(series, /<title>[^<]+<\/title>/, "series page has a title");
   // Admin write surfaces refuse anonymous callers before touching any data.
   const json = { "content-type": "application/json" };
   for (const [method, route, body] of [

@@ -749,7 +749,9 @@ export async function getMovieEditorData(slug: string) {
     applyOverride(await attachVerifiedEpisodeGuide(base.movie), override), override,
   ));
   const manual = resolveManualMovieRating(0, override?.rating) || null;
-  return { movie, editor: { manualRating: manual, baseRating: base.rating } };
+  // The raw override the form starts from; sent back as the save expectation so a
+  // stale form conflicts instead of overwriting another admin's newer value.
+  return { movie, editor: { manualRating: manual, baseRating: base.rating, overrideBaseline: override ?? {} } };
 }
 
 export class MovieOverrideReadError extends Error {

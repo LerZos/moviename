@@ -202,7 +202,13 @@ export async function PUT(request: Request, context: RouteContext) {
 
     const requestBody = body as Record<string, unknown>;
     const overridePayload = buildOverridePayload(requestBody);
-    const currentOverride = await getMovieOverrideData(slug);
+    // The editor sends the override it was opened with; comparing against it (not a
+    // fresh read) turns a stale same-field save into a 409 instead of an overwrite.
+    const clientExpected = requestBody.expectedOverride;
+    const currentOverride =
+      clientExpected && typeof clientExpected === 'object' && !Array.isArray(clientExpected)
+        ? (clientExpected as MovieOverrideData)
+        : await getMovieOverrideData(slug);
     const shouldClearRating =
       Object.prototype.hasOwnProperty.call(requestBody, 'rating') &&
       (overridePayload.rating === 0 || requestBody.rating === null ||

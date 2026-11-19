@@ -12,7 +12,7 @@ import { mergePlayerOptions } from "../../../../lib/vibix";
 type MovieAdminEditFormProps = {
   slug: string;
   movie: Movie & Record<string, unknown>;
-  editor: { manualRating: number | null; baseRating: MovieRatingState };
+  editor: { manualRating: number | null; baseRating: MovieRatingState; overrideBaseline?: Record<string, unknown> };
 };
 
 type SaveState = "idle" | "saving" | "deleting" | "saved" | "error";
@@ -173,6 +173,8 @@ export default function MovieAdminEditForm({
     facts: parseJsonArray(safeJson(movie.facts), "Факты"),
     cast: parseJsonArray(safeJson(movie.cast), "Актёры"),
   });
+  // Override as last confirmed by the server; advances only on a confirmed save.
+  const overrideBaseline = useRef<Record<string, unknown> | undefined>(editor.overrideBaseline);
   const submitInFlight = useRef(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -244,11 +246,18 @@ export default function MovieAdminEditForm({
           authorization: `Bearer ${token}`,
           "content-type": "application/json",
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(
+          overrideBaseline.current ? { ...payload, expectedOverride: overrideBaseline.current } : payload,
+        ),
       });
 
       const result = await response.json().catch(() => null);
 
+      if (response.status === 409 && Array.isArray(result?.conflictFields)) {
+        throw new Error(
+          `Другой администратор уже изменил: ${result.conflictFields.join(", ")}. Ваши правки не сохранены — обновите страницу и повторите.`,
+        );
+      }
       if (!response.ok || result?.ok !== true) {
         throw new Error(result?.error || "Не удалось сохранить правки");
       }
@@ -264,6 +273,9 @@ export default function MovieAdminEditForm({
         throw new Error("Сервер не подтвердил ручной рейтинг. Повторите сохранение.");
       }
       savedValues.current = { ...savedValues.current, ...payload };
+      if (result?.data && typeof result.data === "object" && !Array.isArray(result.data)) {
+        overrideBaseline.current = result.data as Record<string, unknown>;
+      }
 
       setSaveState("saved");
       setMessage(

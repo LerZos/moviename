@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { fixture } from './admin-poster.test.mjs';
+import { fixture, formHarness } from './admin-poster.test.mjs';
 
 test('concurrent poster-only and rating-only requests retain both acknowledged values', async () => {
   const f = fixture();
@@ -24,6 +24,46 @@ test('concurrent same-field edits return one explicit conflict', async () => {
   assert.deepEqual(responses.map(response => response.status).sort(), [200, 409]);
   const conflictResponse = responses.find(response => response.status === 409);
   assert.deepEqual((await conflictResponse.json()).conflictFields, ['rating']);
+});
+
+test('stale editor saving the same field gets 409 and keeps the other admin value', async () => {
+  const f = fixture();
+  // Admin A opens the editor; admin B saves a new rating afterwards.
+  const openedWith = await f.movies.getMovieOverrideData('fixture');
+  assert.equal((await f.put({ rating: 9.4, expectedOverride: openedWith })).status, 200);
+  const stale = await f.put({ rating: 6.2, expectedOverride: openedWith });
+  assert.equal(stale.status, 409);
+  assert.deepEqual((await stale.json()).conflictFields, ['rating']);
+  assert.equal(f.row().data.rating, 9.4);
+});
+
+test('stale editor saving a different field still succeeds without rolling back the other', async () => {
+  const f = fixture();
+  const openedWith = await f.movies.getMovieOverrideData('fixture');
+  assert.equal((await f.put({ rating: 9.4, expectedOverride: openedWith })).status, 200);
+  assert.equal((await f.put({ poster: '/manual-new.svg', expectedOverride: openedWith })).status, 200);
+  assert.equal(f.row().data.rating, 9.4);
+  assert.equal(f.row().data.poster, '/manual-new.svg');
+});
+
+test('editor data carries the raw override baseline', async () => {
+  const f = fixture();
+  const data = await f.movies.getMovieEditorData('fixture');
+  assert.deepEqual(data.editor.overrideBaseline, f.row().data);
+});
+
+test('form sends its baseline and reports a 409 conflict without acknowledging the save', async () => {
+  const baseline = { rating: 7, custom: { keep: true } };
+  const harness = formHarness({
+    editor: { manualRating: 7, baseRating: { effectiveRating: 7, manualRating: 7, source: 'manual' }, overrideBaseline: baseline },
+    transport: () => Response.json({ ok: false, error: 'conflict', conflictFields: ['rating'] }, { status: 409 }),
+  });
+  const request = await harness.submit({ rating: '6.2' });
+  assert.deepEqual(request.expectedOverride, baseline);
+  const messages = harness.updates.map(([, value]) => value).filter(value => typeof value === 'string');
+  assert.ok(messages.some(message => message.includes('Другой администратор') && message.includes('rating')), messages.join(' | '));
+  assert.ok(harness.updates.some(([, value]) => value === 'error'));
+  assert.ok(!harness.updates.some(([, value]) => value === 'saved'));
 });
 
 test('concurrent hide and poster edit preserve both independent intents', async () => {
