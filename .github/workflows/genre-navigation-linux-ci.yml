@@ -1,0 +1,101 @@
+name: KinoLuma genre navigation Linux CI
+
+on:
+  push:
+    branches:
+      - work/claude-genre-navigation-20261119
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kinoluma-genre-navigation-linux-ci
+  cancel-in-progress: false
+
+jobs:
+  verify-linux:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 35
+
+    steps:
+      - name: Check out feature branch
+        uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up exact production Node.js version
+        uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 22.23.0
+          cache: npm
+
+      - name: Verify change scope and unchanged player files
+        run: node .github/ci/verify-genre-navigation-source.mjs source
+
+      - name: Install Linux dependencies from lockfile
+        run: npm ci --include=optional
+
+      - name: TypeScript
+        run: npx tsc --noEmit
+
+      - name: Scoped ESLint with exact base diagnostics
+        run: node .github/ci/verify-genre-navigation-source.mjs lint
+
+      - name: Offline navigation and player regression tests
+        shell: bash
+        run: |
+          sudo env "PATH=$PATH" unshare --net bash -euo pipefail <<'OFFLINE'
+          ip link set lo up
+          node --test scripts/home-catalog-navigation.test.mjs
+          node --test scripts/vibix.test.mjs scripts/vibix-policy.test.mjs scripts/vibix-hardening.test.mjs scripts/vibix-player-order.test.mjs scripts/player-resilience.test.mjs scripts/player-mobile.test.mjs
+          node --test scripts/movie-page-credits-layout.test.mjs scripts/admin-rating.test.mjs scripts/smart-search.test.mjs scripts/the-100.test.mjs scripts/episode-accordion-cast.test.mjs
+          OFFLINE
+
+      - name: Build production standalone without external network
+        shell: bash
+        env:
+          # Public placeholders: the build never reaches Supabase, and no secrets are used.
+          NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-placeholder
+          KINOLUMA_DISABLE_SUPABASE_DURING_BUILD: "true"
+          NEXT_TELEMETRY_DISABLED: "1"
+        run: |
+          sudo --preserve-env=NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,KINOLUMA_DISABLE_SUPABASE_DURING_BUILD,NEXT_TELEMETRY_DISABLED env "PATH=$PATH" unshare --net bash -euo pipefail <<'OFFLINE'
+          ip link set lo up
+          runuser -u "$SUDO_USER" -- npm run build
+          OFFLINE
+
+      - name: Offline standalone runtime route QA
+        shell: bash
+        run: |
+          mkdir -p release/.next
+          cp -a .next/standalone/. release/
+          cp -a .next/static release/.next/static
+          cp -a public release/public
+          sudo env "PATH=$PATH" unshare --net bash -euo pipefail <<'OFFLINE'
+          ip link set lo up
+          export KINOLUMA_DISABLE_SUPABASE_DURING_BUILD=true
+          export KINOLUMA_LOAD_PUBLISHED_DRAFTS=false
+          export NEXT_TELEMETRY_DISABLED=1
+          export HOSTNAME=127.0.0.1
+          export PORT=3100
+          (
+            cd release
+            node server.js > ../server.log 2>&1 &
+            server_pid=$!
+            trap 'kill "$server_pid" 2>/dev/null || true; wait "$server_pid" 2>/dev/null || true' EXIT
+            for attempt in $(seq 1 30); do
+              if curl --fail --silent http://127.0.0.1:3100/ >/dev/null; then break; fi
+              sleep 1
+            done
+            cd ..
+            KINOLUMA_HOME_QA_ORIGIN=http://127.0.0.1:3100 node --test scripts/home-catalog-navigation.test.mjs
+            node .github/ci/verify-genre-navigation-source.mjs runtime http://127.0.0.1:3100
+          )
+          if grep -Ei 'uncaught|unhandled rejection' server.log >/dev/null; then
+            echo "Runtime exception marker found in standalone server log" >&2
+            exit 1
+          fi
+          OFFLINE
