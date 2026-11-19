@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { getLegacyHomeCatalogRedirects } from "./src/app/lib/home/homeCatalogRoutes";
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
@@ -15,6 +16,7 @@ const nextConfig: NextConfig = {
         destination: "/movie/rik-i-morti-2013",
         permanent: true,
       },
+      ...getLegacyHomeCatalogRedirects(),
     ];
   },
   images: {

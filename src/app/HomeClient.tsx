@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { UserRound } from "lucide-react";
 
 import MobileBottomNav from "./components/MobileBottomNav";
@@ -8,7 +9,7 @@ import PosterImage from "./components/PosterImage";
 import type { Movie } from "./data/movies";
 import { supabase } from "./lib/supabase";
 import { canResolveTrailerUrl, resolveTrailerUrl } from "./lib/trailers";
-import { getHomeCatalogPathWithType, homeGenreRoutes } from "./lib/home/homeCatalogRoutes";
+import { getHomeCatalogPathWithType, homeGenreRoutes, parseHomeCatalogSearch } from "./lib/home/homeCatalogRoutes";
 import { normalizeSearchText, searchCatalog } from "./lib/search/searchEngine";
 import {
   emptyMovieActionState,
@@ -33,7 +34,9 @@ import {
   type ReactNode,
   type RefObject,
   type SetStateAction,
+  Suspense,
   useEffect,
+  useEffectEvent,
   useMemo,
   useRef,
   useState,
@@ -476,6 +479,65 @@ const catalogSlugByType: Record<string, string> = {
   Аниме: "anime",
   Мультфильм: "cartoons",
 };
+
+// Lives in its own Suspense boundary: useSearchParams() would otherwise opt the
+// whole prerendered home page out of server rendering.
+function HomeCatalogLocationSync({
+  onSearchChange,
+}: {
+  onSearchChange: (search: string) => void;
+}) {
+  const search = useSearchParams().toString();
+  const notifySearchChange = useEffectEvent(onSearchChange);
+
+  useEffect(() => {
+    // Wait until the App Router has installed its native-history wrapper.
+    const frame = window.requestAnimationFrame(() => notifySearchChange(search));
+    return () => window.cancelAnimationFrame(frame);
+  }, [search]);
+
+  useEffect(() => {
+    // After a direct visit to "/?genre=…", the router reuses that first URL for
+    // soft navigations to "/", so <Link href="/"> or "/?type=film" left the
+    // address unchanged. Home-to-home links only change the query: push it
+    // through the native history API, which the router does honour.
+    const handleHomeLinkClick = (event: MouseEvent) => {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+        return;
+      }
+
+      const anchor = event.target instanceof Element ? event.target.closest("a[href]") : null;
+
+      if (
+        !(anchor instanceof HTMLAnchorElement) ||
+        (anchor.target && anchor.target !== "_self") ||
+        anchor.hasAttribute("download")
+      ) {
+        return;
+      }
+
+      const url = new URL(anchor.href);
+
+      if (
+        url.origin !== window.location.origin ||
+        url.pathname !== "/" ||
+        window.location.pathname !== "/" ||
+        url.search === window.location.search
+      ) {
+        return;
+      }
+
+      event.preventDefault();
+      window.history.pushState(null, "", url.pathname + url.search + url.hash);
+    };
+
+    // Capture phase runs before next/link, which skips default-prevented clicks.
+    window.addEventListener("click", handleHomeLinkClick, true);
+    return () => window.removeEventListener("click", handleHomeLinkClick, true);
+  }, []);
+
+  return null;
+}
 
 function getGenresForType(selectedType: string, items: ContentItem[]) {
   const contentByType =
@@ -1153,6 +1215,7 @@ export default function Home({
   const [pressedGenre, setPressedGenre] = useState<string | null>(null);
   const [pressedType, setPressedType] = useState<string | null>(null);
   const [desktopCatalogPage, setDesktopCatalogPage] = useState(Math.max(1, initialPage));
+  const [searchCatalogPage, setSearchCatalogPage] = useState(1);
   const [selectedItem, setSelectedItem] = useState<ContentItem | null>(null);
   const [trailerItem, setTrailerItem] = useState<ContentItem | null>(null);
   const [isDetailsClosing, setIsDetailsClosing] = useState(false);
@@ -1430,7 +1493,7 @@ export default function Home({
     Math.ceil(filteredContent.length / desktopCatalogPageSize),
   );
   const desktopCatalogSafePage = Math.min(
-    desktopCatalogPage,
+    normalizedSearch ? searchCatalogPage : desktopCatalogPage,
     desktopCatalogTotalPages,
   );
   const desktopCatalogPageItems = useMemo(() => {
@@ -1469,13 +1532,26 @@ export default function Home({
     return Array.from(pages).sort((a, b) => a - b);
   }, [desktopCatalogSafePage, desktopCatalogTotalPages]);
 
-  useEffect(() => {
-    if (!normalizedSearch) {
-      return;
+  // Runs for the initial URL, Back/Forward and soft <Link> navigations to "/",
+  // always with the search the router has already committed.
+  const restoreCatalogLocation = (search: string) => {
+    if (window.location.pathname !== "/") return;
+    const { genre, type, page } = parseHomeCatalogSearch(search);
+    const count = content.filter((item) =>
+      (type === "Все" || item.type === type) &&
+      (genre === "Все" || item.genres.includes(genre)),
+    ).length;
+    const safePage = Math.min(page, Math.max(1, Math.ceil(count / desktopCatalogPageSize)));
+    setSearch("");
+    setSelectedGenre(genre);
+    setSelectedType(type);
+    setDesktopCatalogPage(safePage);
+    const path = getHomeCatalogPathWithType(genre, safePage, type, window.location);
+    if (window.location.pathname + window.location.search + window.location.hash !== path) {
+      // Next's native-history wrapper copies its internal state and syncs the router.
+      window.history.replaceState(null, "", path);
     }
-
-    setDesktopCatalogPage(1);
-  }, [normalizedSearch]);
+  };
   const smoothScrollDesktopRail = (direction: -1 | 1) => {
     const rail = desktopWatchRailRef.current;
 
@@ -1568,9 +1644,9 @@ export default function Home({
   }, [desktopRailItems.length]);
 
   const updateHomeCatalogAddress = (genre: string, page: number, type: string) => {
-    const nextPath = getHomeCatalogPathWithType(genre, page, type);
+    const nextPath = getHomeCatalogPathWithType(genre, page, type, window.location);
 
-    if (window.location.pathname + window.location.search !== nextPath) {
+    if (window.location.pathname + window.location.search + window.location.hash !== nextPath) {
       window.history.pushState(null, "", nextPath);
     }
   };
@@ -1579,8 +1655,12 @@ export default function Home({
     const resolvedPage = typeof nextPage === "function" ? nextPage(desktopCatalogSafePage) : nextPage;
     const safePage = Math.min(desktopCatalogTotalPages, Math.max(1, resolvedPage));
 
-    setDesktopCatalogPage(safePage);
-    updateHomeCatalogAddress(selectedGenre, safePage, selectedType);
+    if (normalizedSearch) {
+      setSearchCatalogPage(safePage);
+    } else {
+      setDesktopCatalogPage(safePage);
+      updateHomeCatalogAddress(selectedGenre, safePage, selectedType);
+    }
     window.setTimeout(() => {
       const mobileCatalog = document.querySelector(".mobile-v2-catalog-section");
       const desktopCatalog = document.querySelector(".desktop-mock-layout");
@@ -2037,7 +2117,7 @@ export default function Home({
   function handleGenreClick(genre: string) {
     setPressedGenre(genre);
 
-    if (genre === selectedGenre) {
+    if (genre === selectedGenre && !normalizedSearch) {
       window.setTimeout(() => {
         setPressedGenre((current) => (current === genre ? null : current));
       }, 180);
@@ -2045,6 +2125,7 @@ export default function Home({
     }
 
     setIsDesktopCatalogSwitching(true);
+    setSearch("");
     setSelectedGenre(genre);
     setDesktopCatalogPage(1);
     updateHomeCatalogAddress(genre, 1, selectedType);
@@ -2060,7 +2141,7 @@ export default function Home({
 
     setPressedType(type);
 
-    if (type === selectedType) {
+    if (type === selectedType && !normalizedSearch) {
       window.setTimeout(() => {
         setPressedType((current) => (current === type ? null : current));
       }, 180);
@@ -2068,6 +2149,7 @@ export default function Home({
     }
 
     setIsDesktopCatalogSwitching(true);
+    setSearch("");
     setSelectedType(type);
     setSelectedGenre(nextGenre);
     setDesktopCatalogPage(1);
@@ -2176,6 +2258,7 @@ export default function Home({
   }
 
   function openCatalogPage(type: string) {
+    setSearch("");
     setSelectedType(type);
     setSelectedGenre("Все");
     setDesktopCatalogPage(1);
@@ -7396,28 +7479,28 @@ export default function Home({
               Главная
             </button>
             <Link
-              href="/"
+              href={getHomeCatalogPathWithType("Все", 1, "Фильм")}
               className="text-left transition duration-200 hover:text-white"
               draggable={false}
             >
               Фильмы
             </Link>
             <Link
-              href="/"
+              href={getHomeCatalogPathWithType("Все", 1, "Сериал")}
               className="text-left transition duration-200 hover:text-white"
               draggable={false}
             >
               Сериалы
             </Link>
             <Link
-              href="/anime"
+              href={getHomeCatalogPathWithType("Все", 1, "Аниме")}
               className="text-left transition duration-200 hover:text-white"
               draggable={false}
             >
               Аниме
             </Link>
             <Link
-              href="/cartoon"
+              href={getHomeCatalogPathWithType("Все", 1, "Мультфильм")}
               className="text-left transition duration-200 hover:text-white"
               draggable={false}
             >
@@ -7453,7 +7536,10 @@ export default function Home({
               id="kinoluma-search"
               ref={searchInputRef}
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setSearchCatalogPage(1);
+              }}
               onFocus={() => setIsSearchFocused(true)}
               onBlur={() => {
                 window.setTimeout(() => setIsSearchFocused(false), 140);
@@ -7484,6 +7570,7 @@ export default function Home({
                           }
 
                           setSearch(item.title);
+                          setSearchCatalogPage(1);
                           setIsSearchFocused(false);
                           openDetails(item);
                         }}
@@ -8927,6 +9014,9 @@ export default function Home({
           </div>
         </div>
       )}
+      <Suspense fallback={null}>
+        <HomeCatalogLocationSync onSearchChange={restoreCatalogLocation} />
+      </Suspense>
       {!selectedItem && !trailerItem && !isAuthModalOpen && (
         <MobileBottomNav
           onSearch={focusMobileSearch}

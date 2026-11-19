@@ -41,7 +41,7 @@ export const homeTypeRoutes: HomeTypeRoute[] = [
 export function getHomeGenreBySlug(slug?: string | null) {
   if (!slug) return null;
 
-  const normalizedSlug = slug.toLowerCase();
+  const normalizedSlug = slug.trim().toLowerCase();
 
   return (
     homeGenreRoutes.find((route) => {
@@ -57,7 +57,7 @@ export function getHomeGenreSlug(genre: string) {
 export function getHomeTypeBySlug(slug?: string | null) {
   if (!slug) return "Все";
 
-  const normalizedSlug = slug.toLowerCase();
+  const normalizedSlug = slug.trim().toLowerCase();
 
   return (
     homeTypeRoutes.find((route) => {
@@ -70,19 +70,73 @@ export function getHomeTypeSlug(type: string) {
   return homeTypeRoutes.find((route) => route.type === type)?.slug ?? "";
 }
 
-export function getHomeCatalogPath(genre: string, page: number) {
-  const safePage = Math.max(1, Math.floor(page));
-  const genreSlug = getHomeGenreSlug(genre);
-  const pagePart = safePage > 1 ? `/page/${safePage}` : "";
+export type HomeCatalogState = { genre: string; type: string; page: number };
 
-  if (genreSlug) {
-    return `/${genreSlug}${pagePart}`;
-  }
-
-  return pagePart || "/";
+function safeHomePage(page: number) {
+  return Number.isSafeInteger(page) && page > 0 ? page : 1;
 }
 
-export function getHomeCatalogPathWithType(genre: string, page: number, type: string) {
-  return getHomeCatalogPath(genre, page);
+export function parseHomeCatalogSearch(search: string): HomeCatalogState {
+  const params = new URLSearchParams(search);
+  // Ambiguous repeated values reset only that filter, irrespective of order.
+  const single = (key: string) => params.getAll(key).length === 1 ? params.get(key) : null;
+  const page = single("page");
+  return {
+    genre: getHomeGenreBySlug(single("genre"))?.genre ?? "Все",
+    type: getHomeTypeBySlug(single("type")),
+    page: page && /^\d+$/.test(page) ? safeHomePage(Number(page)) : 1,
+  };
+}
+
+export function getHomeCatalogPath(genre: string, page: number) {
+  return getHomeCatalogPathWithType(genre, page, "Все");
+}
+
+export function getHomeCatalogPathWithType(
+  genre: string,
+  page: number,
+  type: string,
+  location?: Pick<Location, "search" | "hash">,
+) {
+  const safePage = safeHomePage(page);
+  const genreSlug = getHomeGenreSlug(genre);
+  const typeSlug = getHomeTypeSlug(type);
+  const params = new URLSearchParams(location?.search);
+  for (const key of ["genre", "type", "page"]) params.delete(key);
+  if (genreSlug) params.set("genre", genreSlug);
+  if (genreSlug || typeSlug || safePage > 1) params.set("type", typeSlug || "all");
+  if (safePage > 1) params.set("page", String(safePage));
+  const query = params.toString();
+  return `/${query ? `?${query}` : ""}${location?.hash ?? ""}`;
+}
+
+// Earlier builds pushed /{genre} and /{genre}/page/{n}; those paths never had a
+// route, so send old bookmarks to the query contract instead of a 404.
+// The old nav linked /anime and /cartoon for the content type, so those win over the genre.
+export function getLegacyHomeCatalogRedirects() {
+  return [
+    ...homeGenreRoutes.flatMap((route) => {
+      const slugs = [route.slug, ...(route.aliases ?? [])].join("|");
+      const typeSlug = homeTypeRoutes.find((typeRoute) => typeRoute.slug === route.slug)?.slug;
+      const query = typeSlug ? `type=${typeSlug}` : `genre=${route.slug}&type=all`;
+      return [
+        {
+          source: `/:genre(${slugs})`,
+          destination: `/?${query}`,
+          permanent: false,
+        },
+        {
+          source: `/:genre(${slugs})/page/:page(\\d+)`,
+          destination: `/?${query}&page=:page`,
+          permanent: false,
+        },
+      ];
+    }),
+    {
+      source: "/page/:page(\\d+)",
+      destination: "/?type=all&page=:page",
+      permanent: false,
+    },
+  ];
 }
 
