@@ -125,7 +125,7 @@ test("actual existing merge pipeline keeps manual overrides and later credits en
           assert.equal(columns, "data");
           return { eq(field, slug) {
             assert.equal(field, "slug");
-            return { maybeSingle: async () => ({ data: { data: fixtures.get(slug) }, error: null }) };
+            return { maybeSingle: async () => ({ data: fixtures.has(slug) ? { data: fixtures.get(slug) } : null, error: null }) };
           } };
         } };
       } }),

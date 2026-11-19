@@ -11,7 +11,8 @@ import {
 } from "../../data/movies";
 import { hasRealSupabaseAdminCredentials, getSupabaseAdmin } from "../supabase/admin";
 import {
-  getManualRatingFromRawJson,
+  getDraftRatingState,
+  type MovieRatingState,
   resolveManualMovieRating,
 } from "./rating";
 import { attachVerifiedCredits } from "./verifiedCredits";
@@ -302,22 +303,7 @@ function getRawSourceRecords(rawJson: unknown) {
 }
 
 function getRatingFromRawJson(rawJson: unknown) {
-  const { tmdb, kinopoisk, candidate } = getRawSourceRecords(rawJson);
-  const kinopoiskRating = asRecord(kinopoisk.rating);
-  const manualRating = getManualRatingFromRawJson(rawJson);
-  const kpRating = getNumber(kinopoiskRating.kp);
-  const imdbRating = getNumber(kinopoiskRating.imdb);
-  const tmdbRating =
-    getNumber(tmdb.vote_average) ?? getNumber(candidate.vote_average);
-  const tmdbVoteCount =
-    getNumber(tmdb.vote_count) ?? getNumber(candidate.vote_count) ?? 0;
-
-  const automaticRating =
-    (kpRating && kpRating > 0 ? kpRating : null) ??
-    (imdbRating && imdbRating > 0 ? imdbRating : null) ??
-    (tmdbRating && tmdbRating > 0 && tmdbVoteCount > 0 ? tmdbRating : 0);
-
-  return resolveManualMovieRating(automaticRating, manualRating);
+  return getDraftRatingState(rawJson).effectiveRating;
 }
 
 function getDurationFromRawJson(rawJson: unknown) {
@@ -603,6 +589,11 @@ function applyOverride(
     canonicalMovieId: movie.canonicalMovieId,
   } as Movie;
 
+  // A manual poster must not silently fall back to stale provider artwork.
+  if (cleanString(override.poster)) {
+    mergedMovie.posterFallbacks = cleanStringArray(override.posterFallbacks);
+  }
+
   if (Object.prototype.hasOwnProperty.call(override, "rating")) {
     mergedMovie.rating = getSafeOverrideRating(movie.rating, override.rating);
   }
@@ -695,14 +686,22 @@ export const getCachedPublicMovies = getPublicMovies;
 export async function getPublicBaseMovieBySlug(
   slug: string,
 ): Promise<Movie | null> {
+  return (await getBaseMovieDetails(slug)).movie;
+}
+
+async function getBaseMovieDetails(slug: string, strict = false): Promise<{ movie: Movie | null; rating: MovieRatingState }> {
   const fallbackMovie = getBaseMovieBySlug(slug);
+  const fallback = {
+    movie: fallbackMovie ? sanitizeMovieForPublicDisplay(fallbackMovie) : null,
+    rating: { effectiveRating: fallbackMovie?.rating ?? 0, manualRating: null, source: "catalog" as const },
+  };
 
   // В обычном режиме каталог уже лежит в data/movies.ts. Не ходим в Supabase
   // за movie_drafts на каждую страницу фильма: это давало задержку на серверном
   // рендере. Если опубликованные drafts действительно нужны публично, включи
   // KINOLUMA_LOAD_PUBLISHED_DRAFTS=true.
   if (!shouldLoadPublishedDraftMovies()) {
-    return fallbackMovie ? sanitizeMovieForPublicDisplay(fallbackMovie) : null;
+    return fallback;
   }
 
   try {
@@ -716,36 +715,71 @@ export async function getPublicBaseMovieBySlug(
       .maybeSingle();
 
     if (error) {
+      if (strict) throw new MovieOverrideReadError();
       warnSupabaseReadFallback(
         "Не удалось загрузить опубликованный movie_draft",
         error,
       );
-      return fallbackMovie ? sanitizeMovieForPublicDisplay(fallbackMovie) : null;
+      return fallback;
     }
 
     const draftMovie = data ? draftToMovie(data as MovieDraftRow) : null;
 
     if (draftMovie) {
-      return draftMovie;
+      return { movie: draftMovie, rating: getDraftRatingState((data as MovieDraftRow).raw_json) };
     }
   } catch (error) {
+    if (strict) throw new MovieOverrideReadError();
     warnSupabaseReadFallback(
       "Не удалось загрузить опубликованный movie_draft",
       error,
     );
   }
 
-  return fallbackMovie ? sanitizeMovieForPublicDisplay(fallbackMovie) : null;
+  return fallback;
 }
 
+// One strict override read supplies both the displayed movie and editable intent.
+export async function getMovieEditorData(slug: string) {
+  const base = await getBaseMovieDetails(slug, true);
+  if (!base.movie) return null;
+  const override = await getMovieOverrideData(slug);
+  if (isHiddenOverride(override)) return null;
+  const movie = sanitizeMovieForPublicDisplay(attachVerifiedCredits(
+    applyOverride(await attachVerifiedEpisodeGuide(base.movie), override), override,
+  ));
+  const manual = resolveManualMovieRating(0, override?.rating) || null;
+  return { movie, editor: { manualRating: manual, baseRating: base.rating } };
+}
+
+export class MovieOverrideReadError extends Error {
+  constructor() {
+    super("Не удалось достоверно прочитать текущие правки.");
+    this.name = "MovieOverrideReadError";
+  }
+}
+
+export class MovieOverrideConflictError extends Error {
+  readonly conflictKeys: string[];
+  readonly currentData: MovieOverrideData;
+
+  constructor(conflictKeys: string[], currentData: MovieOverrideData) {
+    super("Правки изменились параллельно. Обновите данные и повторите сохранение.");
+    this.name = "MovieOverrideConflictError";
+    this.conflictKeys = conflictKeys;
+    this.currentData = currentData;
+  }
+}
+
+// Administrative read/merge/write must never treat a failed read as an absent row.
 export async function getMovieOverrideData(
   slug: string,
 ): Promise<MovieOverrideData | null> {
-  if (!hasRealSupabaseAdminCredentials() || shouldDisableSupabaseReadsDuringBuild()) {
-    return null;
-  }
-
   try {
+    if (!hasRealSupabaseAdminCredentials() || shouldDisableSupabaseReadsDuringBuild()) {
+      throw new MovieOverrideReadError();
+    }
+
     const { data, error } = await getSupabaseAdmin()
       .from("movie_overrides")
       .select("data")
@@ -753,15 +787,28 @@ export async function getMovieOverrideData(
       .maybeSingle();
 
     if (error) {
-      warnSupabaseReadFallback("Не удалось загрузить movie_overrides", error);
-      return null;
+      throw new MovieOverrideReadError();
     }
 
-    if (!data?.data || typeof data.data !== "object") {
-      return null;
+    if (data === null) return null;
+
+    if (!data?.data || typeof data.data !== "object" || Array.isArray(data.data)) {
+      throw new MovieOverrideReadError();
     }
 
     return data.data as MovieOverrideData;
+  } catch {
+    throw new MovieOverrideReadError();
+  }
+}
+
+async function getPublicMovieOverrideData(slug: string): Promise<MovieOverrideData | null> {
+  if (!hasRealSupabaseAdminCredentials() || shouldDisableSupabaseReadsDuringBuild()) {
+    return null;
+  }
+
+  try {
+    return await getMovieOverrideData(slug);
   } catch (error) {
     warnSupabaseReadFallback("Не удалось загрузить movie_overrides", error);
     return null;
@@ -770,6 +817,7 @@ export async function getMovieOverrideData(
 
 export async function getMovieWithOverrides(
   slug: string,
+  { allowReadFallback = false }: { allowReadFallback?: boolean } = {},
 ): Promise<Movie | null> {
   const baseMovie = await getPublicBaseMovieBySlug(slug);
 
@@ -777,7 +825,10 @@ export async function getMovieWithOverrides(
     return null;
   }
 
-  const override = await getMovieOverrideData(slug);
+  // The editor must not render an editable provider fallback after a failed read.
+  const override = allowReadFallback
+    ? await getPublicMovieOverrideData(slug)
+    : await getMovieOverrideData(slug);
 
   if (isHiddenOverride(override)) {
     return null;
@@ -793,25 +844,110 @@ export async function getMovieWithOverrides(
 // и сама страница запрашивают один slug. Постоянный Data Cache здесь не нужен,
 // потому что Full Route Cache уже хранит готовую страницу, а админка инвалидирует
 // конкретный URL фильма. Это также не переносит старые локальные данные между deployment.
-export const getCachedMovieWithOverrides = cache(getMovieWithOverrides);
+export const getCachedMovieWithOverrides = cache((slug: string) =>
+  getMovieWithOverrides(slug, { allowReadFallback: true }),
+);
 
-export async function saveMovieOverride(
+type MovieOverridePatchResult = {
+  data: MovieOverrideData;
+  updatedAt: string;
+};
+
+type MovieOverridePatchRpcRow = {
+  applied?: unknown;
+  result_slug?: unknown;
+  result_data?: unknown;
+  result_updated_at?: unknown;
+  conflict_keys?: unknown;
+};
+
+function canonicalJsonValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonicalJsonValue);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .sort(([leftKey], [rightKey]) => leftKey.localeCompare(rightKey))
+        .map(([key, nestedValue]) => [key, canonicalJsonValue(nestedValue)]),
+    );
+  }
+  return value;
+}
+
+function jsonValuesEqual(left: unknown, right: unknown) {
+  return JSON.stringify(canonicalJsonValue(left)) === JSON.stringify(canonicalJsonValue(right));
+}
+
+export async function patchMovieOverride(
   slug: string,
-  data: MovieOverrideData,
+  patch: MovieOverrideData,
+  removeKeys: string[],
   updatedBy: string,
-) {
-  const { error } = await getSupabaseAdmin().from("movie_overrides").upsert(
+  expectedData: MovieOverrideData | null,
+): Promise<MovieOverridePatchResult> {
+  const normalizedRemoveKeys = Array.from(new Set(removeKeys));
+  const touchedKeys = Array.from(new Set([...Object.keys(patch), ...normalizedRemoveKeys]));
+  const expected: MovieOverrideData = {};
+  const expectedAbsent: string[] = [];
+
+  for (const key of touchedKeys) {
+    if (expectedData && Object.hasOwn(expectedData, key)) expected[key] = expectedData[key];
+    else expectedAbsent.push(key);
+  }
+
+  const { data: rpcData, error } = await getSupabaseAdmin().rpc(
+    "patch_movie_override",
     {
-      slug,
-      data,
-      updated_by: updatedBy,
-      updated_at: new Date().toISOString(),
+      p_slug: slug,
+      p_set: patch,
+      p_remove: normalizedRemoveKeys,
+      p_expected: expected,
+      p_expected_absent: expectedAbsent,
+      p_updated_by: updatedBy,
     },
-    { onConflict: "slug" },
   );
 
   if (error) {
     throw error;
   }
 
+  const rows = Array.isArray(rpcData) ? rpcData : rpcData ? [rpcData] : [];
+  const saved = rows.length === 1 ? rows[0] as MovieOverridePatchRpcRow : null;
+  const savedData = saved?.result_data;
+  const conflictKeys = Array.isArray(saved?.conflict_keys)
+    ? saved.conflict_keys.filter((key): key is string => typeof key === "string")
+    : [];
+
+  if (saved?.applied === false) {
+    throw new MovieOverrideConflictError(
+      conflictKeys,
+      savedData && typeof savedData === "object" && !Array.isArray(savedData)
+        ? savedData as MovieOverrideData
+        : {},
+    );
+  }
+
+  if (
+    saved?.applied !== true ||
+    saved.result_slug !== slug ||
+    !savedData ||
+    typeof savedData !== "object" ||
+    Array.isArray(savedData) ||
+    typeof saved.result_updated_at !== "string"
+  ) {
+    throw new Error("Сохранение правок не подтверждено базой данных");
+  }
+
+  const confirmedData = savedData as MovieOverrideData;
+  for (const [key, value] of Object.entries(patch)) {
+    if (!Object.hasOwn(confirmedData, key) || !jsonValuesEqual(confirmedData[key], value)) {
+      throw new Error(`База данных не подтвердила сохранение поля ${key}`);
+    }
+  }
+  for (const key of normalizedRemoveKeys) {
+    if (Object.hasOwn(confirmedData, key)) {
+      throw new Error(`База данных не подтвердила удаление поля ${key}`);
+    }
+  }
+
+  return { data: confirmedData, updatedAt: saved.result_updated_at };
 }

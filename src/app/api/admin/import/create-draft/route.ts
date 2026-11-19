@@ -1,4 +1,5 @@
 import { getSupabaseAdmin } from "../../../../lib/supabase/admin";
+import { parseManualRatingInput, assertSavedDraftRating } from "../../../../lib/movies/rating";
 import { assertAdminSecret } from "../../../../lib/import/adminAuth";
 import { checkDuplicates } from "../../../../lib/import/checkDuplicates";
 import { generateSlug } from "../../../../lib/import/generateSlug";
@@ -46,9 +47,7 @@ function cleanNumber(value: unknown) {
 }
 
 function cleanRating(value: unknown) {
-  const rating = cleanNumber(value);
-  if (rating === null) return null;
-  return Math.max(0, Math.min(10, Math.round(rating * 10) / 10));
+  return parseManualRatingInput(value) || null;
 }
 
 function cleanGenres(value: unknown) {
@@ -324,6 +323,8 @@ export async function POST(request: Request) {
       .single();
 
     if (error) throw error;
+    if (!draft) throw new Error("Создание черновика не подтверждено");
+    assertSavedDraftRating(draft.raw_json, values.rating);
 
     const { error: feedbackError } = await getSupabaseAdmin()
       .from("agent_feedback")
@@ -348,11 +349,9 @@ export async function POST(request: Request) {
       {
         ok: false,
         error:
-          error instanceof Error
-            ? error.message
-            : "Unknown manual draft create error",
+          error instanceof RangeError ? "Рейтинг должен быть числом от 0 до 10" : "Не удалось создать черновик",
       },
-      { status: 500 },
+      { status: error instanceof RangeError ? 400 : 500 },
     );
   }
 }

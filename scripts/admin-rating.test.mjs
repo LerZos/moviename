@@ -117,12 +117,12 @@ test("admin save, read, publish and public display paths use the shared rating r
   ]);
 
   assert.match(files[0], /parseManualRatingInput/);
-  assert.match(files[1], /mergeMovieOverrideData/);
+  assert.match(files[1], /patchMovieOverride/);
   assert.match(files[1], /getMovieOverrideData/);
   assert.match(files[1], /parseManualRatingInput/);
   assert.match(files[2], /mergeManualRatingIntoRawJson/);
-  assert.match(files[3], /resolveManualMovieRating/);
-  assert.match(files[4], /resolveManualMovieRating/);
+  assert.match(files[3], /getDraftRatingState/);
+  assert.match(files[4], /getDraftRatingState/);
   assert.match(files[5], /resolveManualMovieRating/);
   assert.match(files[6], /formatMovieRating/);
 });

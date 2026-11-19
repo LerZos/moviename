@@ -1,6 +1,7 @@
 import { getSupabaseAdmin } from "../../../../lib/supabase/admin";
 import { assertAdminSecret } from "../../../../lib/import/adminAuth";
-import { mergeManualRatingIntoRawJson } from "../../../../lib/movies/rating";
+import { mergeManualRatingIntoRawJson, parseManualRatingInput, assertSavedDraftRating } from "../../../../lib/movies/rating";
+import { revalidatePath } from "next/cache";
 import { normalizeTrailerUrl } from "../../../../lib/trailers";
 
 export const runtime = "nodejs";
@@ -46,9 +47,7 @@ function cleanNumber(value: unknown) {
 }
 
 function cleanRating(value: unknown) {
-  const rating = cleanNumber(value);
-  if (rating === null) return null;
-  return Math.max(0, Math.min(10, Math.round(rating * 10) / 10));
+  return parseManualRatingInput(value) || null;
 }
 
 function cleanGenres(value: unknown) {
@@ -587,6 +586,9 @@ export async function POST(request: Request) {
       .single();
 
     if (beforeError) throw beforeError;
+    if (!beforeDraft || typeof beforeDraft.raw_json !== "object" || !beforeDraft.raw_json || Array.isArray(beforeDraft.raw_json)) {
+      throw new Error("Не удалось достоверно прочитать черновик");
+    }
 
     const update = buildUpdate(values, beforeDraft as Record<string, unknown>);
 
@@ -598,6 +600,10 @@ export async function POST(request: Request) {
       .single();
 
     if (updateError) throw updateError;
+    if (!updatedDraft || updatedDraft.id !== draftId) throw new Error("Сохранение черновика не подтверждено");
+    if ("rating" in values || "movie_rating" in values) {
+      assertSavedDraftRating(updatedDraft.raw_json, "rating" in values ? values.rating : values.movie_rating);
+    }
 
     const { error: feedbackError } = await getSupabaseAdmin()
       .from("agent_feedback")
@@ -612,6 +618,17 @@ export async function POST(request: Request) {
 
     if (feedbackError) throw feedbackError;
 
+    if (beforeDraft.status === "published" || updatedDraft.status === "published") {
+      for (const slug of new Set([beforeDraft.slug, updatedDraft.slug])) {
+        if (typeof slug === "string" && slug) revalidatePath(`/movie/${slug}`);
+      }
+      revalidatePath('/');
+      revalidatePath('/catalog/[category]', 'page');
+      revalidatePath('/catalog/[category]/[genre]', 'page');
+      revalidatePath('/expected');
+      revalidatePath('/sitemap.xml');
+    }
+
     return Response.json({
       ok: true,
       draft: updatedDraft,
@@ -622,11 +639,9 @@ export async function POST(request: Request) {
       {
         ok: false,
         error:
-          error instanceof Error
-            ? error.message
-            : "Unknown manual draft update error",
+          error instanceof RangeError ? "Рейтинг должен быть числом от 0 до 10" : "Не удалось сохранить черновик",
       },
-      { status: 500 },
+      { status: error instanceof RangeError ? 400 : 500 },
     );
   }
 }

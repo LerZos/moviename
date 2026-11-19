@@ -25,7 +25,7 @@ const { movies } = require("../src/app/data/movies.ts");
 const { generatedCanonicalCredits } = require("../src/app/data/generatedCanonicalCredits.ts");
 const { attachVerifiedCredits, getVerifiedCreditsForMovie, hasManualCreditsOverride } = require("../src/app/lib/movies/verifiedCredits.ts");
 const { normalizeCatalogCredits } = require("../src/app/lib/movies/credits.ts");
-const { getDraftFacts, getMovieWithOverrides } = require("../src/app/lib/movies/movieOverrides.ts");
+const { getDraftFacts, getCachedMovieWithOverrides } = require("../src/app/lib/movies/movieOverrides.ts");
 const { collectDirectorNames } = require("../src/app/lib/import/fetchMovieFacts.ts");
 const { collectCuratedProductionCredits } = require("../src/app/lib/import/curatedPack300.ts");
 const moviesById = new Map(movies.map((movie) => [movie.canonicalMovieId, movie]));
@@ -127,7 +127,7 @@ test("imported TMDB creators are not stored as directors", () => {
 });
 
 test("movie page server path receives verified credits without a database read", async () => {
-  const movie = await getMovieWithOverrides("the-gorge-2025");
+  const movie = await getCachedMovieWithOverrides("the-gorge-2025");
   assert.equal(movie?.verifiedCredits?.provenance, "FULLY_VERIFIED");
   assert.ok(normalizeCatalogCredits(movie).directors.length > 0);
 });

@@ -4,8 +4,7 @@ import { tmdbFetch } from '../../../../lib/import/tmdb';
 import { buildTmdbImageUrl } from '../../../../lib/imageLinks';
 import { findBestMovieImages } from '../../../../lib/import/movieImages';
 import {
-  getManualRatingFromRawJson,
-  resolveManualMovieRating,
+  getDraftRatingState,
 } from '../../../../lib/movies/rating';
 import {
   fetchVibixByImdbId,
@@ -230,24 +229,7 @@ async function enrichVibixCandidate(raw: unknown) {
 }
 
 function getDraftMovieRating(rawJson: unknown) {
-  const raw = asObject(rawJson);
-  const tmdb = asObject(raw.tmdb);
-  const kinopoisk = asObject(raw.kinopoisk);
-  const candidate = asObject(raw.candidate);
-  const kinopoiskRating = asObject(kinopoisk.rating);
-
-  const manualRating = getManualRatingFromRawJson(rawJson);
-  const kpRating = getNumber(kinopoiskRating.kp);
-  const imdbRating = getNumber(kinopoiskRating.imdb);
-  const tmdbRating = getNumber(tmdb.vote_average) ?? getNumber(candidate.vote_average);
-  const tmdbVoteCount = getNumber(tmdb.vote_count) ?? getNumber(candidate.vote_count) ?? 0;
-
-  const automaticRating =
-    (kpRating && kpRating > 0 ? kpRating : null) ??
-    (imdbRating && imdbRating > 0 ? imdbRating : null) ??
-    (tmdbRating && tmdbRating > 0 && tmdbVoteCount > 0 ? tmdbRating : 0);
-  const rating = resolveManualMovieRating(automaticRating, manualRating);
-
+  const rating = getDraftRatingState(rawJson).effectiveRating;
   return rating > 0 ? rating : null;
 }
 
@@ -546,6 +528,7 @@ export async function GET(request: Request) {
       })),
       drafts: (drafts ?? []).map((draft) => {
         const { raw_json: rawJson, ...publicDraft } = draft as Record<string, unknown>;
+        const ratingState = getDraftRatingState(rawJson);
 
         const existingPosterUrl = typeof publicDraft.poster_url === 'string' && publicDraft.poster_url.trim() ? publicDraft.poster_url : null;
         const existingBackdropUrl = typeof publicDraft.backdrop_url === 'string' && publicDraft.backdrop_url.trim() ? publicDraft.backdrop_url : null;
@@ -557,6 +540,8 @@ export async function GET(request: Request) {
           rendex_video_id: getDraftRendexVideoId(rawJson),
           player_links: getDraftPlayerLinks(rawJson),
           movie_rating: getDraftMovieRating(rawJson),
+          manual_rating: ratingState.manualRating,
+          rating_source: ratingState.source,
         };
       }),
       runs: runs ?? [],

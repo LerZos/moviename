@@ -1,9 +1,15 @@
 import { revalidatePath } from 'next/cache';
 
-import { assertAdminAccess, getAdminUserFromRequest } from '../../../../../lib/import/adminAuth';
-import { getMovieOverrideData, getPublicBaseMovieBySlug, saveMovieOverride, type MovieOverrideData } from '../../../../../lib/movies/movieOverrides';
+import { getAdminUserFromRequest } from '../../../../../lib/import/adminAuth';
 import {
-  mergeMovieOverrideData,
+  getMovieOverrideData,
+  getPublicBaseMovieBySlug,
+  patchMovieOverride,
+  MovieOverrideConflictError,
+  MovieOverrideReadError,
+  type MovieOverrideData,
+} from '../../../../../lib/movies/movieOverrides';
+import {
   parseManualRatingInput,
 } from '../../../../../lib/movies/rating';
 import { extractRendexVideoId } from '../../../../../lib/players';
@@ -12,8 +18,10 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 type RouteContext = {
-  params: Promise<{ slug: string }> | { slug: string };
+  params: Promise<{ slug: string }>;
 };
+
+class PosterUrlValidationError extends Error {}
 
 function cleanString(value: unknown) {
   if (typeof value !== 'string') {
@@ -22,6 +30,28 @@ function cleanString(value: unknown) {
 
   const trimmed = value.trim();
   return trimmed ? trimmed : undefined;
+}
+
+function cleanPosterUrl(value: unknown) {
+  if (value === null || value === undefined || value === '') return undefined;
+  if (typeof value !== 'string') throw new PosterUrlValidationError();
+  const poster = value.trim();
+  if (!poster) return undefined;
+  if (poster.length > 2048 || /[\u0000-\u001f\\]/.test(poster)) {
+    throw new PosterUrlValidationError();
+  }
+  if (poster.startsWith('/') && !poster.startsWith('//')) return poster;
+
+  let parsed: URL;
+  try {
+    parsed = new URL(poster);
+  } catch {
+    throw new PosterUrlValidationError();
+  }
+  if (parsed.protocol !== 'https:' || !parsed.hostname || parsed.username || parsed.password) {
+    throw new PosterUrlValidationError();
+  }
+  return poster;
 }
 
 function cleanNumber(value: unknown) {
@@ -68,7 +98,6 @@ function buildOverridePayload(body: Record<string, unknown>): MovieOverrideData 
     'type',
     'description',
     'longDescription',
-    'poster',
     'backdrop',
     'trailerUrl',
     'imdbId',
@@ -80,6 +109,11 @@ function buildOverridePayload(body: Record<string, unknown>): MovieOverrideData 
     if (value !== undefined) {
       payload[field] = value;
     }
+  }
+
+  if (Object.prototype.hasOwnProperty.call(body, 'poster')) {
+    const poster = cleanPosterUrl(body.poster);
+    if (poster !== undefined) payload.poster = poster;
   }
 
   const year = cleanNumber(body.year);
@@ -112,7 +146,7 @@ function buildOverridePayload(body: Record<string, unknown>): MovieOverrideData 
   const cast = cleanObjectArray(body.cast);
   if (cast) payload.cast = cast;
 
-  const posterFallbacks = cleanStringArray(body.posterFallbacks);
+  const posterFallbacks = cleanStringArray(body.posterFallbacks)?.map(cleanPosterUrl);
   if (posterFallbacks) payload.posterFallbacks = posterFallbacks;
 
   return payload as MovieOverrideData;
@@ -142,10 +176,8 @@ function revalidateMovieRemovalSurfaces(slug: string) {
 }
 
 export async function PUT(request: Request, context: RouteContext) {
-  const authError = await assertAdminAccess(request);
-  if (authError) return authError;
-
   const adminUser = await getAdminUserFromRequest(request);
+  if (!adminUser) return Response.json({ ok: false, error: 'Forbidden' }, { status: 403 });
   const params = await context.params;
   const slug = params.slug;
 
@@ -161,7 +193,7 @@ export async function PUT(request: Request, context: RouteContext) {
   try {
     const body = await request.json();
 
-    if (!body || typeof body !== 'object') {
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
       return Response.json(
         { ok: false, error: 'Invalid JSON body' },
         { status: 400 },
@@ -173,39 +205,69 @@ export async function PUT(request: Request, context: RouteContext) {
     const currentOverride = await getMovieOverrideData(slug);
     const shouldClearRating =
       Object.prototype.hasOwnProperty.call(requestBody, 'rating') &&
-      (requestBody.rating === null ||
+      (overridePayload.rating === 0 || requestBody.rating === null ||
         (typeof requestBody.rating === 'string' && !requestBody.rating.trim()));
-    const nextOverride = mergeMovieOverrideData(
-      currentOverride,
-      overridePayload,
-      shouldClearRating ? ['rating'] : [],
-    ) as MovieOverrideData;
+    const shouldClearPoster =
+      Object.prototype.hasOwnProperty.call(requestBody, 'poster') &&
+      (requestBody.poster === null ||
+        (typeof requestBody.poster === 'string' && !requestBody.poster.trim()));
+    const shouldClearPosterFallbacks =
+      Array.isArray(requestBody.posterFallbacks) &&
+      requestBody.posterFallbacks.length === 0;
+    const removeKeys = [
+      ...(shouldClearRating ? ['rating'] : []),
+      ...(shouldClearPoster ? ['poster'] : []),
+      ...(shouldClearPosterFallbacks ? ['posterFallbacks'] : []),
+    ];
+    for (const key of removeKeys) delete overridePayload[key];
 
-    await saveMovieOverride(slug, nextOverride, adminUser?.email || 'admin');
+    const savedOverride = await patchMovieOverride(
+      slug,
+      overridePayload,
+      removeKeys,
+      adminUser.email,
+      currentOverride,
+    );
 
     revalidateMovieUpdateSurfaces(slug);
 
     return Response.json({
       ok: true,
       slug,
-      data: nextOverride,
+      data: savedOverride.data,
+      version: savedOverride.updatedAt,
     });
   } catch (error) {
     return Response.json(
       {
         ok: false,
-        error: error instanceof Error ? error.message : 'Unknown movie override error',
+        error: error instanceof MovieOverrideReadError || error instanceof MovieOverrideConflictError
+          ? error.message
+          : error instanceof PosterUrlValidationError
+            ? 'Постер должен быть HTTPS URL или локальным путём /...'
+          : error instanceof RangeError
+            ? 'Рейтинг должен быть числом от 0 до 10'
+            : 'Не удалось сохранить правки',
+        ...(error instanceof MovieOverrideConflictError
+          ? { conflictFields: error.conflictKeys, data: error.currentData }
+          : {}),
       },
-      { status: error instanceof RangeError ? 400 : 500 },
+      {
+        status: error instanceof MovieOverrideReadError
+          ? 503
+          : error instanceof MovieOverrideConflictError
+            ? 409
+            : error instanceof PosterUrlValidationError || error instanceof RangeError
+              ? 400
+              : 500,
+      },
     );
   }
 }
 
 export async function DELETE(request: Request, context: RouteContext) {
-  const authError = await assertAdminAccess(request);
-  if (authError) return authError;
-
   const adminUser = await getAdminUserFromRequest(request);
+  if (!adminUser) return Response.json({ ok: false, error: 'Forbidden' }, { status: 403 });
   const params = await context.params;
   const slug = params.slug;
 
@@ -221,13 +283,12 @@ export async function DELETE(request: Request, context: RouteContext) {
   try {
     const currentOverride = await getMovieOverrideData(slug);
     const hiddenPayload: MovieOverrideData = {
-      ...(currentOverride ?? {}),
       hidden: true,
       deletedAt: new Date().toISOString(),
-      deletedBy: adminUser?.email || 'admin',
+      deletedBy: adminUser.email,
     };
 
-    await saveMovieOverride(slug, hiddenPayload, adminUser?.email || 'admin');
+    await patchMovieOverride(slug, hiddenPayload, [], adminUser.email, currentOverride);
     revalidateMovieRemovalSurfaces(slug);
 
     return Response.json({
@@ -239,9 +300,20 @@ export async function DELETE(request: Request, context: RouteContext) {
     return Response.json(
       {
         ok: false,
-        error: error instanceof Error ? error.message : 'Unknown movie delete override error',
+        error: error instanceof MovieOverrideReadError || error instanceof MovieOverrideConflictError
+          ? error.message
+          : 'Не удалось скрыть фильм',
+        ...(error instanceof MovieOverrideConflictError
+          ? { conflictFields: error.conflictKeys, data: error.currentData }
+          : {}),
       },
-      { status: 500 },
+      {
+        status: error instanceof MovieOverrideReadError
+          ? 503
+          : error instanceof MovieOverrideConflictError
+            ? 409
+            : 500,
+      },
     );
   }
 }

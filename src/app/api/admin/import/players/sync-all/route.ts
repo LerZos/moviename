@@ -14,8 +14,7 @@ import {
 import {
   getMovieOverrideData,
   getPublicMovies,
-  saveMovieOverride,
-  type MovieOverrideData,
+  patchMovieOverride,
 } from "../../../../../lib/movies/movieOverrides";
 import {
   buildAutoPlayers,
@@ -363,16 +362,10 @@ export async function POST(request: Request) {
         }
 
         const summary = summarizePlayers(nextPlayers);
-        const overrideData = ((await getMovieOverrideData(movie.slug)) || {}) as MovieOverrideData;
+        const overrideData = await getMovieOverrideData(movie.slug);
 
-        await saveMovieOverride(
-          movie.slug,
-          {
-            ...overrideData,
-            players: nextPlayers,
-          },
-          updatedBy,
-        );
+        // Patch only players: a full-document write would roll back concurrent rating/poster edits.
+        await patchMovieOverride(movie.slug, { players: nextPlayers }, [], updatedBy, overrideData);
         revalidatePath(`/movie/${movie.slug}`);
 
         const status: SyncMovieResult["status"] = summary.hasVibix ? "updated" : "partial";
