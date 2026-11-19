@@ -133,7 +133,7 @@ jobs:
       - name: Offline standalone runtime QA
         shell: bash
         run: |
-          sudo env "PATH=$PATH" "RUNNER_TEMP=$RUNNER_TEMP" "GITHUB_WORKSPACE=$GITHUB_WORKSPACE" unshare --net bash -euo pipefail <<'OFFLINE'
+          sudo env "PATH=$PATH" "RUNNER_TEMP=$RUNNER_TEMP" "GITHUB_WORKSPACE=$GITHUB_WORKSPACE" "GITHUB_RUN_ID=$GITHUB_RUN_ID" unshare --net bash -euo pipefail <<'OFFLINE'
           ip link set lo up
           test "$(ip -o link show | wc -l)" -eq 1
           test -z "$(ip route show)"
@@ -142,6 +142,9 @@ jobs:
           export NEXT_TELEMETRY_DISABLED=1
           export HOSTNAME=127.0.0.1
           export PORT=3100
+          # Per-run values so admin/cron guards answer 401 (runtime-qa.mjs) instead of 500 for a missing secret.
+          export KINOLUMA_ADMIN_SECRET="ci-route-guard-${GITHUB_RUN_ID}"
+          export CRON_SECRET="ci-route-guard-${GITHUB_RUN_ID}"
           unset SUPABASE_SERVICE_ROLE_KEY TMDB_API_KEY TMDB_ACCESS_TOKEN VIBIX_API_TOKEN EXIIM_API_TOKEN RENDEX_API_TOKEN
           # Run a copy so runtime caches never enter the released payload.
           cp -a release "$RUNNER_TEMP/genre-runtime"
