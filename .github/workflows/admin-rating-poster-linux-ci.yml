@@ -83,13 +83,28 @@ jobs:
       - name: Atomic patch contract on PostgreSQL 17 (superuser)
         env:
           KINOLUMA_TEST_DATABASE_URL: postgres://ci_superuser:ci-disposable-password@127.0.0.1:5432/kinoluma_atomic_test
-        run: npm run test:postgres:movie-overrides
+        shell: bash
+        # Failures are re-emitted as annotations, which stay readable without log access.
+        run: |
+          set +e
+          node --test --test-reporter=spec scripts/postgres/movie-overrides.integration.test.mjs 2>&1 | tee pg-atomic.log
+          status=${PIPESTATUS[0]}
+          grep -E '✖|Error|expected|actual|POSTGRES_' pg-atomic.log | head -30 | sed 's/^/::error title=pg-atomic::/'
+          grep -E '^ℹ (tests|pass|fail)' pg-atomic.log | sed 's/^/::notice title=pg-atomic::/'
+          exit "$status"
 
       - name: Upgrade, rights and concurrency on PostgreSQL 17 (non-superuser owner)
+        shell: bash
         env:
           KINOLUMA_TEST_UPGRADE_DATABASE_URL: postgres://kinoluma_owner:ci-disposable-owner@127.0.0.1:5432/kinoluma_upgrade_test
           KINOLUMA_EXPECT_PG_MAJOR: "17"
-        run: node --test scripts/postgres/movie-overrides-upgrade.integration.test.mjs
+        run: |
+          set +e
+          node --test --test-reporter=spec scripts/postgres/movie-overrides-upgrade.integration.test.mjs 2>&1 | tee pg-upgrade.log
+          status=${PIPESTATUS[0]}
+          grep -E '✖|Error|expected|actual' pg-upgrade.log | head -30 | sed 's/^/::error title=pg-upgrade::/'
+          grep -E '^ℹ (tests|pass|fail)|POSTGRES_SERVER_VERSION_NUM' pg-upgrade.log | sed 's/^/::notice title=pg-upgrade::/'
+          exit "$status"
 
   build-linux-standalone:
     runs-on: ubuntu-22.04

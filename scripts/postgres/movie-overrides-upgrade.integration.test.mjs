@@ -75,11 +75,14 @@ before(async () => {
   if (process.env.KINOLUMA_EXPECT_PG_MAJOR) {
     assert.equal(String(Math.floor(Number(version) / 10000)), process.env.KINOLUMA_EXPECT_PG_MAJOR);
   }
-  await admin.query(`
-    do $$ begin create role anon nologin; exception when duplicate_object then null; end $$;
-    do $$ begin create role authenticated nologin; exception when duplicate_object then null; end $$;
-    do $$ begin create role service_role nologin bypassrls; exception when duplicate_object then null; end $$;
-  `);
+  // The owner is not a superuser (like Supabase's migration role), so the
+  // roles must already exist: CREATE ROLE ... BYPASSRLS is superuser-only.
+  const roles = (await admin.query(
+    "select rolname from pg_roles where rolname = any($1) order by rolname",
+    [['anon', 'authenticated', 'service_role']],
+  )).rows.map(row => row.rolname);
+  assert.deepEqual(roles, ['anon', 'authenticated', 'service_role']);
+  assert.equal((await admin.query('select rolsuper from pg_roles where rolname = current_user')).rows[0].rolsuper, false);
 });
 
 after(async () => {
