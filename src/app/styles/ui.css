@@ -302,6 +302,24 @@
   margin-left: auto;
 }
 
+@media (min-width: 761px) and (max-width: 1080px) {
+  .kl-brand-text {
+    display: none;
+  }
+
+  .kl-header-inner {
+    gap: 10px;
+  }
+
+  .kl-header-nav a {
+    padding: 0 9px;
+  }
+
+  .kl-header-actions .kl-btn--sm {
+    padding: 0 10px;
+  }
+}
+
 @media (max-width: 760px) {
   .kl-header-nav {
     display: none;

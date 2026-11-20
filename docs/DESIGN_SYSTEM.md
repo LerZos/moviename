@@ -1,6 +1,19 @@
 # KinoLuma design system
 
-KinoLuma uses dark cinematic minimalism with restrained premium and glass accents. Posters and content lead; decoration supports hierarchy rather than competing with it. This describes the current code, not a complete centralized token specification.
+KinoLuma uses dark cinematic minimalism with restrained premium and glass accents. Posters and content lead; decoration supports hierarchy rather than competing with it.
+
+## UI 2.0 tokens and primitives
+
+UI 2.0 adds a central layer that new and reworked screens must use instead of local values:
+
+- `src/app/styles/tokens.css` — `--kl-*` custom properties: graphite surfaces (`--kl-bg` … `--kl-surface-3`), text steps, lines, the white primary and the amber "luma" accent (rating, selection, focus), radii, spacing, control sizes, shadows and motion. Motion tokens drop to 0 under reduced motion.
+- `src/app/styles/ui.css` — `kl-*` primitives: `kl-btn` (primary, ghost, danger, icon, sm/lg, `aria-pressed`), `kl-chip`, `kl-tag`, `kl-header`, `kl-section`, `kl-card` (poster-first media card), `kl-grid`, `kl-rail`, `kl-empty`, `kl-skeleton`, `kl-message`, `kl-field`, `kl-select`, `kl-dialog` (bottom sheet under 640px), `kl-info` (movie details) and `kl-toast`.
+- `src/app/components/ui/` — `SiteHeader`, `MediaCard`, `Dialog` (focus trap, Escape, scroll lock, focus restore, one overlay layer), `MovieInfoDialog` (single poster, trailer loaded on demand in a 16:9 frame), `EmptyState` and `getPosterFallback`.
+- `globals.css` sets the system font stack, graphite page background, one `:focus-visible` ring and a global reduced-motion rule.
+
+Legacy page styles (home, movie, catalog, collections) still live in their components; they were normalized to the tokenized background and to weights/tracking that suit the system font. Move them onto `kl-*` primitives when those areas are next reworked.
+
+The sections below describe the wider visual language and the legacy code.
 
 ## Principles
 
@@ -24,9 +37,9 @@ Use these as observed families, not as permission to add more near-duplicate val
 
 ## Typography
 
-The global stylesheet currently falls back to Arial, Helvetica, and sans-serif, while the Tailwind theme references Geist CSS variables that are not initialized in the root layout. Individual interfaces use varied weights, sizes, uppercase labels, and wide tracking.
+The global font is the `--kl-font` system stack (Inter if installed, then Segoe UI, system-ui, SF, Roboto, Arial); Tailwind's `font-sans` points at the same variable, and no network font is loaded. Titles use 750–800 weights with at most −0.035em tracking; the old 1000 weights and −0.08em tracking were tuned for synthetic Arial bold and crush letters in real heavy faces.
 
-Keep body copy readable and calm. Use bold or black display type for titles, compact uppercase labels for navigation or metadata, and neutral gray for supporting text. Avoid adding a new font treatment in a single component. Resolve the mismatch between global fallback and theme variables as a dedicated task with visual review.
+Keep body copy readable and calm. Use compact uppercase labels for navigation or metadata and neutral gray for supporting text. Avoid adding a new font treatment in a single component.
 
 ## Spacing and layout
 
@@ -113,13 +126,10 @@ Empty states should distinguish between no catalog results, no search matches, n
 
 ## Known design-system gaps
 
-- There is no complete centralized token system.
-- Significant CSS lives inside large page components.
-- Typography has been historically inconsistent, and global font configuration is not fully aligned.
-- Movie cards can become overloaded on mobile.
-- Too many blur, glow, gradient, and shadow layers can create visual noise and rendering cost.
-- Repeated near-black and translucent values are not consolidated.
-- Visual regression tests are absent.
-- Some loading and state patterns are page-specific rather than shared.
+- Tokens and primitives exist (UI 2.0), but home, movie, catalog and collections still carry most of their CSS inside large page components; only the header, typography, page background and focus treatment are shared there.
+- Home keeps its own desktop header (search and account controls live in HomeClient); other pages use `SiteHeader`.
+- Movie cards outside the profile still use page-specific markup and can become overloaded on mobile.
+- Too many blur, glow, gradient, and shadow layers in legacy pages can create visual noise and rendering cost.
+- Visual regression tests are absent; UI 2.0 relies on behavior tests (`scripts/profile-ui2.test.mjs`) plus manual screenshot QA.
 
-A future design-system pass should inventory repeated values and components, introduce a small semantic token layer, extract stable primitives, and add representative visual regression coverage without redesigning the product at the same time.
+Move legacy page styles onto `kl-*` primitives area by area, without redesigning and refactoring logic in the same change.

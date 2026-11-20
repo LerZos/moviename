@@ -9,6 +9,7 @@ import { frameNotice, type FrameReachabilityResult } from "../../lib/playerFrame
 import { useVibixLookup } from "../../lib/useVibixLookup";
 import { isVibixPlayer, isUsableSavedPlayer, mergePlayerOptions, selectedPlayer, stablePlayerKey, VIBIX_STATUS_TEXT, VIBIX_PLAN_TEXT, type VibixPlan, type PlayerSelection } from "../../lib/vibix";
 import MobileBottomNav from "../../components/MobileBottomNav";
+import SiteHeader, { getSiteHeaderSectionForType } from "../../components/ui/SiteHeader";
 import PosterImage, { syncPosterBackground } from "../../components/PosterImage";
 import { type MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 import type { Movie, MovieFact, MovieSeason, PlayerProvider } from "../../data/movies";
@@ -988,7 +989,7 @@ export default function MoviePageClient({
     }
 
     const topbarHeight =
-      document.querySelector<HTMLElement>(".topbar")?.offsetHeight ?? 0;
+      document.querySelector<HTMLElement>(".kl-header")?.offsetHeight ?? 0;
     const extraOffset = 18;
     const startY = window.scrollY;
     const targetY = Math.max(
@@ -1053,49 +1054,34 @@ export default function MoviePageClient({
 
       <div className="ambient-bg" />
 
-      <header className="topbar">
-        <div className="topbar-inner">
-          <Link href="/" className="brand">
-            <img
-              src="/kinoluma-icon.png"
-              alt="KinoLuma"
-              className="logo-mark logo-image"
-            />
-
-            <div>
-              <p className="logo-title">KinoLuma</p>
-              <p className="logo-subtitle">{movie.type}</p>
-            </div>
-          </Link>
-
-          <div className="top-actions">
-            <Link href="/" className="ghost-button">
-              В каталог
-            </Link>
-
-            <Link href="/profile" className="ghost-button">
-              Профиль
-            </Link>
-
+      <SiteHeader
+        section={getSiteHeaderSectionForType(movie.type)}
+        sectionLabel={movie.type}
+        actions={
+          <>
             {isAdmin && (
               <Link
                 href={`/admin/movies/${movie.slug}/edit`}
-                className="ghost-button admin-edit-button"
+                className="kl-btn kl-btn--ghost kl-btn--sm"
               >
                 Редактировать
               </Link>
             )}
 
+            <Link href="/profile" className="kl-btn kl-btn--ghost kl-btn--sm kl-hide-mobile">
+              Профиль
+            </Link>
+
             <a
               href="#player"
               onClick={(event) => handleSectionLink(event, "player")}
-              className="ghost-button"
+              className="kl-btn kl-btn--primary kl-btn--sm"
             >
               Смотреть
             </a>
-          </div>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       <div className="page-shell">
         <section className="movie-hero">
@@ -1601,7 +1587,7 @@ const moviePageStyles = `
     width: 100%;
     max-width: 100%;
     overflow-x: hidden;
-    background: #050505;
+    background: var(--kl-bg);
   }
 
   html {
@@ -1630,7 +1616,7 @@ const moviePageStyles = `
   .movie-page {
     min-height: 100vh;
     overflow-x: hidden;
-    background: #050505;
+    background: var(--kl-bg);
     color: #ffffff;
   }
 
@@ -1643,7 +1629,7 @@ const moviePageStyles = `
       radial-gradient(circle at 18% 8%, rgba(255,255,255,0.10), transparent 28%),
       radial-gradient(circle at 88% 18%, rgba(255,255,255,0.07), transparent 26%),
       radial-gradient(circle at 50% 100%, rgba(255,255,255,0.06), transparent 32%),
-      linear-gradient(180deg, #090909 0%, #050505 45%, #000000 100%);
+      linear-gradient(180deg, #111115 0%, var(--kl-bg) 45%, #08080a 100%);
   }
 
   .ambient-bg::after {
@@ -1690,7 +1676,7 @@ const moviePageStyles = `
     display: block;
     border-radius: 14px;
     object-fit: cover;
-    background: #050505;
+    background: var(--kl-bg);
     box-shadow: 0 0 36px rgba(255,255,255,0.16);
   }
 
@@ -1698,7 +1684,7 @@ const moviePageStyles = `
     margin: 0;
     font-size: 20px;
     line-height: 1;
-    font-weight: 1000;
+    font-weight: 800;
     letter-spacing: -0.04em;
   }
 
@@ -1824,7 +1810,7 @@ const moviePageStyles = `
     color: #858585;
     font-size: 11px;
     line-height: 1;
-    font-weight: 1000;
+    font-weight: 800;
     letter-spacing: 0.12em;
     text-transform: uppercase;
     white-space: nowrap;
@@ -1838,7 +1824,7 @@ const moviePageStyles = `
     white-space: nowrap;
     font-size: 14px;
     line-height: 1;
-    font-weight: 1000;
+    font-weight: 800;
   }
 
   .poster-genres-panel {
@@ -1852,7 +1838,7 @@ const moviePageStyles = `
     color: #777777;
     font-size: 11px;
     line-height: 1;
-    font-weight: 1000;
+    font-weight: 800;
     letter-spacing: 0.16em;
     text-transform: uppercase;
   }
@@ -1912,7 +1898,7 @@ const moviePageStyles = `
     margin: 0;
     color: #858585;
     font-size: 12px;
-    font-weight: 1000;
+    font-weight: 800;
     letter-spacing: 0.36em;
     text-transform: uppercase;
   }
@@ -1922,8 +1908,8 @@ const moviePageStyles = `
     margin: 14px 0 0;
     font-size: clamp(42px, 6vw, 72px);
     line-height: 0.95;
-    font-weight: 1000;
-    letter-spacing: -0.08em;
+    font-weight: 800;
+    letter-spacing: -0.035em;
   }
 
   .original-title {
@@ -1944,7 +1930,7 @@ const moviePageStyles = `
     color: #000000;
     padding: 0 16px;
     font-size: 14px;
-    font-weight: 1000;
+    font-weight: 800;
     box-shadow: 0 0 28px rgba(255,255,255,0.12);
   }
 
@@ -2033,7 +2019,7 @@ const moviePageStyles = `
     border-radius: 14px;
     padding: 0 16px;
     font-size: 14px;
-    font-weight: 1000;
+    font-weight: 800;
     transition:
       transform 180ms ease,
       background 180ms ease,
@@ -2050,7 +2036,7 @@ const moviePageStyles = `
 
   .primary-button:hover {
     transform: translateY(-2px);
-    background: #000000;
+    background: var(--kl-bg);
     color: #ffffff;
     box-shadow: 0 0 28px rgba(255,255,255,0.16);
   }
@@ -2093,7 +2079,7 @@ const moviePageStyles = `
     color: #858585;
     font-size: 11px;
     line-height: 1;
-    font-weight: 1000;
+    font-weight: 800;
     letter-spacing: 0.18em;
     text-transform: uppercase;
   }
@@ -2103,8 +2089,8 @@ const moviePageStyles = `
     color: #ffffff;
     font-size: 20px;
     line-height: 1;
-    font-weight: 1000;
-    letter-spacing: -0.05em;
+    font-weight: 800;
+    letter-spacing: -0.03em;
   }
 
   .watching-badge {
@@ -2116,7 +2102,7 @@ const moviePageStyles = `
     padding: 8px 11px;
     font-size: 12px;
     line-height: 1;
-    font-weight: 1000;
+    font-weight: 800;
   }
 
   .action-buttons-grid {
@@ -2138,7 +2124,7 @@ const moviePageStyles = `
     color: #d8d8d8;
     padding: 0 12px;
     font-size: 13px;
-    font-weight: 1000;
+    font-weight: 800;
     transition:
       transform 180ms ease,
       background 180ms ease,
@@ -2209,7 +2195,7 @@ const moviePageStyles = `
     color: #ffffff;
     font-size: 20px;
     line-height: 1.1;
-    font-weight: 1000;
+    font-weight: 800;
     letter-spacing: -0.04em;
   }
 
@@ -2239,8 +2225,8 @@ const moviePageStyles = `
     margin: 8px 0 0;
     font-size: 28px;
     line-height: 1;
-    font-weight: 1000;
-    letter-spacing: -0.05em;
+    font-weight: 800;
+    letter-spacing: -0.03em;
   }
 
   .player-tabs {
@@ -2258,7 +2244,7 @@ const moviePageStyles = `
     color: #d8d8d8;
     padding: 0 14px;
     font-size: 13px;
-    font-weight: 1000;
+    font-weight: 800;
     transition:
       transform 180ms ease,
       background 180ms ease,
@@ -2317,7 +2303,7 @@ const moviePageStyles = `
     width: 100%;
     height: 100%;
     border: 0;
-    background: #000000;
+    background: var(--kl-bg);
   }
 
   .player-frame-guard {
@@ -2361,7 +2347,7 @@ const moviePageStyles = `
     color: #ffffff;
     padding: 0 14px;
     font-size: 13px;
-    font-weight: 1000;
+    font-weight: 800;
   }
 
   .player-frame-notice-actions .player-frame-notice-primary {
@@ -2388,7 +2374,7 @@ const moviePageStyles = `
     width: 100%;
     height: 100%;
     border: 0;
-    background: #000000;
+    background: var(--kl-bg);
   }
 
   .player-placeholder {
@@ -2421,7 +2407,7 @@ const moviePageStyles = `
     margin: 16px 0 0;
     font-size: 24px;
     line-height: 1.1;
-    font-weight: 1000;
+    font-weight: 800;
     letter-spacing: -0.04em;
   }
 
@@ -2639,7 +2625,7 @@ const moviePageStyles = `
     color: #ffffff;
     font-size: 18px;
     line-height: 1.2;
-    font-weight: 1000;
+    font-weight: 800;
     letter-spacing: -0.04em;
   }
 
@@ -2738,7 +2724,7 @@ const moviePageStyles = `
 
   .cast-line strong {
     color: #ffffff;
-    font-weight: 1000;
+    font-weight: 800;
   }
 
   .credits-toggle {
@@ -2805,7 +2791,7 @@ const moviePageStyles = `
     color: #000000;
     margin-top: 1px;
     font-size: 12px;
-    font-weight: 1000;
+    font-weight: 800;
   }
 
 
@@ -2829,7 +2815,7 @@ const moviePageStyles = `
   .faq-item h3 {
     margin: 0 0 8px;
     font-size: 16px;
-    font-weight: 1000;
+    font-weight: 800;
     color: #ffffff;
   }
 
@@ -2915,7 +2901,7 @@ const moviePageStyles = `
     background: rgba(255,255,255,0.92);
     color: #000000;
     font-size: 11px;
-    font-weight: 1000;
+    font-weight: 800;
   }
 
   .similar-info {
@@ -2926,7 +2912,7 @@ const moviePageStyles = `
     display: block;
     color: #777777;
     font-size: 11px;
-    font-weight: 1000;
+    font-weight: 800;
   }
 
   .similar-info h3 {
@@ -2939,7 +2925,7 @@ const moviePageStyles = `
     color: #ffffff;
     font-size: 14px;
     line-height: 1.35;
-    font-weight: 1000;
+    font-weight: 800;
   }
 
   .similar-info p {
@@ -3093,7 +3079,7 @@ const moviePageStyles = `
 
     .main-card h1 {
       font-size: 38px;
-      letter-spacing: -0.07em;
+      letter-spacing: -0.035em;
     }
 
     .movie-title-row {
@@ -3332,7 +3318,7 @@ const moviePageStyles = `
     .main-card h1 {
       font-size: clamp(34px, 11vw, 46px);
       line-height: 0.98;
-      letter-spacing: -0.07em;
+      letter-spacing: -0.035em;
     }
 
     .original-title {

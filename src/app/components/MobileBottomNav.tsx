@@ -134,6 +134,7 @@ export default function MobileBottomNav({
         <Link
           href="/"
           className={pathname === "/" ? "mobile-nav-item active" : "mobile-nav-item"}
+          aria-current={pathname === "/" ? "page" : undefined}
         >
           <Home aria-hidden="true" />
           <span>Главная</span>
@@ -164,6 +165,7 @@ export default function MobileBottomNav({
               ? "mobile-nav-item active"
               : "mobile-nav-item"
           }
+          aria-current={pathname?.startsWith("/profile") ? "page" : undefined}
         >
           <UserRound aria-hidden="true" />
           <span>Профиль</span>
@@ -224,9 +226,9 @@ const mobileBottomNavStyles = `
     }
 
     .mobile-back-to-top strong {
-      font-size: 11px;
+      font-size: 12px;
       line-height: 1;
-      font-weight: 1000;
+      font-weight: 750;
       letter-spacing: -0.02em;
     }
 
@@ -244,11 +246,11 @@ const mobileBottomNavStyles = `
       grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 7px;
       padding: 8px;
-      border: 1px solid rgba(255,255,255,0.13);
+      border: 1px solid var(--kl-line-strong, rgba(255,255,255,0.16));
       border-radius: 24px;
       background:
-        linear-gradient(180deg, rgba(28,28,28,0.90), rgba(0,0,0,0.92)),
-        rgba(0,0,0,0.86);
+        linear-gradient(180deg, rgba(30,30,36,0.92), rgba(12,12,14,0.94)),
+        rgba(10,10,12,0.88);
       box-shadow:
         0 24px 70px rgba(0,0,0,0.76),
         inset 0 1px 0 rgba(255,255,255,0.08);
@@ -262,7 +264,7 @@ const mobileBottomNavStyles = `
       border: 0;
       border-radius: 18px;
       background: transparent;
-      color: rgba(255,255,255,0.58);
+      color: rgba(255,255,255,0.64);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -270,10 +272,10 @@ const mobileBottomNavStyles = `
       gap: 5px;
       text-decoration: none;
       font: inherit;
-      font-size: 10px;
+      font-size: 11px;
       line-height: 1;
-      font-weight: 1000;
-      letter-spacing: -0.01em;
+      font-weight: 650;
+      letter-spacing: 0;
       cursor: pointer;
       transition:
         transform 170ms ease,
@@ -299,6 +301,10 @@ const mobileBottomNavStyles = `
     .mobile-nav-item:hover {
       background: rgba(255,255,255,0.08);
       color: #ffffff;
+    }
+
+    .mobile-nav-item.active:not(.mobile-nav-random) svg {
+      color: var(--kl-accent-strong, #ffc766);
     }
 
     .mobile-nav-random {

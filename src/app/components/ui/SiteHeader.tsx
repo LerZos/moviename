@@ -15,6 +15,17 @@ const navItems: Array<{ key: SiteHeaderSection; label: string; href: string }> =
   { key: "collections", label: "Подборки", href: "/collections" },
 ];
 
+const typeSections: Record<string, SiteHeaderSection> = {
+  Фильм: "films",
+  Сериал: "series",
+  Аниме: "anime",
+  Мультфильм: "cartoons",
+};
+
+export function getSiteHeaderSectionForType(type: string): SiteHeaderSection | undefined {
+  return typeSections[type];
+}
+
 export default function SiteHeader({
   section,
   sectionLabel,
