@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { Star } from "lucide-react";
 
 import PosterImage from "../PosterImage";
 import { getPosterFallback } from "./posterFallback";
@@ -15,6 +14,7 @@ export type MediaCardItem = {
   year: string;
   type: string;
   rating?: number;
+  genres?: string[];
   poster: string;
 };
 
@@ -22,26 +22,34 @@ export function formatRating(rating: number | undefined) {
   return typeof rating === "number" && Number.isFinite(rating) && rating > 0 ? rating.toFixed(1) : "";
 }
 
-// Poster-first card shared by the profile and other UI 2.0 surfaces.
-// The poster opens details (or the movie page); the title is always a plain link to the movie page.
+// Same badge text as the catalog grid (getRatingBadgeText in CatalogPageClient).
+function getRatingBadge(rating: number | undefined) {
+  if (typeof rating !== "number" || !Number.isFinite(rating) || rating <= 0) {
+    return "—";
+  }
+
+  return `★ ${Number.isInteger(rating) ? rating : rating.toFixed(1)}`;
+}
+
+// Movie card with the production catalog composition (.catalog-card): poster with type and rating pills,
+// then year/genre, title, original title and an optional pair of actions under the poster.
 export default function MediaCard({
   item,
   onOpen,
   badge,
-  corner,
   actions,
   priority = false,
 }: {
   item: MediaCardItem;
   onOpen?: (item: MediaCardItem) => void;
   badge?: string;
-  corner?: ReactNode;
   actions?: ReactNode;
   priority?: boolean;
 }) {
   const href = `/movie/${item.slug}`;
   const rating = formatRating(item.rating);
   const meta = [item.year, item.type].filter(Boolean).join(" · ");
+  const genre = item.genres?.find((value) => value && value.toLowerCase() !== item.type.toLowerCase());
   const poster = (
     <>
       <PosterImage
@@ -54,19 +62,13 @@ export default function MediaCard({
           event.currentTarget.src = getPosterFallback(item.title, item.originalTitle, item.type);
         }}
       />
-      {rating || badge ? (
-        <span className="kl-card-badges" aria-hidden="true">
-          {rating ? (
-            <span className="kl-card-badge kl-card-badge--rating">
-              <Star size={11} fill="currentColor" strokeWidth={0} />
-              {rating}
-            </span>
-          ) : (
-            <span />
-          )}
-          {badge ? <span className="kl-card-badge">{badge}</span> : null}
-        </span>
-      ) : null}
+      <span className="kl-card-shade" aria-hidden="true" />
+      <span className="kl-card-type" aria-hidden="true">
+        {badge || item.type}
+      </span>
+      <span className="kl-card-rating" aria-hidden="true">
+        {getRatingBadge(item.rating)}
+      </span>
     </>
   );
 
@@ -88,13 +90,17 @@ export default function MediaCard({
         </Link>
       )}
 
-      {corner ? <div className="kl-card-corner">{corner}</div> : null}
-
       <div className="kl-card-body">
+        <p className="kl-card-meta" aria-hidden="true">
+          <span>{item.year}</span>
+          {genre ? <span>{genre}</span> : null}
+        </p>
         <h3 className="kl-card-title" title={item.title}>
           <Link href={href}>{item.title}</Link>
         </h3>
-        {meta ? <p className="kl-card-meta">{meta}</p> : null}
+        {item.originalTitle && item.originalTitle !== item.title ? (
+          <p className="kl-card-original">{item.originalTitle}</p>
+        ) : null}
         {actions ? <div className="kl-card-actions">{actions}</div> : null}
       </div>
     </article>

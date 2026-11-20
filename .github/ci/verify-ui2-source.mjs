@@ -19,15 +19,9 @@ const APP_FILES = [
   "src/app/components/ui/EmptyState.tsx",
   "src/app/components/ui/MediaCard.tsx",
   "src/app/components/ui/MovieInfoDialog.tsx",
-  "src/app/components/ui/SiteHeader.tsx",
   "src/app/components/ui/posterFallback.ts",
   "src/app/globals.css",
-  "src/app/layout.tsx",
   "src/app/lib/kinolumaSupabase.ts",
-  "src/app/loading.tsx",
-  "src/app/movie/[slug]/MoviePageClient.tsx",
-  "src/app/movie/[slug]/loading.tsx",
-  "src/app/profile/loading.tsx",
   "src/app/profile/page.tsx",
   "src/app/profile/profile.css",
   "src/app/styles/tokens.css",
@@ -44,6 +38,12 @@ const UNCHANGED = [
   "src/app/components/CleanDocumentGuard.tsx",
   "src/app/components/PosterImage.tsx",
   "src/app/profile/layout.tsx",
+  // Movie page, root layout and loaders stay exactly as in production.
+  "src/app/movie/[slug]/MoviePageClient.tsx",
+  "src/app/movie/[slug]/loading.tsx",
+  "src/app/layout.tsx",
+  "src/app/loading.tsx",
+  "src/app/profile/loading.tsx",
   "src/app/lib/adminPlayers.ts",
   "src/app/lib/players.ts",
   "src/app/lib/vibix.ts",
@@ -132,7 +132,7 @@ function artifactGate(directory) {
   const css = staticFiles.filter((file) => file.endsWith(".css")).map((file) => readFileSync(file, "utf8")).join("\n");
   assert.ok(!/SUPABASE_SERVICE_ROLE_KEY|TMDB_API_KEY|TMDB_ACCESS_TOKEN|VIBIX_API_TOKEN|EXIIM_API_TOKEN|RENDEX_API_TOKEN|KINOPOISK_API_KEY|KINOPOISK_DEV_TOKEN|sb_secret_/.test(client), "Privileged client marker");
   assert.ok(client.includes("678053396"), "VibixPlayer publisher missing from client bundle");
-  for (const marker of ["--kl-bg", ".kl-header", ".kl-dialog", ".kl-card"]) assert.ok(css.includes(marker), "UI 2.0 CSS marker missing: " + marker);
+  for (const marker of ["--kl-bg", ".kl-panel", ".kl-dialog", ".kl-card"]) assert.ok(css.includes(marker), "UI 2.0 CSS marker missing: " + marker);
   assert.ok(readFileSync(path.join(root, ".next/BUILD_ID"), "utf8").trim());
   assert.ok(readFileSync(path.join(root, "server.js"), "utf8").includes("next"));
   console.log("STANDALONE_UI2_PAYLOAD=PASS");
@@ -178,15 +178,14 @@ async function runtimeGate(origin) {
   assert.ok([301, 307, 308].includes(legacy.status), "legacy redirect status " + legacy.status);
   assert.match(legacy.headers.get("location") ?? "", /\?genre=boevik&type=all&page=2$/);
 
-  // Shared header on SSR pages, with Genre Navigation query links.
-  for (const page of ["/catalog/films", "/collections", "/movie/the-100-2014"]) {
+  // Existing pages keep their production headers; no second header design is rendered.
+  for (const [page, header] of [["/catalog/films", "catalog-header"], ["/collections", "collections-header"], ["/movie/the-100-2014", "topbar"]]) {
     const html = await (await fetchManual(page)).text();
-    assert.match(html, /class="kl-header"/, page + " renders SiteHeader");
-    for (const type of ["film", "series", "anime", "cartoon"]) assert.match(html, new RegExp(`href="/\\?type=${type}"`), page + " type link " + type);
+    assert.match(html, new RegExp(`<header class="${header}"`), page + " renders the production header");
+    assert.ok(!html.includes("kl-header"), page + " must not render the UI 2.0 header");
   }
   const series = await (await fetchManual("/movie/the-100-2014")).text();
   assert.match(series, /id="player"/, "movie page keeps the player section");
-  assert.match(series, /aria-current="page" href="\/\?type=series"/, "series page highlights Сериалы");
 
   for (const page of ["/admin/import", "/admin/movies/the-100-2014/edit"]) {
     const status = (await fetchManual(page)).status;

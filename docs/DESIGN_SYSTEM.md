@@ -4,14 +4,14 @@ KinoLuma uses dark cinematic minimalism with restrained premium and glass accent
 
 ## UI 2.0 tokens and primitives
 
-UI 2.0 adds a central layer that new and reworked screens must use instead of local values:
+Production is the visual source of truth. UI 2.0 adds functionality (profile lists, details dialog, toasts) without a second visual language: its shared layer only names values that already exist in production styles.
 
-- `src/app/styles/tokens.css` — `--kl-*` custom properties: graphite surfaces (`--kl-bg` … `--kl-surface-3`), text steps, lines, the white primary and the amber "luma" accent (rating, selection, focus), radii, spacing, control sizes, shadows and motion. Motion tokens drop to 0 under reduced motion.
-- `src/app/styles/ui.css` — `kl-*` primitives: `kl-btn` (primary, ghost, danger, icon, sm/lg, `aria-pressed`), `kl-chip`, `kl-tag`, `kl-header`, `kl-section`, `kl-card` (poster-first media card), `kl-grid`, `kl-rail`, `kl-empty`, `kl-skeleton`, `kl-message`, `kl-field`, `kl-select`, `kl-dialog` (bottom sheet under 640px), `kl-info` (movie details) and `kl-toast`.
-- `src/app/components/ui/` — `SiteHeader`, `MediaCard`, `Dialog` (focus trap, Escape, scroll lock, focus restore, one overlay layer), `MovieInfoDialog` (single poster, trailer loaded on demand in a 16:9 frame), `EmptyState` and `getPosterFallback`.
-- `globals.css` sets the system font stack, graphite page background, one `:focus-visible` ring and a global reduced-motion rule.
+- `src/app/styles/tokens.css` — `--kl-*` custom properties copied from production selectors (profile `.profile-page`, `.ambient-bg`, `.section-card`, `.details-modal`; catalog `.catalog-card`): `#050505` page, the graphite 145° panel gradient, line opacities, text greys, radii (30 panel, 26 card, 16 button, 14 small button, pills), the 1180px container and Arial. Motion tokens drop to 0 under reduced motion.
+- `src/app/styles/ui.css` — `kl-*` primitives, each mirroring one production component: `kl-btn` (`.primary-button`, `.secondary-button`, `.ghost-button`, `.modal-action`), `kl-chip` (`.sort-button`), `kl-count` (`.count-pill`), `kl-panel`/`kl-soft` (`.section-card`/`.soft-card`), `kl-card` (`.catalog-card`: type and rating pills, year/genre, title, original title, two actions under the poster), `kl-empty` (`.empty-state`), `kl-field` (`.profile-auth-field`), `kl-dialog` and `kl-info` (`.details-overlay`, `.details-modal`, bottom sheet under 760px).
+- `src/app/components/ui/` — `MediaCard`, `Dialog` (focus trap, Escape, scroll lock, focus restore, one overlay layer), `MovieInfoDialog` (trailer loaded on demand in a 16:9 frame), `EmptyState` and `getPosterFallback`.
+- `globals.css` keeps the production Arial body font and adds one white `:focus-visible` ring and a global reduced-motion rule.
 
-Legacy page styles (home, movie, catalog, collections) still live in their components; they were normalized to the tokenized background and to weights/tracking that suit the system font. Move them onto `kl-*` primitives when those areas are next reworked.
+Home, catalog, collections and the movie page keep their production markup, headers and styles. UI 2.0 only adds functional fixes there (catalog genre de-duplication, the mobile bottom navigation on catalog and collections, the home mobile header row). When a component is extracted later, copy its production values instead of inventing new ones.
 
 The sections below describe the wider visual language and the legacy code.
 
@@ -37,7 +37,7 @@ Use these as observed families, not as permission to add more near-duplicate val
 
 ## Typography
 
-The global font is the `--kl-font` system stack (Inter if installed, then Segoe UI, system-ui, SF, Roboto, Arial); Tailwind's `font-sans` points at the same variable, and no network font is loaded. Titles use 750–800 weights with at most −0.035em tracking; the old 1000 weights and −0.08em tracking were tuned for synthetic Arial bold and crush letters in real heavy faces.
+The global font is Arial, Helvetica, sans-serif (`--kl-font`); Tailwind's `font-sans` points at the same variable and no network font is loaded. Display titles use the 1000 weight with tight negative tracking (−0.04em to −0.08em); eyebrows are 12px, 1000 weight, 0.36em tracking, uppercase, `#858585`.
 
 Keep body copy readable and calm. Use compact uppercase labels for navigation or metadata and neutral gray for supporting text. Avoid adding a new font treatment in a single component.
 
@@ -126,8 +126,8 @@ Empty states should distinguish between no catalog results, no search matches, n
 
 ## Known design-system gaps
 
-- Tokens and primitives exist (UI 2.0), but home, movie, catalog and collections still carry most of their CSS inside large page components; only the header, typography, page background and focus treatment are shared there.
-- Home keeps its own desktop header (search and account controls live in HomeClient); other pages use `SiteHeader`.
+- Tokens and primitives (UI 2.0) are used by the profile and its dialog; home, movie, catalog and collections still carry their CSS inside large page components.
+- Each page keeps its own production header variant (home search header, catalog pills, movie and profile topbars); there is no single shared header component yet.
 - Movie cards outside the profile still use page-specific markup and can become overloaded on mobile.
 - Too many blur, glow, gradient, and shadow layers in legacy pages can create visual noise and rendering cost.
 - Visual regression tests are absent; UI 2.0 relies on behavior tests (`scripts/profile-ui2.test.mjs`) plus manual screenshot QA.

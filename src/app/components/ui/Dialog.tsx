@@ -129,11 +129,11 @@ export default function Dialog({
         <button
           ref={closeRef}
           type="button"
-          className="kl-btn kl-btn--icon kl-btn--sm kl-dialog-close"
+          className="kl-btn kl-dialog-close"
           onClick={onClose}
           aria-label={closeLabel}
         >
-          <X size={18} aria-hidden="true" />
+          <X size={22} strokeWidth={2.6} aria-hidden="true" />
         </button>
         <div className="kl-dialog-scroll">{children}</div>
         {/* Focus sentinel: leaving the last control (or an iframe) wraps to the close button. */}

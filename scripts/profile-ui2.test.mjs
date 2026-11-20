@@ -196,14 +196,21 @@ test("profile tabs and admin check keep their existing contracts", () => {
 const React = requireLocal("react");
 const { renderToStaticMarkup } = requireLocal("react-dom/server");
 
-test("site header links follow the Genre Navigation query contract", () => {
-  const { default: SiteHeader, getSiteHeaderSectionForType } = requireLocal("../../src/app/components/ui/SiteHeader.tsx");
-  const html = renderToStaticMarkup(React.createElement(SiteHeader, { section: "series", sectionLabel: "Профиль" }));
-  const hrefs = [...html.matchAll(/<a [^>]*href="([^"]+)"/g)].map((match) => match[1].replaceAll("&amp;", "&"));
-  assert.deepEqual(hrefs, ["/", "/", "/?type=film", "/?type=series", "/?type=anime", "/?type=cartoon", "/collections"]);
-  assert.match(html, /<a aria-current="page" href="\/\?type=series">Сериалы<\/a>/);
-  assert.equal(getSiteHeaderSectionForType("Мультфильм"), "cartoons");
-  assert.equal(getSiteHeaderSectionForType("Неизвестно"), undefined);
+test("existing pages keep their production headers and the catalog genre fix", () => {
+  const moviePage = read("src/app/movie/[slug]/MoviePageClient.tsx");
+  const catalog = read("src/app/catalog/[category]/CatalogPageClient.tsx");
+  assert.match(moviePage, /<header className="topbar">/);
+  assert.match(moviePage, /querySelector<HTMLElement>\(".topbar"\)/);
+  assert.match(catalog, /<header className="catalog-header">/);
+  for (const file of ["src/app/collections/page.tsx", "src/app/collections/[slug]/page.tsx"]) {
+    assert.match(read(file), /<header className="collections-header">/, file);
+  }
+  for (const file of ["src/app/movie/[slug]/MoviePageClient.tsx", "src/app/catalog/[category]/CatalogPageClient.tsx", "src/app/profile/page.tsx"]) {
+    assert.ok(!read(file).includes("SiteHeader"), file + " must not use a second header design");
+  }
+  // "Боевик" and "боевик" collapse into one chip and filter case-insensitively.
+  assert.match(catalog, /byKey\.set\(key, genre\)/);
+  assert.match(catalog, /genre\.toLowerCase\(\) === selectedGenre\.toLowerCase\(\)/);
 });
 
 test("media card keeps long titles readable and labels the poster action", () => {
@@ -215,6 +222,9 @@ test("media card keeps long titles readable and labels the poster action", () =>
   assert.match(html, /aria-label="Подробнее: Леди Баг[^"]*, 2023 · Мультфильм, рейтинг 8\.5"/);
   assert.match(html, /aria-haspopup="dialog"/);
   assert.match(html, /href="\/movie\/miraculous-world-paris-2023"/);
+  // Same pills as the catalog grid: content type on the left, white rating on the right.
+  assert.match(html, /<span class="kl-card-type" aria-hidden="true">Мультфильм<\/span>/);
+  assert.match(html, /<span class="kl-card-rating" aria-hidden="true">★ 8\.5<\/span>/);
   // Missing poster falls back to a generated SVG instead of an empty image.
   assert.match(html, /src="data:image\/svg\+xml/);
 });

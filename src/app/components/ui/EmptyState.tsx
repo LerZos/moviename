@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+// Production profile empty state (.empty-state): icon tile, title, one line and a link back to the catalog.
 export default function EmptyState({
   icon,
   title,
@@ -20,7 +21,7 @@ export default function EmptyState({
       <h3>{title}</h3>
       <p>{text}</p>
       {action && typeof action === "object" && "href" in action ? (
-        <Link href={action.href} className="kl-btn kl-btn--primary">
+        <Link href={action.href} className="kl-btn kl-btn--sm">
           {action.label}
         </Link>
       ) : (

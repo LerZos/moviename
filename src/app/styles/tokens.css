@@ -1,109 +1,68 @@
 /*
- * KinoLuma UI 2.0 design tokens.
- * Adapted from the 2026-11-01 UI 2.0 draft. Custom properties and keyframes only:
- * nothing here targets bare elements, so importing it never restyles a page by itself.
+ * KinoLuma UI 2.0 tokens.
+ * Every value is taken from production styles (14f1dff), so new surfaces render like the existing site:
+ *   profile/page.tsx  profileStyles  - .profile-page, .ambient-bg, .topbar, .identity-card, .section-card,
+ *                                      .tabs-card, .primary-button, .secondary-button, .details-modal
+ *   catalog/[category]/CatalogPageClient.tsx catalogStyles - .catalog-card*, .catalog-grid
+ * Custom properties and keyframes only: nothing here targets bare elements.
  */
 :root {
-  /* Surfaces: graphite, darkest first. */
-  --kl-bg: #0a0a0c;
-  --kl-bg-raised: #0f0f12;
-  --kl-surface: #141418;
-  --kl-surface-2: #1a1a1f;
-  --kl-surface-3: #222228;
-  --kl-surface-glass: rgba(20, 20, 24, 0.78);
-  --kl-overlay: rgba(6, 6, 8, 0.8);
+  /* Surfaces */
+  --kl-bg: #050505; /* .profile-page */
+  --kl-ambient:
+    radial-gradient(circle at 18% 8%, rgba(255, 255, 255, 0.1), transparent 28%),
+    radial-gradient(circle at 88% 18%, rgba(255, 255, 255, 0.07), transparent 26%),
+    radial-gradient(circle at 50% 100%, rgba(255, 255, 255, 0.06), transparent 32%),
+    linear-gradient(180deg, #090909 0%, #050505 45%, #000000 100%); /* .ambient-bg */
+  --kl-panel: linear-gradient(145deg, rgba(28, 28, 28, 0.82), rgba(8, 8, 8, 0.92)), #0b0b0b; /* .section-card */
+  --kl-panel-shadow: 0 30px 90px rgba(0, 0, 0, 0.42);
+  --kl-card: linear-gradient(180deg, rgba(255, 255, 255, 0.042), rgba(255, 255, 255, 0.018)), #050505; /* .catalog-card */
+  --kl-card-shadow: 0 28px 90px rgba(0, 0, 0, 0.46), inset 0 1px 0 rgba(255, 255, 255, 0.065);
+  --kl-inset: rgba(0, 0, 0, 0.36); /* .soft-card, .mini-stats div */
+  --kl-modal:
+    radial-gradient(circle at 78% 12%, rgba(255, 255, 255, 0.1), transparent 30%),
+    linear-gradient(145deg, rgba(30, 30, 30, 0.98), rgba(5, 5, 5, 0.98)); /* .details-modal */
+  --kl-overlay: rgba(0, 0, 0, 0.78); /* .details-overlay */
+  --kl-topbar: rgba(0, 0, 0, 0.76); /* .topbar */
 
   /* Lines */
-  --kl-line: rgba(255, 255, 255, 0.08);
-  --kl-line-strong: rgba(255, 255, 255, 0.16);
+  --kl-line: rgba(255, 255, 255, 0.1);
+  --kl-line-soft: rgba(255, 255, 255, 0.08);
+  --kl-line-strong: rgba(255, 255, 255, 0.12);
+  --kl-line-hover: rgba(255, 255, 255, 0.3);
 
-  /* Text (contrast checked against --kl-surface-2) */
-  --kl-text: #f4f4f5;
-  --kl-text-2: #b9b9c2;
-  --kl-text-3: #8a8a94;
-  --kl-text-inverse: #0a0a0c;
-
-  /* Accent: white stays the primary action; "luma" amber marks rating, selection and focus. */
-  --kl-primary: #ffffff;
-  --kl-primary-hover: #e9e9ec;
-  --kl-accent: #f3b74f;
-  --kl-accent-strong: #ffc766;
-  --kl-accent-soft: rgba(243, 183, 79, 0.14);
-  --kl-accent-ink: #1c1405;
-
-  /* Semantic */
-  --kl-success: #4ade80;
-  --kl-success-soft: rgba(74, 222, 128, 0.12);
-  --kl-danger: #f87171;
-  --kl-danger-soft: rgba(248, 113, 113, 0.12);
-  --kl-info: #7dd3fc;
+  /* Text */
+  --kl-text: #ffffff;
+  --kl-text-2: #c7c7c7; /* .details-description */
+  --kl-text-3: #8a8a8a; /* .user-meta email, .empty-state p */
+  --kl-text-4: #737373; /* .catalog-card-meta */
+  --kl-eyebrow: #858585; /* .eyebrow */
+  --kl-text-inverse: #000000;
 
   /* Radii */
-  --kl-radius-xs: 6px;
-  --kl-radius-sm: 10px;
-  --kl-radius-md: 14px;
-  --kl-radius-lg: 20px;
-  --kl-radius-xl: 28px;
+  --kl-radius-panel: 30px; /* .section-card, .identity-card, .details-modal */
+  --kl-radius-card: 26px; /* .catalog-card */
+  --kl-radius-tile: 24px; /* .empty-state, .level-card */
+  --kl-radius-soft: 22px; /* .soft-card, .tabs-card */
+  --kl-radius-btn: 16px; /* .primary-button, .tab-button */
+  --kl-radius-btn-sm: 14px; /* .ghost-button, .remove-button */
   --kl-radius-pill: 999px;
 
-  /* Spacing (4px grid) */
-  --kl-space-1: 4px;
-  --kl-space-2: 8px;
-  --kl-space-3: 12px;
-  --kl-space-4: 16px;
-  --kl-space-5: 20px;
-  --kl-space-6: 24px;
-  --kl-space-8: 32px;
-  --kl-space-10: 40px;
-  --kl-space-12: 48px;
-
   /* Layout */
-  --kl-container: 1240px;
-  --kl-gutter: clamp(16px, 4vw, 32px);
-  --kl-header-h: 64px;
-  --kl-bottom-nav-h: calc(84px + env(safe-area-inset-bottom));
+  --kl-container: 1180px; /* .page-shell, .topbar-inner */
+  --kl-topbar-h: 76px;
+  --kl-bottom-nav-h: calc(92px + env(safe-area-inset-bottom)); /* .profile-page-with-mobile-nav */
 
-  /* Typography: system stack, no network font. */
-  --kl-font:
-    Inter, "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont,
-    "Helvetica Neue", Roboto, Arial, sans-serif;
-  --kl-font-display:
-    Inter, "Segoe UI Variable Display", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont,
-    "Helvetica Neue", Roboto, Arial, sans-serif;
-  --kl-text-xs: 12px;
-  --kl-text-sm: 13px;
-  --kl-text-md: 15px;
-  --kl-text-lg: 17px;
-  --kl-text-xl: 21px;
-  --kl-text-2xl: clamp(24px, 3.2vw, 32px);
-  --kl-text-3xl: clamp(28px, 4.4vw, 44px);
+  /* Typography: production uses Arial with 1000 weights and tight negative tracking. */
+  --kl-font: Arial, Helvetica, sans-serif;
 
-  /* Controls */
-  --kl-control-sm: 34px;
-  --kl-control-md: 42px;
-  --kl-control-lg: 48px;
-  --kl-touch: 44px;
-
-  /* Elevation and focus */
-  --kl-shadow-1: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 10px 28px rgba(0, 0, 0, 0.32);
-  --kl-shadow-2: 0 28px 80px rgba(0, 0, 0, 0.6);
-  --kl-focus-ring: #ffd27a;
+  /* Focus: production outlines are white (.movie-card-main:focus-visible). */
+  --kl-focus-ring: #ffffff;
 
   /* Motion */
-  --kl-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
-  --kl-fast: 140ms;
+  --kl-ease: ease;
+  --kl-fast: 180ms;
   --kl-med: 220ms;
-}
-
-@keyframes kl-fade-up {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
 }
 
 @keyframes kl-fade {
@@ -115,10 +74,22 @@
   }
 }
 
+/* Same curves as production modalOverlayOpen / modalWindowOpen. */
+@keyframes kl-window-open {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 @keyframes kl-sheet-up {
   from {
     opacity: 0;
-    transform: translateY(24px);
+    transform: translateY(28px);
   }
   to {
     opacity: 1;
