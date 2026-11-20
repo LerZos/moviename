@@ -14,6 +14,7 @@ import { manualSeoMovieExpansionAdditions } from "./manualSeoMovieExpansion";
 import { manualRequestedSeriesAdditions } from "./manualRequestedSeriesAdditions";
 import { manualUserPinnedAdditions } from "./manualUserPinnedAdditions";
 import { manualThe100Addition } from "./manualThe100Addition";
+import { manualBuddyAddition } from "./manualBuddyAddition";
 import {
   IMAGE_LINKS,
   createCartoonPoster,
@@ -451,6 +452,7 @@ function hydrateMovieContent(movie: Movie) {
 const moviesRaw: Movie[] = [
   ...manualUserPinnedAdditions,
   manualThe100Addition,
+  manualBuddyAddition,
   ...manualRequestedSeriesAdditions,
   ...generatedRequestedExpansionMovies,
   ...manualCuratedExpansionPack,

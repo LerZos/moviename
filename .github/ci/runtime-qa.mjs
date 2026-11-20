@@ -68,7 +68,7 @@ for (const query of ["Сотня", "The 100"]) {
 const sitemapResponse = await fetch(`${origin}/sitemap.xml`);
 const sitemap = await sitemapResponse.text();
 const sitemapUrlCount = [...sitemap.matchAll(/<loc>[^<]+<\/loc>/g)].length;
-if (sitemapResponse.status !== 200 || sitemapUrlCount !== 2190 ||
+if (sitemapResponse.status !== 200 || sitemapUrlCount !== 2191 ||
     !sitemap.includes("https://kinoluma.online/movie/the-100-2014")) {
   errors.push(`Sitemap check failed: HTTP ${sitemapResponse.status}, ${sitemapUrlCount} URLs`);
 }
@@ -135,7 +135,7 @@ const report = {
 
 await writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
 console.log(`SSR_CANONICAL=${report.ssrCanonical.passed}/19`);
-console.log(`SITEMAP_URLS=${sitemapUrlCount}/2190`);
+console.log(`SITEMAP_URLS=${sitemapUrlCount}/2191`);
 console.log(`IMAGE_OPTIMIZER=${imageResponse.status}:${imageContentType}`);
 console.log(`ROUTE_GUARDS=${adminResponse.status}/${cronResponse.status}/${tmdbResponse.status}`);
 console.log(`RUNTIME_QA=${report.pass ? "PASS" : "FAIL"}`);

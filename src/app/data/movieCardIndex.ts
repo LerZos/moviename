@@ -21,6 +21,16 @@ export type MovieCardIndexItem = {
 
 export const movieCardIndex: MovieCardIndexItem[] = [
   {
+    id: 950002,
+    slug: "buddy-2026",
+    title: "Бадди",
+    type: "Фильм",
+    year: "2026",
+    rating: 6.6,
+    genres: ["Ужасы", "Комедия", "Фэнтези"],
+    poster: "https://image.tmdb.org/t/p/w500/1BdZbNvl1SfrrX8J9X5tQzN6Ivu.jpg",
+  },
+  {
     id: 950001,
     slug: "the-100-2014",
     title: "Сотня",

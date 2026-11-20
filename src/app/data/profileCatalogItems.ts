@@ -16,6 +16,19 @@ export type ProfileCatalogItem = {
 
 export const profileCatalogItems: ProfileCatalogItem[] = [
   {
+    id: 950002,
+    slug: "buddy-2026",
+    title: "Бадди",
+    originalTitle: "Buddy",
+    type: "Фильм",
+    year: "2026",
+    rating: 6.6,
+    genres: ["Ужасы", "Комедия", "Фэнтези"],
+    poster: "https://image.tmdb.org/t/p/w500/1BdZbNvl1SfrrX8J9X5tQzN6Ivu.jpg",
+    description: "Оранжевый единорог Бадди ведёт солнечное детское телешоу, но когда одна девочка отказывается играть по правилам, в идеальном мире появляются трещины.",
+    trailerUrl: "https://www.youtube.com/embed/0mil0YgOtu8",
+  },
+  {
     id: 950001,
     slug: "the-100-2014",
     title: "Сотня",

@@ -48,7 +48,7 @@ const manifest = {
     creditsPlanSha256: source.planSha256 ?? null,
     runtime: runtime.pass,
     ssrCanonical: `${runtime.ssrCanonical.passed}/19`,
-    sitemap: `${runtime.sitemap.urlCount}/2190`,
+    sitemap: `${runtime.sitemap.urlCount}/2191`,
     imageOptimizer: runtime.imageOptimizer,
     animeCredentialedIdentityEvidence: {
       result: "21/21 VERIFIED",
