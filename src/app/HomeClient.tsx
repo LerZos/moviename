@@ -2706,7 +2706,7 @@ export default function Home({
   }
 
   return (
-    <main className="kinoluma-home min-h-screen overflow-x-hidden bg-(--kl-bg) pb-[calc(92px+env(safe-area-inset-bottom))] text-white md:pb-0">
+    <main className="kinoluma-home min-h-screen overflow-x-hidden bg-black pb-[calc(92px+env(safe-area-inset-bottom))] text-white md:pb-0">
       <style>{`
         /* KinoLuma: широкий фон и затемнение для блока "Популярное сейчас" */
 
@@ -2987,7 +2987,7 @@ export default function Home({
           margin: 0;
           color: #737373;
           font-size: 12px;
-          font-weight: 800;
+          font-weight: 1000;
           letter-spacing: 0.28em;
           text-transform: uppercase;
         }
@@ -2997,8 +2997,8 @@ export default function Home({
           margin: 10px 0 0;
           color: #ffffff;
           font-size: clamp(28px, 4.2vw, 54px);
-          font-weight: 800;
-          letter-spacing: -0.03em;
+          font-weight: 1000;
+          letter-spacing: -0.065em;
           line-height: 0.98;
         }
 
@@ -3029,7 +3029,7 @@ export default function Home({
           padding: 0 18px;
           color: #f5f5f5;
           font-size: 13px;
-          font-weight: 800;
+          font-weight: 1000;
           transition: transform 180ms ease, border-color 180ms ease, background 180ms ease, color 180ms ease;
         }
 
@@ -3100,7 +3100,7 @@ export default function Home({
           bottom: 10px;
           color: rgba(255, 255, 255, 0.045);
           font-size: 86px;
-          font-weight: 800;
+          font-weight: 1000;
           letter-spacing: -0.12em;
           line-height: 1;
         }
@@ -3126,7 +3126,7 @@ export default function Home({
           align-items: center;
           border-radius: 999px;
           font-size: 11px;
-          font-weight: 800;
+          font-weight: 1000;
         }
 
         .home-search-hub-card-topline span {
@@ -3156,8 +3156,8 @@ export default function Home({
           display: block;
           color: #ffffff;
           font-size: 24px;
-          font-weight: 800;
-          letter-spacing: -0.03em;
+          font-weight: 1000;
+          letter-spacing: -0.05em;
           line-height: 1.04;
         }
 
@@ -3181,7 +3181,7 @@ export default function Home({
           gap: 12px;
           color: #d4d4d4;
           font-size: 12px;
-          font-weight: 800;
+          font-weight: 1000;
         }
 
         .home-search-hub-card-bottom span:first-child {
@@ -4207,7 +4207,7 @@ export default function Home({
             border-radius: 13px;
             object-fit: cover;
             display: block;
-            background: var(--kl-bg);
+            background: #050505;
             border: 1px solid rgba(255,255,255,0.08);
             box-shadow: none;
           }
@@ -4322,7 +4322,7 @@ export default function Home({
 
           .mobile-logo-title {
             font-size: 24px;
-            letter-spacing: -0.03em;
+            letter-spacing: -0.05em;
             white-space: nowrap;
           }
 
@@ -4332,7 +4332,7 @@ export default function Home({
             border-radius: 13px;
             object-fit: cover;
             display: block;
-            background: var(--kl-bg);
+            background: #050505;
             border: 1px solid rgba(255,255,255,0.08);
             box-shadow: none;
           }
@@ -4424,7 +4424,7 @@ export default function Home({
           .mobile-hero-title {
             font-size: clamp(38px, 13vw, 56px);
             line-height: 0.96;
-            letter-spacing: -0.035em;
+            letter-spacing: -0.075em;
           }
 
           .mobile-hero-original {
@@ -4679,7 +4679,7 @@ export default function Home({
           .details-modal-content h3 {
             font-size: clamp(30px, 10vw, 40px) !important;
             line-height: 0.98;
-            letter-spacing: -0.03em;
+            letter-spacing: -0.06em;
           }
 
           .details-modal-content .mt-6.text-lg {
@@ -4829,7 +4829,7 @@ export default function Home({
             max-height: min(68dvh, 520px);
             border-radius: 24px;
             border-color: rgba(255,255,255,0.12);
-            background: var(--kl-surface);
+            background: rgba(4,4,4,0.96);
             box-shadow: 0 30px 110px rgba(0,0,0,0.82);
           }
 
@@ -4950,7 +4950,7 @@ export default function Home({
           .mobile-hero-title {
             font-size: clamp(30px, 10.5vw, 46px);
             line-height: 0.95;
-            letter-spacing: -0.035em;
+            letter-spacing: -0.075em;
             text-wrap: balance;
           }
 
@@ -5483,7 +5483,7 @@ export default function Home({
           .mobile-hero-title {
             font-size: clamp(27px, 9.4vw, 39px) !important;
             line-height: 0.96 !important;
-            letter-spacing: -0.035em !important;
+            letter-spacing: -0.07em !important;
             text-wrap: balance;
           }
 
@@ -5770,7 +5770,7 @@ export default function Home({
             max-width: 230px !important;
             color: rgba(255,255,255,0.82) !important;
             font-size: 11px !important;
-            font-weight: 800 !important;
+            font-weight: 1000 !important;
             letter-spacing: 0.34em !important;
             line-height: 1.1 !important;
             text-transform: uppercase !important;
@@ -5785,7 +5785,7 @@ export default function Home({
             background: rgba(255,255,255,0.09) !important;
             color: rgba(255,255,255,0.82) !important;
             font-size: 12px !important;
-            font-weight: 800 !important;
+            font-weight: 1000 !important;
             letter-spacing: 0.05em !important;
           }
 
@@ -5896,7 +5896,7 @@ export default function Home({
             overflow: hidden !important;
             color: rgba(255,255,255,0.90) !important;
             font-size: 13px !important;
-            font-weight: 800 !important;
+            font-weight: 1000 !important;
             line-height: 1.15 !important;
             text-overflow: ellipsis !important;
             white-space: nowrap !important;
@@ -5940,7 +5940,7 @@ export default function Home({
             margin: 0 !important;
             color: rgba(255,255,255,0.58) !important;
             font-size: 10px !important;
-            font-weight: 800 !important;
+            font-weight: 1000 !important;
             line-height: 1.15 !important;
             text-align: center !important;
           }
@@ -6113,7 +6113,7 @@ export default function Home({
           .desktop-watch-section { position: relative; }
           .desktop-mock-section-head-tight { margin-top: 0; padding-right: 0; }
           .desktop-mock-eyebrow { color: rgba(255,255,255,0.44); font-size: 10px; font-weight: 900; letter-spacing: 0.32em; text-transform: uppercase; }
-          .desktop-mock-title { margin-top: 7px; color: #fff; font-size: 27px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
+          .desktop-mock-title { margin-top: 7px; color: #fff; font-size: 27px; font-weight: 1000; letter-spacing: -0.052em; line-height: 1; }
           .desktop-mock-count { margin-top: 8px; color: rgba(255,255,255,0.46); font-size: 13px; font-weight: 800; }
           .desktop-mock-panel { border: 1px solid rgba(255,255,255,0.115); border-radius: 28px; background: radial-gradient(circle at 18% 0%, rgba(255,255,255,0.085), transparent 38%), linear-gradient(180deg, rgba(255,255,255,0.052), rgba(255,255,255,0.018)), rgba(8,8,9,0.88); box-shadow: 0 28px 86px rgba(0,0,0,0.50), inset 0 1px 0 rgba(255,255,255,0.085); backdrop-filter: blur(18px); }
 
@@ -6130,7 +6130,7 @@ export default function Home({
           .desktop-mock-rail-card:hover { transform: translateY(-4px); border-color: rgba(255,255,255,0.30); box-shadow: 0 26px 66px rgba(0,0,0,0.50); }
           .desktop-mock-rail-card img { display: block; width: 100%; aspect-ratio: 2 / 3; object-fit: cover; object-position: center; filter: saturate(0.9) contrast(1.04); }
           .desktop-mock-rail-card span { position: absolute; inset: auto 0 0; padding: 54px 12px 12px; background: linear-gradient(transparent, rgba(0,0,0,0.94)); }
-          .desktop-mock-rail-card strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 800; }
+          .desktop-mock-rail-card strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 1000; }
           .desktop-mock-rail-card em { display: block; margin-top: 4px; color: rgba(255,255,255,0.58); font-size: 11px; font-style: normal; font-weight: 850; }
 
           .desktop-mock-genres { display: flex; flex-wrap: wrap; justify-content: center; max-width: 940px; margin: 0 auto; gap: 8px; padding: 13px; }
@@ -6160,11 +6160,11 @@ export default function Home({
           .desktop-mock-card-poster::after { content: ""; position: absolute; inset: auto 0 0; height: 34%; background: linear-gradient(180deg, transparent, rgba(0,0,0,0.76)); pointer-events: none; }
           .desktop-mock-card-poster img { display: block; width: 100%; aspect-ratio: 2 / 3; object-fit: cover; object-position: center; filter: saturate(0.90) contrast(1.04); transition: filter 260ms ease; }
           .desktop-mock-card:hover .desktop-mock-card-poster img { filter: saturate(1) contrast(1.08); }
-          .desktop-mock-card-type, .desktop-mock-card-rating { position: absolute; z-index: 3; top: 12px; border-radius: 999px; padding: 8px 11px; font-size: 11px; font-weight: 800; line-height: 1; letter-spacing: -0.01em; }
+          .desktop-mock-card-type, .desktop-mock-card-rating { position: absolute; z-index: 3; top: 12px; border-radius: 999px; padding: 8px 11px; font-size: 11px; font-weight: 1000; line-height: 1; letter-spacing: -0.01em; }
           .desktop-mock-card-type { left: 12px; background: rgba(3,3,3,0.74); color: #fff; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12); backdrop-filter: blur(12px); }
           .desktop-mock-card-rating { right: 12px; min-width: 48px; text-align: center; background: rgba(3,3,3,0.74); color: #ffd76a; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12), 0 12px 30px rgba(0,0,0,0.32); backdrop-filter: blur(12px); font-size: 12px; }
           .desktop-mock-card-body { display: grid; gap: 9px; padding: 16px 15px 18px; border-top: 1px solid rgba(255,255,255,0.08); background: linear-gradient(180deg, rgba(255,255,255,0.018), rgba(255,255,255,0.006)); }
-          .desktop-mock-card h3 { display: -webkit-box; min-height: 38px; margin: 0; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; color: #fff; font-size: 17px; font-weight: 800; letter-spacing: -0.025em; line-height: 1.08; }
+          .desktop-mock-card h3 { display: -webkit-box; min-height: 38px; margin: 0; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; color: #fff; font-size: 17px; font-weight: 1000; letter-spacing: -0.025em; line-height: 1.08; }
           .desktop-mock-card-body p { margin: -2px 0 0; overflow: hidden; color: rgba(255,255,255,0.42); font-size: 12px; font-weight: 850; text-overflow: ellipsis; white-space: nowrap; }
           .desktop-mock-meta { display: flex; justify-content: space-between; gap: 12px; color: rgba(255,255,255,0.50); font-size: 12px; font-weight: 950; }
           .desktop-mock-meta span:last-child { overflow: hidden; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
@@ -6178,18 +6178,18 @@ export default function Home({
           .desktop-mock-side-panel { padding: 16px; }
           .desktop-mock-side-panel { background: radial-gradient(circle at 74% 0%, rgba(255,255,255,0.13), transparent 36%), linear-gradient(180deg, rgba(255,255,255,0.060), rgba(255,255,255,0.018)), rgba(8,8,9,0.88); }
           .desktop-mock-side-featured { background: radial-gradient(circle at 74% 0%, rgba(255,255,255,0.13), transparent 36%), linear-gradient(180deg, rgba(255,255,255,0.060), rgba(255,255,255,0.018)), rgba(8,8,9,0.88); }
-          .desktop-mock-side-title { margin: 5px 0 13px; color: #fff; font-size: 20px; font-weight: 800; letter-spacing: -0.04em; }
+          .desktop-mock-side-title { margin: 5px 0 13px; color: #fff; font-size: 20px; font-weight: 1000; letter-spacing: -0.04em; }
           .desktop-mock-side-item { display: grid; grid-template-columns: 32px 60px minmax(0, 1fr); gap: 12px; align-items: center; width: 100%; border: 1px solid transparent; border-top-color: rgba(255,255,255,0.075); border-radius: 15px; background: transparent; padding: 10px 8px; color: #fff; text-align: left; transition: background 170ms ease, border-color 170ms ease, transform 170ms ease; }
           .desktop-mock-side-item:first-of-type { border-top-color: transparent; }
           .desktop-mock-side-item:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.14); background: rgba(255,255,255,0.050); }
-          .desktop-mock-rank { display: grid; width: 30px; height: 30px; place-items: center; border: 1px solid rgba(255,255,255,0.14); border-radius: 999px; background: rgba(255,255,255,0.045); font-size: 11px; font-weight: 800; }
+          .desktop-mock-rank { display: grid; width: 30px; height: 30px; place-items: center; border: 1px solid rgba(255,255,255,0.14); border-radius: 999px; background: rgba(255,255,255,0.045); font-size: 11px; font-weight: 1000; }
           .desktop-mock-side-item img { width: 60px; height: 90px; border-radius: 12px; object-fit: cover; object-position: center; box-shadow: 0 14px 28px rgba(0,0,0,0.36); }
-          .desktop-mock-side-item strong { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; font-size: 13px; font-weight: 800; line-height: 1.2; }
+          .desktop-mock-side-item strong { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; font-size: 13px; font-weight: 1000; line-height: 1.2; }
           .desktop-mock-side-item small { display: block; margin-top: 6px; color: rgba(255,255,255,0.50); font-size: 11px; font-weight: 850; }
           .desktop-mock-collection-item { grid-template-columns: 32px 58px minmax(0, 1fr); text-decoration: none; }
-          .desktop-mock-collection-mark { position: relative; display: grid; width: 58px; height: 58px; place-items: center; overflow: hidden; border: 1px solid rgba(255,255,255,0.11); border-radius: 16px; background: radial-gradient(circle at 34% 22%, rgba(255,255,255,0.14), transparent 38%), linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02)); color: #fff; font-size: 12px; font-weight: 800; box-shadow: 0 16px 34px rgba(0,0,0,0.30); }
+          .desktop-mock-collection-mark { position: relative; display: grid; width: 58px; height: 58px; place-items: center; overflow: hidden; border: 1px solid rgba(255,255,255,0.11); border-radius: 16px; background: radial-gradient(circle at 34% 22%, rgba(255,255,255,0.14), transparent 38%), linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02)); color: #fff; font-size: 12px; font-weight: 1000; box-shadow: 0 16px 34px rgba(0,0,0,0.30); }
           .desktop-mock-collection-mark img { width: 32px; height: 32px; object-fit: contain; opacity: 0.92; filter: drop-shadow(0 8px 18px rgba(255,255,255,0.10)); }
-          .desktop-mock-collection-mark em { position: absolute; right: 5px; bottom: 4px; max-width: 48px; overflow: hidden; color: rgba(255,255,255,0.72); font-size: 8px; font-style: normal; font-weight: 800; letter-spacing: -0.02em; text-overflow: ellipsis; white-space: nowrap; }
+          .desktop-mock-collection-mark em { position: absolute; right: 5px; bottom: 4px; max-width: 48px; overflow: hidden; color: rgba(255,255,255,0.72); font-size: 8px; font-style: normal; font-weight: 1000; letter-spacing: -0.02em; text-overflow: ellipsis; white-space: nowrap; }
           .desktop-mock-side-link { display: inline-flex; align-items: center; gap: 7px; margin-top: 12px; border: 1px solid rgba(255,255,255,0.12); border-radius: 999px; padding: 9px 12px; color: rgba(255,255,255,0.82); font-size: 12px; font-weight: 950; text-decoration: none; transition: transform 180ms ease, border-color 180ms ease, background 180ms ease, color 180ms ease; }
           .desktop-mock-side-link:hover { transform: translateY(-1px); border-color: rgba(255,255,255,0.24); background: rgba(255,255,255,0.06); color: #fff; }
           .desktop-mock-telegram-banner { position: relative; display: grid; grid-template-columns: 54px minmax(0, 1fr) 36px; align-items: center; gap: 13px; overflow: hidden; padding: 16px; color: #fff; text-decoration: none; isolation: isolate; transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1), border-color 220ms ease, box-shadow 220ms ease, background 220ms ease; }
@@ -6197,11 +6197,11 @@ export default function Home({
           .desktop-mock-telegram-banner:hover { transform: translateY(-3px); border-color: rgba(255,255,255,0.22); box-shadow: 0 28px 76px rgba(0,0,0,0.56), 0 0 30px rgba(255,255,255,0.045), inset 0 1px 0 rgba(255,255,255,0.12); }
           .desktop-mock-telegram-banner:hover::before { opacity: 1; transform: scale(1.04); }
           .desktop-mock-telegram-orbit { position: absolute; right: -34px; top: -44px; width: 124px; height: 124px; border: 1px solid rgba(255,255,255,0.10); border-radius: 999px; box-shadow: inset 0 0 34px rgba(255,255,255,0.035); opacity: 0.74; }
-          .desktop-mock-telegram-mark { display: grid; width: 54px; height: 54px; place-items: center; border: 1px solid rgba(255,255,255,0.13); border-radius: 17px; background: radial-gradient(circle at 32% 18%, rgba(255,255,255,0.22), transparent 38%), linear-gradient(145deg, rgba(255,255,255,0.10), rgba(255,255,255,0.025)); font-size: 13px; font-weight: 800; box-shadow: 0 18px 42px rgba(0,0,0,0.36); }
+          .desktop-mock-telegram-mark { display: grid; width: 54px; height: 54px; place-items: center; border: 1px solid rgba(255,255,255,0.13); border-radius: 17px; background: radial-gradient(circle at 32% 18%, rgba(255,255,255,0.22), transparent 38%), linear-gradient(145deg, rgba(255,255,255,0.10), rgba(255,255,255,0.025)); font-size: 13px; font-weight: 1000; box-shadow: 0 18px 42px rgba(0,0,0,0.36); }
           .desktop-mock-telegram-mark img { width: 36px; height: 36px; object-fit: contain; filter: drop-shadow(0 10px 20px rgba(255,255,255,0.12)); }
           .desktop-mock-telegram-copy { display: grid; gap: 5px; min-width: 0; }
           .desktop-mock-telegram-copy .desktop-mock-eyebrow { font-size: 9px; letter-spacing: 0.28em; }
-          .desktop-mock-telegram-copy strong { font-size: 18px; font-weight: 800; letter-spacing: -0.035em; }
+          .desktop-mock-telegram-copy strong { font-size: 18px; font-weight: 1000; letter-spacing: -0.035em; }
           .desktop-mock-telegram-copy small { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; color: rgba(255,255,255,0.52); font-size: 11px; font-weight: 800; line-height: 1.35; }
           .desktop-mock-telegram-arrow { display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid rgba(255,255,255,0.13); border-radius: 999px; background: rgba(255,255,255,0.055); font-size: 18px; font-weight: 950; transition: transform 220ms ease, background 220ms ease, color 220ms ease; }
           .desktop-mock-telegram-banner:hover .desktop-mock-telegram-arrow { transform: translateX(2px); background: #fff; color: #050505; }}        /* Desktop home polish based on the balanced catalog mockup */
@@ -6300,7 +6300,7 @@ export default function Home({
             max-width: 760px;
             font-size: clamp(54px, 5.2vw, 94px) !important;
             line-height: 0.92 !important;
-            letter-spacing: -0.035em;
+            letter-spacing: -0.075em;
             text-wrap: balance;
           }
 
@@ -6745,7 +6745,7 @@ export default function Home({
 
           .details-modal-actions > button[title="Открыть страницу фильма"] {
             order: 1;
-            font-weight: 800 !important;
+            font-weight: 1000 !important;
           }
 
           .details-modal-actions > button:not([title="Открыть страницу фильма"]),
@@ -6814,7 +6814,7 @@ export default function Home({
             border-radius: 999px;
             padding: 0 9px;
             font-size: 10px;
-            font-weight: 800;
+            font-weight: 1000;
             line-height: 1;
             letter-spacing: -0.01em;
           }
@@ -6855,7 +6855,7 @@ export default function Home({
           .mobile-v2-section-head span {
             color: rgba(255,255,255,0.45);
             font-size: 9px;
-            font-weight: 800;
+            font-weight: 1000;
             letter-spacing: 0.28em;
             text-transform: uppercase;
           }
@@ -6877,8 +6877,8 @@ export default function Home({
             margin: 8px 0 0;
             color: #fff;
             font-size: clamp(30px, 7vw, 58px);
-            font-weight: 800;
-            letter-spacing: -0.035em;
+            font-weight: 1000;
+            letter-spacing: -0.07em;
             line-height: 0.94;
           }
 
@@ -6937,7 +6937,7 @@ export default function Home({
             border: 1px solid rgba(255,255,255,0.13);
             padding: 0 14px;
             font-size: 13px;
-            font-weight: 800;
+            font-weight: 1000;
             transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1), background 180ms ease, color 180ms ease, border-color 180ms ease;
           }
 
@@ -6976,8 +6976,8 @@ export default function Home({
             margin: 5px 0 0;
             color: #fff;
             font-size: clamp(24px, 5.8vw, 36px);
-            font-weight: 800;
-            letter-spacing: -0.03em;
+            font-weight: 1000;
+            letter-spacing: -0.055em;
             line-height: 1;
           }
 
@@ -7040,7 +7040,7 @@ export default function Home({
           .mobile-v2-watch-card strong {
             color: #fff;
             font-size: 12px;
-            font-weight: 800;
+            font-weight: 1000;
           }
 
           .mobile-v2-watch-card em {
@@ -7175,7 +7175,7 @@ export default function Home({
             -webkit-line-clamp: 2;
             color: #fff;
             font-size: 15px;
-            font-weight: 800;
+            font-weight: 1000;
             letter-spacing: -0.025em;
             line-height: 1.08;
           }
@@ -7256,7 +7256,7 @@ export default function Home({
             background: rgba(255,255,255,0.05);
             color: #fff;
             font-size: 10px;
-            font-weight: 800;
+            font-weight: 1000;
           }
 
           .mobile-v2-list-item > img,
@@ -7282,10 +7282,10 @@ export default function Home({
             place-items: center;
             color: #fff;
             font-size: 11px;
-            font-weight: 800;
+            font-weight: 1000;
           }
           .mobile-v2-collection-mark img { width: 32px; height: 32px; object-fit: contain; opacity: 0.92; }
-          .mobile-v2-collection-mark em { position: absolute; right: 5px; bottom: 4px; max-width: 48px; overflow: hidden; color: rgba(255,255,255,0.70); font-size: 8px; font-style: normal; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+          .mobile-v2-collection-mark em { position: absolute; right: 5px; bottom: 4px; max-width: 48px; overflow: hidden; color: rgba(255,255,255,0.70); font-size: 8px; font-style: normal; font-weight: 1000; text-overflow: ellipsis; white-space: nowrap; }
 
           .mobile-v2-list-item strong,
           .mobile-v2-list-item em {
@@ -7300,7 +7300,7 @@ export default function Home({
             -webkit-line-clamp: 2;
             color: #fff;
             font-size: 13px;
-            font-weight: 800;
+            font-weight: 1000;
             line-height: 1.18;
           }
 
@@ -7369,7 +7369,7 @@ export default function Home({
             color: rgba(255,255,255,0.46);
             font-size: 9px;
             font-style: normal;
-            font-weight: 800;
+            font-weight: 1000;
             letter-spacing: 0.28em;
             text-transform: uppercase;
           }
@@ -7378,7 +7378,7 @@ export default function Home({
             overflow: hidden;
             color: #fff;
             font-size: 18px;
-            font-weight: 800;
+            font-weight: 1000;
             letter-spacing: -0.04em;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -8123,7 +8123,7 @@ export default function Home({
         </div>
       </section>
 
-      <section className="mobile-hero relative flex min-h-[720px] items-center gap-8 overflow-hidden bg-(--kl-bg) px-8 pt-16 lg:gap-10">
+      <section className="mobile-hero relative flex min-h-[720px] items-center gap-8 overflow-hidden bg-black px-8 pt-16 lg:gap-10">
         <button
           type="button"
           onClick={() => openDetails(featuredContent)}

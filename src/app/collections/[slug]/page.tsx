@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+
+import MobileBottomNav from "../../components/MobileBottomNav";
 import { notFound } from "next/navigation";
 
 import {
@@ -17,8 +19,6 @@ import {
   slugifyGenre,
   trimSeoText,
 } from "../../lib/seo";
-import MobileBottomNav from "../../components/MobileBottomNav";
-import SiteHeader from "../../components/ui/SiteHeader";
 import CollectionMovieGridClient from "../CollectionMovieGridClient";
 import CollectionsRevealClient from "../CollectionsRevealClient";
 import { collectionStyles } from "../collectionStyles";
@@ -217,7 +217,20 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
         <span />
       </div>
 
-      <SiteHeader section="collections" sectionLabel="Подборка" />
+      <header className="collections-header">
+        <Link href="/" className="collections-brand" aria-label="KinoLuma — на главную">
+          <img src="/kinoluma-icon.png" alt="KinoLuma" />
+          <span>KinoLuma</span>
+        </Link>
+
+        <nav className="collections-header-actions" aria-label="Навигация по KinoLuma">
+          <Link href="/collections">Подборки</Link>
+          <Link href="/catalog/films">Фильмы</Link>
+          <Link href="/catalog/series">Сериалы</Link>
+          <Link href="/catalog/cartoons">Мультфильмы</Link>
+          <Link href="/">На главную</Link>
+        </nav>
+      </header>
 
       <div className="collections-shell">
         <Link href="/collections" className="collection-back-link">

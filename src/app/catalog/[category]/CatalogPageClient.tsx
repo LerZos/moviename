@@ -6,7 +6,6 @@ import { type ReactNode, useEffect, useMemo, useState } from "react";
 
 import MobileBottomNav from "../../components/MobileBottomNav";
 import PosterImage from "../../components/PosterImage";
-import SiteHeader, { type SiteHeaderSection } from "../../components/ui/SiteHeader";
 import type { Movie } from "../../data/movies";
 import { canResolveTrailerUrl, resolveTrailerUrl } from "../../lib/trailers";
 
@@ -54,13 +53,6 @@ const catalogCategories: Record<string, CatalogCategory> = {
     description:
       "Добрые, красивые и энергичные мультфильмы для отдыха без лишней тяжести.",
   },
-};
-
-const catalogHeaderSections: Record<string, SiteHeaderSection> = {
-  films: "films",
-  series: "series",
-  anime: "anime",
-  cartoons: "cartoons",
 };
 
 const catalogNavItems = [
@@ -667,7 +659,7 @@ export default function CatalogCategoryPage({
 
   if (!category) {
     return (
-      <main className="kinoluma-catalog min-h-screen bg-(--kl-bg) px-6 py-24 text-white">
+      <main className="kinoluma-catalog min-h-screen bg-black px-6 py-24 text-white">
         <style>{catalogStyles}</style>
 
         <div className="catalog-bg-elements" aria-hidden="true">
@@ -708,7 +700,7 @@ export default function CatalogCategoryPage({
   ];
 
   return (
-    <main className="kinoluma-catalog min-h-screen overflow-x-hidden bg-(--kl-bg) text-white">
+    <main className="kinoluma-catalog min-h-screen overflow-x-hidden bg-black text-white">
       <style>{catalogStyles}</style>
 
       <div className="catalog-bg-elements" aria-hidden="true">
@@ -720,30 +712,37 @@ export default function CatalogCategoryPage({
         <span className="catalog-bg-dot catalog-bg-dot-two" />
       </div>
 
-      <SiteHeader
-        section={catalogHeaderSections[categoryKey]}
-        sectionLabel="Каталог"
-        actions={
-          <Link href="/profile" className="kl-btn kl-btn--ghost kl-btn--sm">
-            Профиль
-          </Link>
-        }
-      />
+      <header className="catalog-header">
+        <Link href="/" className="catalog-brand" aria-label="KinoLuma — на главную">
+          <img
+            src="/kinoluma-icon.png"
+            alt="KinoLuma"
+            className="catalog-brand-logo"
+            draggable={false}
+          />
+          <span className="catalog-brand-text">KinoLuma</span>
+        </Link>
 
-      <div className="catalog-subnav">
         <nav className="catalog-header-nav" aria-label="Каталоги KinoLuma">
           {catalogNavItems.map((item) => (
             <Link
               key={item.key}
               href={`/catalog/${item.key}`}
               className={categoryKey === item.key ? "is-active" : ""}
-              aria-current={categoryKey === item.key ? "page" : undefined}
             >
               {item.label}
             </Link>
           ))}
         </nav>
-      </div>
+
+        <button
+          type="button"
+          onClick={() => router.push("/")}
+          className="catalog-home-button"
+        >
+          На главную
+        </button>
+      </header>
 
       <section className="catalog-hero">
         <div className="catalog-hero-inner">
@@ -1245,7 +1244,7 @@ const catalogStyles = `
     opacity: 0.62;
   }
 
-  .catalog-subnav,
+  .catalog-header,
   .catalog-hero,
   .catalog-controls-section,
   .catalog-grid-section,
@@ -1254,17 +1253,21 @@ const catalogStyles = `
     z-index: 2;
   }
 
-  .catalog-subnav {
-    width: min(100% - 36px, 1320px);
-    margin: 0 auto;
-    padding-top: 18px;
-  }
-
-  /* The legacy patch block below centres this nav with !important; the sub-nav aligns with the hero. */
-  .catalog-subnav .catalog-header-nav {
-    justify-content: flex-start !important;
-    padding: 4px 0 !important;
-    margin: 0 !important;
+  .catalog-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 18px;
+    width: 100%;
+    min-height: 78px;
+    padding: 0 clamp(18px, 4vw, 42px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.9);
+    backdrop-filter: blur(22px);
+    -webkit-backdrop-filter: blur(22px);
   }
 
   .catalog-brand {
@@ -1285,7 +1288,7 @@ const catalogStyles = `
     min-width: 46px;
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 13px;
-    background: var(--kl-bg);
+    background: #050505;
     object-fit: cover;
     box-shadow: none;
     pointer-events: none;
@@ -1294,7 +1297,7 @@ const catalogStyles = `
 
   .catalog-brand-text {
     font-size: 17px;
-    font-weight: 800;
+    font-weight: 1000;
     letter-spacing: 0.01em;
   }
 
@@ -1327,7 +1330,7 @@ const catalogStyles = `
       rgba(255, 255, 255, 0.025);
     color: rgba(255, 255, 255, 0.72);
     font-size: 12px;
-    font-weight: 800;
+    font-weight: 1000;
     text-decoration: none;
     white-space: nowrap;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.055);
@@ -1363,7 +1366,7 @@ const catalogStyles = `
     background: rgba(255, 255, 255, 0.92);
     color: #000000;
     font-size: 13px;
-    font-weight: 800;
+    font-weight: 1000;
     cursor: pointer;
     box-shadow: 0 18px 48px rgba(0, 0, 0, 0.42);
     transition: transform 180ms ease, background 180ms ease, color 180ms ease, border-color 180ms ease;
@@ -1398,7 +1401,7 @@ const catalogStyles = `
     margin: 0;
     color: #737373;
     font-size: 13px;
-    font-weight: 800;
+    font-weight: 1000;
     letter-spacing: 0.32em;
     text-transform: uppercase;
   }
@@ -1407,8 +1410,8 @@ const catalogStyles = `
     margin: 14px 0 0;
     color: #ffffff;
     font-size: clamp(42px, 6.4vw, 92px);
-    font-weight: 800;
-    letter-spacing: -0.035em;
+    font-weight: 1000;
+    letter-spacing: -0.07em;
     line-height: 0.92;
   }
 
@@ -1416,7 +1419,7 @@ const catalogStyles = `
     margin: 14px 0 0;
     color: rgba(255, 255, 255, 0.86);
     font-size: clamp(20px, 2.8vw, 32px);
-    font-weight: 800;
+    font-weight: 1000;
     letter-spacing: -0.045em;
   }
 
@@ -1449,7 +1452,7 @@ const catalogStyles = `
     margin: 0;
     color: #787878;
     font-size: 12px;
-    font-weight: 800;
+    font-weight: 1000;
     letter-spacing: 0.18em;
     text-transform: uppercase;
   }
@@ -1459,8 +1462,8 @@ const catalogStyles = `
     margin-top: 8px;
     color: #ffffff;
     font-size: 58px;
-    font-weight: 800;
-    letter-spacing: -0.035em;
+    font-weight: 1000;
+    letter-spacing: -0.08em;
     line-height: 0.95;
   }
 
@@ -1547,7 +1550,7 @@ const catalogStyles = `
     border: 0;
     color: #a3a3a3;
     cursor: pointer;
-    font-weight: 800;
+    font-weight: 1000;
     transition: transform 180ms ease, background 180ms ease, color 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
   }
 
@@ -1632,7 +1635,7 @@ const catalogStyles = `
     margin: 0;
     color: #727272;
     font-size: 12px;
-    font-weight: 800;
+    font-weight: 1000;
     letter-spacing: 0.24em;
     text-transform: uppercase;
   }
@@ -1641,7 +1644,7 @@ const catalogStyles = `
     margin: 5px 0 0;
     color: #ffffff;
     font-size: 24px;
-    font-weight: 800;
+    font-weight: 1000;
     letter-spacing: -0.04em;
   }
 
@@ -1743,7 +1746,7 @@ const catalogStyles = `
     border-radius: 999px;
     padding: 0 10px;
     font-size: 11px;
-    font-weight: 800;
+    font-weight: 1000;
     line-height: 1;
     box-shadow: 0 10px 28px rgba(0, 0, 0, 0.32);
   }
@@ -1800,7 +1803,7 @@ const catalogStyles = `
     background: transparent;
     color: #ffffff;
     font-size: 18px;
-    font-weight: 800;
+    font-weight: 1000;
     letter-spacing: -0.03em;
     line-height: 1.18;
     text-align: left;
@@ -1871,7 +1874,7 @@ const catalogStyles = `
     justify-content: center;
     border-radius: 13px;
     font-size: 13px;
-    font-weight: 800;
+    font-weight: 1000;
     text-decoration: none;
     cursor: pointer;
     transition: transform 180ms ease, background 180ms ease, color 180ms ease, border-color 180ms ease;
@@ -1932,7 +1935,7 @@ const catalogStyles = `
       rgba(8, 8, 8, 0.86);
     color: #ffffff;
     font-size: 15px;
-    font-weight: 800;
+    font-weight: 1000;
     letter-spacing: 0.01em;
     line-height: 1;
     box-shadow:
@@ -2027,7 +2030,7 @@ const catalogStyles = `
     margin: 0 0 9px;
     color: #ffffff;
     font-size: 16px;
-    font-weight: 800;
+    font-weight: 1000;
   }
 
   .catalog-faq-card p {
@@ -2045,7 +2048,7 @@ const catalogStyles = `
   .catalog-not-found h1 {
     margin: 0;
     color: #ffffff;
-    font-weight: 800;
+    font-weight: 1000;
     letter-spacing: -0.04em;
   }
 
@@ -2072,7 +2075,7 @@ const catalogStyles = `
     margin: 0;
     color: #737373;
     font-size: 13px;
-    font-weight: 800;
+    font-weight: 1000;
     letter-spacing: 0.28em;
     text-transform: uppercase;
   }
@@ -2090,7 +2093,7 @@ const catalogStyles = `
     border-radius: 999px;
     background: #ffffff;
     color: #000000;
-    font-weight: 800;
+    font-weight: 1000;
     cursor: pointer;
   }
 
@@ -2353,7 +2356,7 @@ const catalogStyles = `
     .details-modal-content h3 {
       font-size: clamp(30px, 10vw, 40px) !important;
       line-height: 0.98;
-      letter-spacing: -0.03em;
+      letter-spacing: -0.06em;
     }
 
     .details-modal-content .mt-6.text-lg {
@@ -2443,7 +2446,7 @@ const catalogStyles = `
   .catalog-hero h1 {
     max-width: 900px !important;
     font-size: clamp(44px, 6vw, 78px) !important;
-    letter-spacing: -0.03em !important;
+    letter-spacing: -0.065em !important;
   }
 
   .catalog-hero h2 {
@@ -2649,11 +2652,11 @@ const catalogStyles = `
     }
   }
 
-  /* UI 2.0: room for the shared mobile bottom navigation. */
+
+  /* Room for the shared mobile bottom navigation. */
   @media (max-width: 760px) {
-    .kinoluma-collections,
     .kinoluma-catalog {
-      padding-bottom: var(--kl-bottom-nav-h);
+      padding-bottom: calc(96px + env(safe-area-inset-bottom));
     }
   }
 `;

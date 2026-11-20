@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import MobileBottomNav from "../components/MobileBottomNav";
+
 import {
   getSeoCollectionGroups,
   getSeoCollectionItems,
   seoCollections,
 } from "../data/collections";
 import { siteUrl, trimSeoText } from "../lib/seo";
-import MobileBottomNav from "../components/MobileBottomNav";
-import SiteHeader from "../components/ui/SiteHeader";
 import CollectionsRevealClient from "./CollectionsRevealClient";
 import { collectionStyles } from "./collectionStyles";
 
@@ -73,7 +73,20 @@ export default function CollectionsIndexPage() {
         <span />
       </div>
 
-      <SiteHeader section="collections" sectionLabel="Подборки" />
+      <header className="collections-header">
+        <Link href="/" className="collections-brand" aria-label="KinoLuma — на главную">
+          <img src="/kinoluma-icon.png" alt="KinoLuma" />
+          <span>KinoLuma</span>
+        </Link>
+
+        <nav className="collections-header-actions" aria-label="Навигация по KinoLuma">
+          <Link href="/catalog/films">Фильмы</Link>
+          <Link href="/catalog/series">Сериалы</Link>
+          <Link href="/catalog/anime">Аниме</Link>
+          <Link href="/catalog/cartoons">Мультфильмы</Link>
+          <Link href="/">На главную</Link>
+        </nav>
+      </header>
 
       <div className="collections-shell">
         <section className="collections-hero">

@@ -47,7 +47,7 @@ const loadingStyles = `
     position: relative;
     min-height: 100vh;
     overflow: hidden;
-    background: var(--kl-bg);
+    background: #050505;
     color: #ffffff;
   }
 
@@ -88,7 +88,7 @@ const loadingStyles = `
     margin: 0;
     font-size: 20px;
     line-height: 1;
-    font-weight: 800;
+    font-weight: 1000;
     letter-spacing: -0.04em;
   }
 
