@@ -1,9 +1,9 @@
-name: KinoLuma UI 2.0 Linux release candidate
+name: KinoLuma UI 2.0 visual revision Linux CI
 
 on:
   push:
     branches:
-      - work/claude-ui2-release-20261120
+      - work/claude-ui2-visual-revision-20261120
   workflow_dispatch:
 
 permissions:
@@ -49,7 +49,7 @@ jobs:
 
       - name: Verify approved ref
         shell: bash
-        run: test "$GITHUB_REF_NAME" = "work/claude-ui2-release-20261120"
+        run: test "$GITHUB_REF_NAME" = "work/claude-ui2-visual-revision-20261120"
 
       - name: Set up exact production Node.js version
         uses: actions/setup-node@v7.1.0
@@ -120,7 +120,7 @@ jobs:
       - name: Verify approved ref
         shell: bash
         run: |
-          test "$GITHUB_REF_NAME" = "work/claude-ui2-release-20261120"
+          test "$GITHUB_REF_NAME" = "work/claude-ui2-visual-revision-20261120"
           case "$GITHUB_EVENT_NAME" in
             push|workflow_dispatch) ;;
             *) echo "Unsupported event: $GITHUB_EVENT_NAME" >&2; exit 1 ;;

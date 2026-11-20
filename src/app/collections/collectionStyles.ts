@@ -107,7 +107,7 @@ export const collectionStyles = `
     min-width: 0;
     align-items: center;
     gap: 13px;
-    font-weight: 800;
+    font-weight: 1000;
   }
 
   .collections-brand img {
@@ -115,7 +115,7 @@ export const collectionStyles = `
     height: 46px;
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 13px;
-    background: var(--kl-bg);
+    background: #050505;
     object-fit: cover;
   }
 
@@ -138,7 +138,7 @@ export const collectionStyles = `
     padding: 0 16px;
     color: rgba(255, 255, 255, 0.82);
     font-size: 12px;
-    font-weight: 800;
+    font-weight: 1000;
     transition: transform 180ms ease, background 180ms ease, color 180ms ease, border-color 180ms ease;
   }
 
@@ -200,7 +200,7 @@ export const collectionStyles = `
     margin: 0;
     color: #737373;
     font-size: 12px;
-    font-weight: 800;
+    font-weight: 1000;
     letter-spacing: 0.24em;
     text-transform: uppercase;
   }
@@ -211,8 +211,8 @@ export const collectionStyles = `
     margin: 14px 0 0;
     color: #ffffff;
     font-size: clamp(42px, 6.4vw, 86px);
-    font-weight: 800;
-    letter-spacing: -0.035em;
+    font-weight: 1000;
+    letter-spacing: -0.07em;
     line-height: 0.94;
   }
 
@@ -225,7 +225,7 @@ export const collectionStyles = `
     margin: 14px 0 0;
     color: rgba(255, 255, 255, 0.86);
     font-size: clamp(19px, 2.4vw, 30px);
-    font-weight: 800;
+    font-weight: 1000;
     letter-spacing: -0.045em;
   }
 
@@ -261,8 +261,8 @@ export const collectionStyles = `
     margin-top: 8px;
     color: #ffffff;
     font-size: 56px;
-    font-weight: 800;
-    letter-spacing: -0.035em;
+    font-weight: 1000;
+    letter-spacing: -0.08em;
     line-height: 0.95;
   }
 
@@ -310,7 +310,7 @@ export const collectionStyles = `
     margin: 6px 0 0;
     color: #ffffff;
     font-size: 26px;
-    font-weight: 800;
+    font-weight: 1000;
     letter-spacing: -0.04em;
   }
 
@@ -357,7 +357,7 @@ export const collectionStyles = `
     margin: 12px 0 0;
     color: #ffffff;
     font-size: 22px;
-    font-weight: 800;
+    font-weight: 1000;
     letter-spacing: -0.04em;
     line-height: 1.12;
   }
@@ -378,7 +378,7 @@ export const collectionStyles = `
     margin-top: 22px;
     color: #ffffff;
     font-size: 12px;
-    font-weight: 800;
+    font-weight: 1000;
   }
 
   .collection-card-bottom span:last-child {
@@ -441,7 +441,7 @@ export const collectionStyles = `
     border-radius: 999px;
     padding: 0 10px;
     font-size: 11px;
-    font-weight: 800;
+    font-weight: 1000;
     line-height: 1;
   }
 
@@ -480,7 +480,7 @@ export const collectionStyles = `
     color: #ffffff;
     font: inherit;
     font-size: 18px;
-    font-weight: 800;
+    font-weight: 1000;
     letter-spacing: -0.03em;
     line-height: 1.18;
     text-align: left;
@@ -712,7 +712,7 @@ export const collectionStyles = `
     border-radius: 13px;
     padding: 0 14px;
     font-size: 13px;
-    font-weight: 800;
+    font-weight: 1000;
     cursor: pointer;
     transition: transform 180ms ease, border-color 180ms ease, background 180ms ease, color 180ms ease;
   }
@@ -812,7 +812,7 @@ export const collectionStyles = `
     background: rgba(0, 0, 0, 0.75);
     color: #ffffff;
     font-size: 24px;
-    font-weight: 800;
+    font-weight: 1000;
     line-height: 1;
     cursor: pointer;
     transition: transform 180ms ease, background 180ms ease, color 180ms ease;
@@ -829,7 +829,7 @@ export const collectionStyles = `
     margin: 0;
     color: #737373;
     font-size: 12px;
-    font-weight: 800;
+    font-weight: 1000;
     letter-spacing: 0.28em;
     text-transform: uppercase;
   }
@@ -839,8 +839,8 @@ export const collectionStyles = `
     margin: 12px 0 0;
     color: #ffffff;
     font-size: clamp(32px, 4.5vw, 54px);
-    font-weight: 800;
-    letter-spacing: -0.03em;
+    font-weight: 1000;
+    letter-spacing: -0.06em;
     line-height: 0.98;
   }
 
@@ -868,7 +868,7 @@ export const collectionStyles = `
     border-radius: 999px;
     padding: 0 15px;
     font-size: 13px;
-    font-weight: 800;
+    font-weight: 1000;
     line-height: 1;
   }
 
@@ -931,7 +931,7 @@ export const collectionStyles = `
   .collection-details-info-grid span {
     color: #737373;
     font-size: 11px;
-    font-weight: 800;
+    font-weight: 1000;
     letter-spacing: 0.14em;
     text-transform: uppercase;
   }
@@ -952,7 +952,7 @@ export const collectionStyles = `
     width: min(980px, 100%);
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 26px;
-    background: var(--kl-bg);
+    background: #050505;
     padding: 18px;
     box-shadow: 0 32px 120px rgba(0, 0, 0, 0.72);
     animation: collectionModalCardIn 220ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -975,7 +975,7 @@ export const collectionStyles = `
     aspect-ratio: 16 / 9;
     overflow: hidden;
     border-radius: 18px;
-    background: var(--kl-bg);
+    background: #000000;
   }
 
   .collection-trailer-frame iframe {
@@ -1036,7 +1036,7 @@ export const collectionStyles = `
     color: #ffffff;
     font-size: 17px;
     line-height: 1.15;
-    font-weight: 800;
+    font-weight: 1000;
   }
 
   .collection-topic-chip-list {
@@ -1084,7 +1084,7 @@ export const collectionStyles = `
     margin: 0 0 9px;
     color: #ffffff;
     font-size: 16px;
-    font-weight: 800;
+    font-weight: 1000;
   }
 
   .collection-faq-card p {
@@ -1105,7 +1105,7 @@ export const collectionStyles = `
     padding: 0 20px;
     color: #000000;
     font-size: 13px;
-    font-weight: 800;
+    font-weight: 1000;
     transition: transform 180ms ease, background 180ms ease, color 180ms ease;
   }
 

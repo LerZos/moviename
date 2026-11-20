@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+// Compact inline empty state: one line of context and one quiet way forward.
 export default function EmptyState({
   icon,
   title,
@@ -17,10 +18,12 @@ export default function EmptyState({
       <span className="kl-empty-icon" aria-hidden="true">
         {icon}
       </span>
-      <h3>{title}</h3>
-      <p>{text}</p>
+      <div className="kl-empty-text">
+        <h3>{title}</h3>
+        <p>{text}</p>
+      </div>
       {action && typeof action === "object" && "href" in action ? (
-        <Link href={action.href} className="kl-btn kl-btn--primary">
+        <Link href={action.href} className="kl-btn kl-btn--sm">
           {action.label}
         </Link>
       ) : (

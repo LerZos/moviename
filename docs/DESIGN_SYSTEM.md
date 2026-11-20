@@ -6,12 +6,14 @@ KinoLuma uses dark cinematic minimalism with restrained premium and glass accent
 
 UI 2.0 adds a central layer that new and reworked screens must use instead of local values:
 
-- `src/app/styles/tokens.css` — `--kl-*` custom properties: graphite surfaces (`--kl-bg` … `--kl-surface-3`), text steps, lines, the white primary and the amber "luma" accent (rating, selection, focus), radii, spacing, control sizes, shadows and motion. Motion tokens drop to 0 under reduced motion.
-- `src/app/styles/ui.css` — `kl-*` primitives: `kl-btn` (primary, ghost, danger, icon, sm/lg, `aria-pressed`), `kl-chip`, `kl-tag`, `kl-header`, `kl-section`, `kl-card` (poster-first media card), `kl-grid`, `kl-rail`, `kl-empty`, `kl-skeleton`, `kl-message`, `kl-field`, `kl-select`, `kl-dialog` (bottom sheet under 640px), `kl-info` (movie details) and `kl-toast`.
+- `src/app/styles/tokens.css` — `--kl-*` custom properties: production black and neutral grey surfaces (`--kl-bg` … `--kl-surface-3`), text steps, lines, white for the primary action and selected state, amber only for ratings and the focus ring, radii (posters 13px, controls 8–10px, pills only for filter chips), spacing, control sizes, shadows and motion. Motion tokens drop to 0 under reduced motion.
+- `src/app/styles/ui.css` — `kl-*` primitives: `kl-btn` (primary, ghost, danger, icon, sm/lg, `aria-pressed`), `kl-chip`, `kl-tag`, `kl-header`, `kl-section`, `kl-card` (production-style poster card: title and "year · ★ rating" laid over the artwork, remove control revealed on hover/focus), `kl-grid`, `kl-rail`, `kl-empty`, `kl-skeleton`, `kl-message`, `kl-field`, `kl-select`, `kl-dialog` (bottom sheet under 640px), `kl-empty` (compact inline row), `kl-info` (movie details: poster, title, one-line dotted metadata, description, one primary action, a quiet row of list toggles, trailer last) and `kl-toast`.
 - `src/app/components/ui/` — `SiteHeader`, `MediaCard`, `Dialog` (focus trap, Escape, scroll lock, focus restore, one overlay layer), `MovieInfoDialog` (single poster, trailer loaded on demand in a 16:9 frame), `EmptyState` and `getPosterFallback`.
 - `globals.css` sets the system font stack, graphite page background, one `:focus-visible` ring and a global reduced-motion rule.
 
-Legacy page styles (home, movie, catalog, collections) still live in their components; they were normalized to the tokenized background and to weights/tracking that suit the system font. Move them onto `kl-*` primitives when those areas are next reworked.
+Legacy page styles (home, movie, catalog, collections) still live in their components and keep their production typography and backgrounds unchanged. Move them onto `kl-*` primitives when those areas are next reworked.
+
+Visual revision (2026-11-20): the first UI 2.0 pass read as a generic dashboard. New `kl-*`/`klp-*` work follows production instead: heavy Arial headings with tight tracking, tracked uppercase eyebrows, posters as the dominant element, counts shown as plain figures, text tabs with an underline, flat settings rows instead of cards, and no decorative gradients, glows or icon badges.
 
 The sections below describe the wider visual language and the legacy code.
 
@@ -37,7 +39,7 @@ Use these as observed families, not as permission to add more near-duplicate val
 
 ## Typography
 
-The global font is the `--kl-font` system stack (Inter if installed, then Segoe UI, system-ui, SF, Roboto, Arial); Tailwind's `font-sans` points at the same variable, and no network font is loaded. Titles use 750–800 weights with at most −0.035em tracking; the old 1000 weights and −0.08em tracking were tuned for synthetic Arial bold and crush letters in real heavy faces.
+The global font is the production stack `Arial, Helvetica, sans-serif`, exposed as `--kl-font`; Tailwind's `font-sans` points at the same variable, and no network font is loaded. Arial has one bold face, so 700 and the legacy 1000 weights render identically; display titles rely on tight negative tracking (−0.035em to −0.08em) for their character.
 
 Keep body copy readable and calm. Use compact uppercase labels for navigation or metadata and neutral gray for supporting text. Avoid adding a new font treatment in a single component.
 

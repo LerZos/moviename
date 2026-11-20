@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { Star } from "lucide-react";
 
 import PosterImage from "../PosterImage";
 import { getPosterFallback } from "./posterFallback";
@@ -22,7 +21,7 @@ export function formatRating(rating: number | undefined) {
   return typeof rating === "number" && Number.isFinite(rating) && rating > 0 ? rating.toFixed(1) : "";
 }
 
-// Poster-first card shared by the profile and other UI 2.0 surfaces.
+// Poster-first card in the production style: title and "year · ★ rating" sit on the artwork.
 // The poster opens details (or the movie page); the title is always a plain link to the movie page.
 export default function MediaCard({
   item,
@@ -54,17 +53,9 @@ export default function MediaCard({
           event.currentTarget.src = getPosterFallback(item.title, item.originalTitle, item.type);
         }}
       />
-      {rating || badge ? (
+      {badge ? (
         <span className="kl-card-badges" aria-hidden="true">
-          {rating ? (
-            <span className="kl-card-badge kl-card-badge--rating">
-              <Star size={11} fill="currentColor" strokeWidth={0} />
-              {rating}
-            </span>
-          ) : (
-            <span />
-          )}
-          {badge ? <span className="kl-card-badge">{badge}</span> : null}
+          <span className="kl-tag">{badge}</span>
         </span>
       ) : null}
     </>
@@ -94,7 +85,13 @@ export default function MediaCard({
         <h3 className="kl-card-title" title={item.title}>
           <Link href={href}>{item.title}</Link>
         </h3>
-        {meta ? <p className="kl-card-meta">{meta}</p> : null}
+        {item.year || rating ? (
+          <p className="kl-card-meta" aria-hidden="true">
+            {item.year}
+            {item.year && rating ? " · " : null}
+            {rating ? <span className="kl-rating">★ {rating}</span> : null}
+          </p>
+        ) : null}
         {actions ? <div className="kl-card-actions">{actions}</div> : null}
       </div>
     </article>

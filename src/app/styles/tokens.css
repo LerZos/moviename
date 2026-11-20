@@ -1,31 +1,32 @@
 /*
  * KinoLuma UI 2.0 design tokens.
- * Adapted from the 2026-11-01 UI 2.0 draft. Custom properties and keyframes only:
+ * Derived from the production KinoLuma look (pure black, neutral greys, heavy Arial type,
+ * poster-first cards) in the 2026-11-20 visual revision. Custom properties and keyframes only:
  * nothing here targets bare elements, so importing it never restyles a page by itself.
  */
 :root {
-  /* Surfaces: graphite, darkest first. */
-  --kl-bg: #0a0a0c;
-  --kl-bg-raised: #0f0f12;
-  --kl-surface: #141418;
-  --kl-surface-2: #1a1a1f;
-  --kl-surface-3: #222228;
-  --kl-surface-glass: rgba(20, 20, 24, 0.78);
-  --kl-overlay: rgba(6, 6, 8, 0.8);
+  /* Surfaces: production black and neutral greys, darkest first. */
+  --kl-bg: #000000;
+  --kl-bg-raised: #070707;
+  --kl-surface: #0e0e0e;
+  --kl-surface-2: #151515;
+  --kl-surface-3: #1e1e1e;
+  --kl-surface-glass: rgba(0, 0, 0, 0.84);
+  --kl-overlay: rgba(0, 0, 0, 0.8);
 
   /* Lines */
   --kl-line: rgba(255, 255, 255, 0.08);
-  --kl-line-strong: rgba(255, 255, 255, 0.16);
+  --kl-line-strong: rgba(255, 255, 255, 0.14);
 
   /* Text (contrast checked against --kl-surface-2) */
-  --kl-text: #f4f4f5;
-  --kl-text-2: #b9b9c2;
-  --kl-text-3: #8a8a94;
-  --kl-text-inverse: #0a0a0c;
+  --kl-text: #ffffff;
+  --kl-text-2: #b3b3b3;
+  --kl-text-3: #8c8c8c;
+  --kl-text-inverse: #000000;
 
-  /* Accent: white stays the primary action; "luma" amber marks rating, selection and focus. */
+  /* White is the primary action and the selected state; amber is reserved for ratings and focus. */
   --kl-primary: #ffffff;
-  --kl-primary-hover: #e9e9ec;
+  --kl-primary-hover: #e5e5e5;
   --kl-accent: #f3b74f;
   --kl-accent-strong: #ffc766;
   --kl-accent-soft: rgba(243, 183, 79, 0.14);
@@ -38,12 +39,12 @@
   --kl-danger-soft: rgba(248, 113, 113, 0.12);
   --kl-info: #7dd3fc;
 
-  /* Radii */
+  /* Radii: production posters use 13px; controls stay a step below so posters read as the rounded objects. */
   --kl-radius-xs: 6px;
-  --kl-radius-sm: 10px;
-  --kl-radius-md: 14px;
-  --kl-radius-lg: 20px;
-  --kl-radius-xl: 28px;
+  --kl-radius-sm: 8px;
+  --kl-radius-md: 12px;
+  --kl-radius-lg: 14px;
+  --kl-radius-xl: 18px;
   --kl-radius-pill: 999px;
 
   /* Spacing (4px grid) */
@@ -58,18 +59,14 @@
   --kl-space-12: 48px;
 
   /* Layout */
-  --kl-container: 1240px;
-  --kl-gutter: clamp(16px, 4vw, 32px);
-  --kl-header-h: 64px;
+  --kl-container: 1280px;
+  --kl-gutter: clamp(16px, 4vw, 40px);
+  --kl-header-h: 68px;
   --kl-bottom-nav-h: calc(84px + env(safe-area-inset-bottom));
 
-  /* Typography: system stack, no network font. */
-  --kl-font:
-    Inter, "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont,
-    "Helvetica Neue", Roboto, Arial, sans-serif;
-  --kl-font-display:
-    Inter, "Segoe UI Variable Display", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont,
-    "Helvetica Neue", Roboto, Arial, sans-serif;
+  /* Typography: the production stack, no network font. */
+  --kl-font: Arial, Helvetica, sans-serif;
+  --kl-font-display: Arial, Helvetica, sans-serif;
   --kl-text-xs: 12px;
   --kl-text-sm: 13px;
   --kl-text-md: 15px;
@@ -81,12 +78,12 @@
   /* Controls */
   --kl-control-sm: 34px;
   --kl-control-md: 42px;
-  --kl-control-lg: 48px;
+  --kl-control-lg: 46px;
   --kl-touch: 44px;
 
   /* Elevation and focus */
-  --kl-shadow-1: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 10px 28px rgba(0, 0, 0, 0.32);
-  --kl-shadow-2: 0 28px 80px rgba(0, 0, 0, 0.6);
+  --kl-shadow-1: 0 10px 28px rgba(0, 0, 0, 0.5);
+  --kl-shadow-2: 0 30px 90px rgba(0, 0, 0, 0.8);
   --kl-focus-ring: #ffd27a;
 
   /* Motion */

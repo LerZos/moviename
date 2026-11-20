@@ -16,11 +16,8 @@ import {
   ChevronRight,
   Eye,
   Heart,
-  LayoutGrid,
   LogOut,
-  Settings,
   ShieldCheck,
-  Sparkles,
   ThumbsDown,
   Trash2,
   X,
@@ -90,7 +87,6 @@ const LISTS: Record<
   {
     tab: ProfileTab;
     title: string;
-    short: string;
     inLabel: string;
     removeLabel: string;
     icon: (size: number) => ReactNode;
@@ -100,7 +96,6 @@ const LISTS: Record<
   watching: {
     tab: "watching",
     title: "Смотрю",
-    short: "Смотрю",
     inLabel: "«Смотрю»",
     removeLabel: "Убрать из «Смотрю»",
     icon: (size) => <Eye size={size} aria-hidden="true" />,
@@ -112,7 +107,6 @@ const LISTS: Record<
   watch_later: {
     tab: "watchLater",
     title: "Смотреть позже",
-    short: "Позже",
     inLabel: "«Смотреть позже»",
     removeLabel: "Убрать из «Смотреть позже»",
     icon: (size) => <Bookmark size={size} aria-hidden="true" />,
@@ -124,7 +118,6 @@ const LISTS: Record<
   liked: {
     tab: "liked",
     title: "Избранное",
-    short: "Избранное",
     inLabel: "«Избранное»",
     removeLabel: "Убрать из избранного",
     icon: (size) => <Heart size={size} aria-hidden="true" />,
@@ -136,7 +129,6 @@ const LISTS: Record<
   disliked: {
     tab: "disliked",
     title: "Не понравилось",
-    short: "Дизлайки",
     inLabel: "«Не понравилось»",
     removeLabel: "Убрать отметку «Не понравилось»",
     icon: (size) => <ThumbsDown size={size} aria-hidden="true" />,
@@ -305,9 +297,9 @@ function ProfileSkeleton() {
   return (
     <div className="klp-shell" aria-busy="true" aria-label="Загрузка профиля">
       <div className="kl-container">
-        <div className="klp-hero klp-hero--skeleton">
+        <div className="klp-head">
           <span className="klp-avatar kl-skeleton" />
-          <div className="klp-hero-text">
+          <div className="klp-head-text">
             <span className="kl-skeleton" style={{ display: "block", width: 200, height: 24 }} />
             <span className="kl-skeleton" style={{ display: "block", width: 140, height: 14, marginTop: 10 }} />
           </div>
@@ -1015,15 +1007,14 @@ export default function ProfilePage() {
 
   const activeList = TAB_TO_LIST[activeTab];
 
-  const tabs: Array<{ id: ProfileTab; label: string; icon: ReactNode; count?: number }> = [
-    { id: "overview", label: "Обзор", icon: <LayoutGrid size={15} aria-hidden="true" /> },
+  const tabs: Array<{ id: ProfileTab; label: string; count?: number }> = [
+    { id: "overview", label: "Обзор" },
     ...LIST_KEYS.map((list) => ({
       id: LISTS[list].tab,
       label: LISTS[list].title,
-      icon: LISTS[list].icon(15),
       count: items[list].length,
     })),
-    { id: "settings", label: "Настройки", icon: <Settings size={15} aria-hidden="true" /> },
+    { id: "settings", label: "Настройки" },
   ];
 
   return (
@@ -1054,30 +1045,20 @@ export default function ProfilePage() {
 
       <div className="klp-shell">
         <div className="kl-container">
-          <section className="klp-hero" aria-labelledby="klp-name">
+          {/* Compact identity line; per-list counts live in the tabs below, not in a second stats block. */}
+          <section className="klp-head" aria-labelledby="klp-name">
             <span className="klp-avatar" aria-hidden="true">
               {getInitials(currentUser.name)}
             </span>
-            <div className="klp-hero-text">
-              <p className="kl-eyebrow">Профиль KinoLuma</p>
+            <div className="klp-head-text">
+              <p className="kl-eyebrow">Профиль</p>
               <h1 id="klp-name" title={currentUser.name}>
                 {currentUser.name}
               </h1>
-              <p className="klp-hero-sub">
+              <p className="klp-head-sub">
                 {totalSaved > 0 ? `${totalSaved} в ваших списках` : "Списки пока пусты — начните с каталога"}
               </p>
             </div>
-            <ul className="klp-stats" aria-label="Сводка по спискам">
-              {LIST_KEYS.map((list) => (
-                <li key={list}>
-                  <button type="button" className="klp-stat" onClick={() => selectTab(LISTS[list].tab)}>
-                    <span className="klp-stat-icon">{LISTS[list].icon(16)}</span>
-                    <span className="klp-stat-value">{items[list].length}</span>
-                    <span className="klp-stat-label">{LISTS[list].short}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
           </section>
 
           <nav ref={tabsRef} className="klp-tabs" aria-label="Разделы профиля">
@@ -1090,7 +1071,6 @@ export default function ProfilePage() {
                 aria-current={activeTab === tab.id ? "page" : undefined}
                 onClick={() => selectTab(tab.id)}
               >
-                {tab.icon}
                 {tab.label}
                 {typeof tab.count === "number" ? <span className="kl-count">{tab.count}</span> : null}
               </button>
@@ -1130,7 +1110,6 @@ export default function ProfilePage() {
                     <div className="kl-section-head">
                       <div>
                         <h2 className="kl-section-title" id="klp-editorial">
-                          <Sparkles size={18} aria-hidden="true" className="klp-accent-icon" />
                           Подборка редакции
                         </h2>
                         <p className="klp-note">Общая подборка KinoLuma, не персональные рекомендации.</p>
@@ -1214,7 +1193,7 @@ export default function ProfilePage() {
                   </div>
                 </section>
 
-                <section className="klp-box klp-box--danger" aria-labelledby="klp-danger">
+                <section className="klp-box" aria-labelledby="klp-danger">
                   <h2 id="klp-danger">Очистка списков</h2>
                   <p className="kl-muted">
                     Удалит «Смотрю», «Смотреть позже», избранное и отметки «Не понравилось» на всех ваших устройствах.
