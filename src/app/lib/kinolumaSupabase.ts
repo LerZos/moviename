@@ -193,11 +193,12 @@ export async function syncMovieAction(
   movieId: number,
   action: MovieAction,
   shouldEnable: boolean,
-) {
+): Promise<boolean> {
+  // Resolves to true only when Supabase confirmed the write, so callers can roll back optimistic UI.
   const user = await getCurrentSupabaseUser();
 
   if (!user) {
-    return;
+    return false;
   }
 
   if (shouldEnable) {
@@ -214,9 +215,10 @@ export async function syncMovieAction(
 
     if (error) {
       console.error("Не удалось сохранить действие:", error.message);
+      return false;
     }
 
-    return;
+    return true;
   }
 
   const { error } = await supabase
@@ -228,14 +230,17 @@ export async function syncMovieAction(
 
   if (error) {
     console.error("Не удалось удалить действие:", error.message);
+    return false;
   }
+
+  return true;
 }
 
-export async function clearMovieActions() {
+export async function clearMovieActions(): Promise<boolean> {
   const user = await getCurrentSupabaseUser();
 
   if (!user) {
-    return;
+    return false;
   }
 
   const { error } = await supabase
@@ -245,5 +250,8 @@ export async function clearMovieActions() {
 
   if (error) {
     console.error("Не удалось очистить списки:", error.message);
+    return false;
   }
+
+  return true;
 }
