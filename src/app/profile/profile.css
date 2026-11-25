@@ -1,8 +1,9 @@
 /*
- * Profile layout (klp-*). Values follow the production profile styles (profileStyles in 14f1dff):
- * .profile-page, .ambient-bg, .topbar, .page-shell, .identity-card, .avatar, .user-meta, .mini-stats,
- * .tabs-card, .tab-button, .content-grid, .genre-*, .footer, .auth-*, .loading-*.
- * Shared pieces (panels, cards, buttons, dialog) live in styles/ui.css.
+ * Profile layout (klp-*): one centred column built with the home page rules.
+ * Values come from the production home page (HomeClient): .desktop-mock-home (background and texture),
+ * .desktop-mock-shell (1194px column, 4.5vw side padding), .desktop-mock-section-head / -eyebrow / -title,
+ * .desktop-mock-panel, .desktop-mock-genre (filter pills) and .desktop-mock-count.
+ * The topbar, auth and loading screens keep the production profile styles (profileStyles in 14f1dff).
  */
 
 .klp-page {
@@ -11,7 +12,7 @@
   min-height: 100svh;
   padding-bottom: var(--kl-bottom-nav-h);
   overflow-x: hidden;
-  background: var(--kl-bg);
+  background: var(--kl-home-bg);
   color: #ffffff;
   font-family: var(--kl-font);
 }
@@ -27,21 +28,17 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background: var(--kl-ambient);
+  background: var(--kl-home-glow);
 }
 
-.klp-ambient::after {
+.klp-ambient::before {
   content: "";
   position: absolute;
   inset: 0;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
-  background-size: 54px 54px;
-  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.45), transparent 65%);
+  background: var(--kl-home-texture);
 }
 
-/* ---------------------------------------------------------------- Topbar */
+/* ---------------------------------------------------------------- Topbar (production profile .topbar) */
 
 .klp-topbar {
   position: sticky;
@@ -58,7 +55,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 18px;
-  width: min(var(--kl-container), calc(100% - 40px));
+  width: min(var(--kl-home-shell), calc(100% - 9vw));
   min-height: var(--kl-topbar-h);
   margin: 0 auto;
 }
@@ -74,6 +71,7 @@
 
 .klp-brand > span {
   display: grid;
+  min-width: 0;
 }
 
 .klp-logo {
@@ -87,7 +85,10 @@
 }
 
 .klp-logo-title {
+  overflow: hidden;
   font-size: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   line-height: 1;
   font-weight: 1000;
   letter-spacing: -0.04em;
@@ -102,62 +103,77 @@
 
 .klp-top-actions {
   display: flex;
+  flex: none;
   align-items: center;
   gap: 10px;
 }
 
-/* ---------------------------------------------------------------- Shell */
+/* ---------------------------------------------------------------- Column */
 
 .klp-shell {
   position: relative;
   z-index: 1;
-  width: min(var(--kl-container), calc(100% - 40px));
+  width: min(var(--kl-home-shell), calc(100% - 9vw));
   margin: 0 auto;
-  padding: 28px 0 56px;
+  padding: 32px 0 72px;
 }
 
-.klp-panel-stack {
-  display: grid;
-  gap: 20px;
-  margin-top: 20px;
-  animation: kl-fade var(--kl-med) ease;
-}
-
-/* .content-grid: main column and a 360px side column. */
-.klp-overview-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 360px;
-  gap: 20px;
+.klp-panel {
   min-width: 0;
+  border: 1px solid var(--kl-line-panel);
+  border-radius: var(--kl-radius-home-panel);
+  background: var(--kl-home-panel);
+  box-shadow: var(--kl-home-panel-shadow);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 }
 
-.klp-note {
-  margin: 16px 0 0;
-  color: #777777;
+.klp-eyebrow {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.44);
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1.5;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+}
+
+.klp-title {
+  margin: 7px 0 0;
+  font-size: 27px;
+  line-height: 1;
+  font-weight: 1000;
+  letter-spacing: -0.052em;
+}
+
+.klp-count {
+  margin: 8px 0 0;
+  color: rgba(255, 255, 255, 0.46);
   font-size: 13px;
-  line-height: 1.65;
-  font-weight: 750;
+  font-weight: 800;
+  line-height: 1.5;
 }
 
-/* ---------------------------------------------------------------- Identity */
+/* ---------------------------------------------------------------- Profile header */
 
 .klp-identity {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 20px;
+  display: flex;
   align-items: center;
+  gap: 18px;
+  padding: 18px 22px;
 }
 
+/* Production profile .avatar, scaled down for the compact header. */
 .klp-avatar {
   display: grid;
   flex: none;
   place-items: center;
-  width: 88px;
-  height: 88px;
-  border-radius: 28px;
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
   background: linear-gradient(135deg, #ffffff 0%, #d8d8d8 100%);
   color: #000000;
-  font-size: 34px;
+  font-size: 25px;
   font-weight: 1000;
   letter-spacing: -0.08em;
   box-shadow:
@@ -169,91 +185,22 @@
   min-width: 0;
 }
 
-.klp-user h1 {
-  margin: 8px 0 0;
-  overflow: hidden;
-  font-size: 34px;
-  line-height: 1.04;
-  font-weight: 1000;
-  letter-spacing: -0.06em;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.klp-user .klp-title {
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
 
-.klp-user > p:last-child {
-  margin: 8px 0 0;
-  color: var(--kl-text-3);
-  font-size: 13px;
-  font-weight: 800;
-}
-
-.klp-mini-stats {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(96px, 1fr));
-  gap: 10px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.klp-mini-stats button {
-  display: block;
-  width: 100%;
-  padding: 14px 10px;
-  border: 1px solid var(--kl-line-soft);
-  border-radius: 20px;
-  background: var(--kl-inset);
-  color: #ffffff;
-  font: inherit;
-  text-align: center;
-  cursor: pointer;
-  transition:
-    border-color var(--kl-fast) ease,
-    background var(--kl-fast) ease;
-}
-
-.klp-mini-stats button:hover {
-  border-color: rgba(255, 255, 255, 0.26);
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.klp-mini-stats strong {
-  display: block;
-  font-size: 24px;
-  font-weight: 1000;
-  font-variant-numeric: tabular-nums;
-}
-
-.klp-mini-stats span {
-  display: block;
-  margin-top: 4px;
-  overflow: hidden;
-  color: #777777;
-  font-size: 12px;
-  font-weight: 900;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* ---------------------------------------------------------------- Tabs (.tabs-card / .tab-button) */
+/* ---------------------------------------------------------------- Navigation (.desktop-mock-genres) */
 
 .klp-tabs {
-  position: sticky;
-  top: calc(var(--kl-topbar-h) + 16px);
-  z-index: 20;
   display: flex;
   gap: 8px;
-  margin-top: 20px;
-  padding: 8px;
+  margin-top: 24px;
+  padding: 13px;
   overflow-x: auto;
-  border: 1px solid var(--kl-line);
-  border-radius: var(--kl-radius-soft);
-  background: var(--kl-panel);
-  box-shadow: var(--kl-panel-shadow);
-  backdrop-filter: blur(22px);
-  -webkit-backdrop-filter: blur(22px);
+  overscroll-behavior-x: contain;
   scrollbar-width: none;
-  scroll-margin-top: calc(var(--kl-topbar-h) + 16px);
+  scroll-margin-top: calc(var(--kl-topbar-h) + 12px);
 }
 
 .klp-tabs::-webkit-scrollbar {
@@ -262,98 +209,146 @@
 
 .klp-tab {
   display: inline-flex;
-  flex: 1 0 auto;
+  flex: none;
   align-items: center;
-  justify-content: center;
   gap: 8px;
-  min-height: 46px;
-  padding: 0 16px;
-  border: 0;
-  border-radius: var(--kl-radius-btn);
-  background: transparent;
-  color: #8c8c8c;
+  min-height: 42px;
+  padding: 0 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--kl-radius-pill);
+  background: linear-gradient(rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+  color: rgba(255, 255, 255, 0.7);
   font: inherit;
-  font-size: 14px;
-  font-weight: 1000;
+  font-size: 12px;
+  font-weight: 950;
+  line-height: 1.5;
   white-space: nowrap;
   cursor: pointer;
   transition:
     background var(--kl-fast) ease,
-    color var(--kl-fast) ease;
+    color var(--kl-fast) ease,
+    border-color var(--kl-fast) ease;
 }
 
 .klp-tab:hover {
-  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.28);
   color: #ffffff;
 }
 
 .klp-tab[aria-current="page"],
 .klp-tab[aria-current="page"]:hover {
+  border-color: rgba(255, 255, 255, 0.64);
   background: #ffffff;
-  color: #000000;
-  box-shadow: 0 12px 36px rgba(255, 255, 255, 0.1);
+  color: #050505;
+  box-shadow: 0 9px 24px rgba(255, 255, 255, 0.08);
 }
 
-/* ---------------------------------------------------------------- Genres (.genre-row / .genre-track) */
-
-.klp-genres {
-  display: grid;
-  gap: 16px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
+.klp-tab-count {
+  color: rgba(255, 255, 255, 0.46);
+  font-size: 11px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
 }
 
-.klp-genres a {
-  display: block;
-  color: inherit;
-  text-decoration: none;
+.klp-tab[aria-current="page"] .klp-tab-count {
+  color: rgba(5, 5, 5, 0.5);
 }
 
-.klp-genre-row {
+/* ---------------------------------------------------------------- Sections (.desktop-mock-section-head) */
+
+.klp-sections {
+  animation: kl-fade var(--kl-med) ease;
+}
+
+.klp-section {
+  margin-top: 24px;
+}
+
+.klp-section-head {
   display: flex;
+  align-items: flex-end;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 8px;
-  color: #d7d7d7;
+  gap: 22px;
+  margin-bottom: 13px;
+}
+
+.klp-title-count {
+  margin-left: 10px;
+  color: rgba(255, 255, 255, 0.46);
   font-size: 14px;
   font-weight: 900;
+  letter-spacing: 0;
+  vertical-align: 4px;
+  font-variant-numeric: tabular-nums;
 }
 
-.klp-genres a:hover .klp-genre-row {
+.klp-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 34px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: rgba(255, 255, 255, 0.7);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 950;
+  cursor: pointer;
+  transition: color var(--kl-fast) ease;
+}
+
+.klp-more:hover {
   color: #ffffff;
 }
 
-.klp-genre-row strong {
-  color: #ffffff;
+.klp-section > .klp-panel {
+  padding: 16px 18px 24px;
 }
 
-.klp-genre-track {
-  display: block;
-  height: 8px;
-  overflow: hidden;
-  border-radius: var(--kl-radius-pill);
-  background: rgba(255, 255, 255, 0.07);
+/* Rail of posters, like .desktop-mock-rail; short lists simply leave empty space. */
+.klp-rail {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
 }
 
-.klp-genre-track span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, #ffffff, #9e9e9e);
-  box-shadow: 0 0 18px rgba(255, 255, 255, 0.25);
+.klp-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.klp-rail > * {
+  flex: none;
+  scroll-snap-align: start;
+}
+
+.klp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 156px);
+  gap: 20px 12px;
+}
+
+.klp-sort {
+  flex: none;
 }
 
 /* ---------------------------------------------------------------- Settings */
 
+.klp-section > .klp-settings {
+  padding: 20px 22px 22px;
+}
+
 .klp-dl {
   display: grid;
-  gap: 12px;
+  gap: 14px;
   margin: 0;
 }
 
 .klp-dl dt {
-  color: var(--kl-text-3);
+  color: rgba(255, 255, 255, 0.44);
   font-size: 12px;
   font-weight: 900;
 }
@@ -363,7 +358,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 4px 12px;
-  margin: 6px 0 0;
+  margin: 4px 0 0;
   color: #ffffff;
   font-size: 16px;
   font-weight: 1000;
@@ -374,41 +369,20 @@
   min-width: 0;
 }
 
+.klp-settings-text {
+  max-width: 620px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 14px;
+  line-height: 1.65;
+  font-weight: 800;
+}
+
 .klp-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
   margin-top: 18px;
-}
-
-/* ---------------------------------------------------------------- Footer */
-
-.klp-footer {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  justify-content: center;
-  gap: 20px;
-  padding: 26px 20px;
-  border-top: 1px solid var(--kl-line);
-}
-
-.klp-footer p,
-.klp-footer a {
-  margin: 0;
-  color: #747474;
-  font-size: 13px;
-  font-weight: 800;
-}
-
-.klp-footer a {
-  color: #d7d7d7;
-  text-decoration: none;
-  transition: color var(--kl-fast) ease;
-}
-
-.klp-footer a:hover {
-  color: #ffffff;
 }
 
 /* ---------------------------------------------------------------- Auth and loading (.auth-screen / .auth-card) */
@@ -505,35 +479,9 @@
   margin-top: 16px;
 }
 
-/* ---------------------------------------------------------------- Responsive (production breakpoints 1050 / 760 / 430) */
-
-@media (max-width: 1050px) {
-  .klp-overview-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .klp-identity {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-
-  .klp-mini-stats {
-    grid-column: 1 / -1;
-  }
-}
+/* ---------------------------------------------------------------- Phones (home mobile: 14px gutters) */
 
 @media (max-width: 760px) {
-  .klp-ambient {
-    background:
-      radial-gradient(circle at 24% 0%, rgba(255, 255, 255, 0.12), transparent 30%),
-      radial-gradient(circle at 100% 14%, rgba(255, 255, 255, 0.07), transparent 28%),
-      linear-gradient(180deg, #090909 0%, #040404 52%, #000000 100%);
-  }
-
-  .klp-ambient::after {
-    background-size: 38px 38px;
-    opacity: 0.55;
-  }
-
   .klp-topbar {
     background: rgba(0, 0, 0, 0.84);
     backdrop-filter: blur(18px);
@@ -542,7 +490,7 @@
 
   .klp-topbar-inner,
   .klp-shell {
-    width: min(100% - 20px, var(--kl-container));
+    width: calc(100% - 28px);
   }
 
   .klp-topbar-inner {
@@ -578,88 +526,78 @@
   }
 
   .klp-shell {
-    padding: 18px 0 42px;
+    padding: 16px 0 32px;
   }
 
-  .klp-panel-stack {
-    gap: 12px;
-    margin-top: 12px;
-  }
-
-  .klp-overview-grid {
-    gap: 12px;
+  .klp-panel {
+    border-radius: 24px;
   }
 
   .klp-identity {
     gap: 14px;
+    padding: 14px 16px;
   }
 
   .klp-avatar {
-    width: 64px;
-    height: 64px;
-    border-radius: 22px;
-    font-size: 25px;
-  }
-
-  /* Long names wrap to two lines on phones instead of being cut. */
-  .klp-user h1 {
-    display: -webkit-box;
-    margin-top: 6px;
-    font-size: 26px;
-    white-space: normal;
-    overflow-wrap: break-word;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-  }
-
-  .klp-user > p:last-child {
-    margin-top: 6px;
-    font-size: 12px;
-  }
-
-  .klp-mini-stats {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 6px;
-  }
-
-  .klp-mini-stats button {
-    padding: 10px 4px;
-    border-radius: 16px;
-  }
-
-  .klp-mini-stats strong {
+    width: 52px;
+    height: 52px;
+    border-radius: 17px;
     font-size: 20px;
   }
 
-  .klp-mini-stats span {
-    font-size: 10px;
+  .klp-title {
+    font-size: 23px;
   }
 
-  /* Production mobile .tabs-card: a full-bleed scrolling strip under the topbar. */
+  /* Long names wrap instead of being cut. */
+  .klp-user .klp-title {
+    font-size: 22px;
+    line-height: 1.05;
+  }
+
+  .klp-count {
+    margin-top: 6px;
+    font-size: 12px;
+  }
+
   .klp-tabs {
-    top: 66px;
-    margin: 12px -10px 0;
-    padding: 8px 10px;
-    border-right: 0;
-    border-left: 0;
-    border-radius: 0;
-    overscroll-behavior-x: contain;
-    scroll-margin-top: 66px;
-    scroll-snap-type: x proximity;
+    margin-top: 14px;
+    padding: 10px;
   }
 
   .klp-tab {
-    flex: 0 0 auto;
-    min-height: 42px;
-    padding: 0 14px;
-    border-radius: 14px;
-    font-size: 12px;
-    scroll-snap-align: start;
+    min-height: 40px;
+    padding: 0 15px;
   }
 
-  .klp-footer {
-    flex-direction: column;
-    align-items: flex-start;
+  .klp-section {
+    margin-top: 20px;
+  }
+
+  .klp-section-head {
+    gap: 12px;
+    margin-bottom: 11px;
+  }
+
+  .klp-section > .klp-panel {
+    padding: 12px;
+  }
+
+  .klp-rail {
+    gap: 10px;
+  }
+
+  .klp-rail > * {
+    width: 148px;
+  }
+
+  .klp-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 10px;
+  }
+
+  .klp-section > .klp-settings {
+    padding: 16px;
   }
 
   .klp-auth,
@@ -677,34 +615,17 @@
   }
 }
 
-@media (max-width: 430px) {
+@media (max-width: 359px) {
+  .klp-user .klp-title {
+    font-size: 19px;
+  }
+
   .klp-topbar-inner,
   .klp-shell {
-    width: min(100% - 16px, var(--kl-container));
+    width: calc(100% - 20px);
   }
 
-  .klp-top-actions .kl-btn--ghost {
-    padding: 0 9px;
-    font-size: 11px;
-  }
-
-  .klp-avatar {
-    width: 56px;
-    height: 56px;
-    border-radius: 20px;
-    font-size: 22px;
-  }
-
-  .klp-user h1 {
-    font-size: 23px;
-  }
-
-  .klp-tabs {
-    margin-inline: -8px;
-    padding-inline: 8px;
-  }
-
-  .klp-tab {
-    padding: 0 12px;
+  .klp-rail > * {
+    width: 136px;
   }
 }

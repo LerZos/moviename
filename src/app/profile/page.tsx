@@ -17,9 +17,7 @@ import {
   Eye,
   Film,
   Heart,
-  LayoutGrid,
   LogOut,
-  Settings,
   ShieldCheck,
   ThumbsDown,
   Trash2,
@@ -36,7 +34,6 @@ import {
   profileCatalogItems as catalogItems,
   type ProfileCatalogItem,
 } from "../data/profileCatalogItems";
-import { getHomeCatalogPath, getHomeGenreSlug } from "../lib/home/homeCatalogRoutes";
 import { supabase } from "../lib/supabase";
 import {
   clearMovieActions,
@@ -72,7 +69,6 @@ type ProfileToast = {
 };
 
 const PROFILE_LOAD_TIMEOUT_MS = 4500;
-const EDITORIAL_IDS = [1, 3, 20, 21, 24, 28];
 const PROFILE_TABS: ProfileTab[] = ["overview", "watching", "watchLater", "liked", "disliked", "settings"];
 const LIST_KEYS: ListKey[] = ["watching", "watch_later", "liked", "disliked"];
 
@@ -89,7 +85,6 @@ const LISTS: Record<
   {
     tab: ProfileTab;
     title: string;
-    short: string;
     inLabel: string;
     removeLabel: string;
     icon: (size: number) => ReactNode;
@@ -99,7 +94,6 @@ const LISTS: Record<
   watching: {
     tab: "watching",
     title: "Смотрю",
-    short: "Смотрю",
     inLabel: "«Смотрю»",
     removeLabel: "Убрать из «Смотрю»",
     icon: (size) => <Eye size={size} aria-hidden="true" />,
@@ -111,7 +105,6 @@ const LISTS: Record<
   watch_later: {
     tab: "watchLater",
     title: "Смотреть позже",
-    short: "Позже",
     inLabel: "«Смотреть позже»",
     removeLabel: "Убрать из «Смотреть позже»",
     icon: (size) => <Bookmark size={size} aria-hidden="true" />,
@@ -123,7 +116,6 @@ const LISTS: Record<
   liked: {
     tab: "liked",
     title: "Избранное",
-    short: "Избранное",
     inLabel: "«Избранное»",
     removeLabel: "Убрать из избранного",
     icon: (size) => <Heart size={size} aria-hidden="true" />,
@@ -135,7 +127,6 @@ const LISTS: Record<
   disliked: {
     tab: "disliked",
     title: "Не понравилось",
-    short: "Дизлайки",
     inLabel: "«Не понравилось»",
     removeLabel: "Убрать отметку «Не понравилось»",
     icon: (size) => <ThumbsDown size={size} aria-hidden="true" />,
@@ -144,6 +135,14 @@ const LISTS: Record<
       text: "Тайтлы с отметкой «Не нравится» появятся здесь — отметку легко снять одним нажатием.",
     },
   },
+};
+
+// Section titles on the overview; the full lists keep the tab names.
+const OVERVIEW_TITLES: Record<ListKey, string> = {
+  watching: "Сейчас смотрю",
+  watch_later: "Смотреть позже",
+  liked: "Избранное",
+  disliked: "Не понравилось",
 };
 
 const TAB_TO_LIST: Partial<Record<ProfileTab, ListKey>> = {
@@ -512,40 +511,6 @@ export default function ProfilePage() {
     [ids],
   );
 
-  // Editorial picks: a fixed list, topped up with the highest-rated titles the user has not saved.
-  // It is not personalised, and the UI says so.
-  const editorialItems = useMemo(() => {
-    const saved = new Set(LIST_KEYS.flatMap((list) => ids[list]));
-    const picks = getItemsByIds(EDITORIAL_IDS).filter((item) => !saved.has(item.id));
-
-    if (picks.length < 10) {
-      const extra = catalogItems
-        .filter((item) => !saved.has(item.id) && !EDITORIAL_IDS.includes(item.id) && item.rating >= 8)
-        .sort((first, second) => second.rating - first.rating)
-        .slice(0, 10 - picks.length);
-      picks.push(...extra);
-    }
-
-    return picks.slice(0, 12);
-  }, [ids]);
-
-  // Genres counted from titles the user marked as liked or watching; only genres that have a catalog route.
-  const topGenres = useMemo(() => {
-    const counts = new Map<string, number>();
-
-    for (const item of [...items.liked, ...items.watching]) {
-      for (const genre of item.genres) {
-        if (getHomeGenreSlug(genre)) {
-          counts.set(genre, (counts.get(genre) ?? 0) + 1);
-        }
-      }
-    }
-
-    return Array.from(counts.entries())
-      .sort((first, second) => second[1] - first[1] || first[0].localeCompare(second[0], "ru"))
-      .slice(0, 6);
-  }, [items.liked, items.watching]);
-
   const dismissToast = useCallback((id: number) => {
     setToasts((current) => current.filter((toast) => toast.id !== id));
   }, []);
@@ -901,12 +866,12 @@ export default function ProfilePage() {
 
   const totalSaved = LIST_KEYS.reduce((sum, list) => sum + items[list].length, 0);
   const selectedItem = selectedItemId === null ? null : (catalogById.get(selectedItemId) ?? null);
-  const topGenreMax = topGenres.reduce((max, [, count]) => Math.max(max, count), 1);
 
   function openDetails(card: MediaCardItem) {
     setSelectedItemId(card.id);
   }
 
+  // Full lists add a slim "Убрать" under each poster (production .remove-button); overview rails stay posters only.
   function renderCard(item: CatalogItem, options: { list?: ListKey; priority?: boolean } = {}) {
     const { list, priority } = options;
 
@@ -917,26 +882,17 @@ export default function ProfilePage() {
         onOpen={openDetails}
         priority={priority}
         actions={
-          <>
-            <Link href={`/movie/${item.slug}`} aria-label={`Смотреть: ${item.title}`}>
-              Смотреть
-            </Link>
-            {list ? (
-              <button
-                type="button"
-                onClick={() => void applyListChange(list, item, false, { undoable: true })}
-                disabled={isPending(item.id)}
-                aria-label={`${LISTS[list].removeLabel}: ${item.title}`}
-              >
-                <Trash2 size={14} strokeWidth={2.4} aria-hidden="true" />
-                Убрать
-              </button>
-            ) : (
-              <button type="button" onClick={() => openDetails(item)} aria-haspopup="dialog">
-                Подробнее
-              </button>
-            )}
-          </>
+          list ? (
+            <button
+              type="button"
+              onClick={() => void applyListChange(list, item, false, { undoable: true })}
+              disabled={isPending(item.id)}
+              aria-label={`${LISTS[list].removeLabel}: ${item.title}`}
+            >
+              <Trash2 size={13} strokeWidth={2.4} aria-hidden="true" />
+              Убрать
+            </button>
+          ) : undefined
         }
       />
     );
@@ -958,52 +914,72 @@ export default function ProfilePage() {
     </label>
   );
 
-  function renderRailPanel(list: ListKey, eyebrow: string, limit = 12) {
-    const listItems = sortCatalogItems(items[list], "recent").slice(0, limit);
+  function renderSectionHead(id: string, title: string, count: number, tools?: ReactNode) {
+    return (
+      <div className="klp-section-head">
+        <div>
+          <p className="klp-eyebrow">Мой список</p>
+          <h2 id={id} className="klp-title">
+            {title}
+            <span className="klp-title-count">{count}</span>
+          </h2>
+        </div>
+        {tools}
+      </div>
+    );
+  }
+
+  function renderEmpty(list: ListKey) {
+    return (
+      <EmptyState
+        icon={LISTS[list].icon(20)}
+        title={LISTS[list].empty.title}
+        text={LISTS[list].empty.text}
+        action={{ href: "/", label: "Открыть каталог" }}
+      />
+    );
+  }
+
+  function renderOverviewSection(list: ListKey) {
+    const listItems = sortCatalogItems(items[list], "recent").slice(0, 12);
+    const headingId = `klp-overview-${list}`;
 
     return (
-      <section className="kl-panel" aria-labelledby={`klp-overview-${list}`}>
-        <div className="kl-panel-head">
-          <div>
-            <p className="kl-eyebrow">{eyebrow}</p>
-            <h2 id={`klp-overview-${list}`}>{LISTS[list].title}</h2>
-          </div>
-          <div className="kl-panel-tools">
-            {items[list].length > 0 ? (
-              <button type="button" className="kl-link-btn" onClick={() => selectTab(LISTS[list].tab)}>
-                Все
-                <ChevronRight size={15} strokeWidth={2.6} aria-hidden="true" />
-              </button>
-            ) : null}
-            <span className="kl-count">{items[list].length}</span>
-          </div>
-        </div>
-        {listItems.length === 0 ? (
-          <EmptyState
-            icon={LISTS[list].icon(24)}
-            title={LISTS[list].empty.title}
-            text={LISTS[list].empty.text}
-            action={{ href: "/", label: "Перейти в каталог" }}
-          />
-        ) : (
-          <div className="kl-rail" role="list" aria-label={LISTS[list].title}>
-            {listItems.map((item, index) => (
-              <div role="listitem" key={item.id}>
-                {renderCard(item, { list, priority: index < 4 })}
-              </div>
-            ))}
-          </div>
+      <section className="klp-section" aria-labelledby={headingId}>
+        {renderSectionHead(
+          headingId,
+          OVERVIEW_TITLES[list],
+          items[list].length,
+          items[list].length > 0 ? (
+            <button type="button" className="klp-more" onClick={() => selectTab(LISTS[list].tab)}>
+              Все
+              <ChevronRight size={15} strokeWidth={2.6} aria-hidden="true" />
+            </button>
+          ) : null,
         )}
+        <div className="klp-panel">
+          {listItems.length === 0 ? (
+            renderEmpty(list)
+          ) : (
+            <div className="klp-rail" role="list" aria-label={OVERVIEW_TITLES[list]}>
+              {listItems.map((item, index) => (
+                <div role="listitem" key={item.id}>
+                  {renderCard(item, { priority: index < 6 })}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </section>
     );
   }
 
   const activeList = TAB_TO_LIST[activeTab];
 
-  const tabs: Array<{ id: ProfileTab; label: string; icon: ReactNode }> = [
-    { id: "overview", label: "Обзор", icon: <LayoutGrid size={17} strokeWidth={2.4} aria-hidden="true" /> },
-    ...LIST_KEYS.map((list) => ({ id: LISTS[list].tab, label: LISTS[list].title, icon: LISTS[list].icon(17) })),
-    { id: "settings", label: "Настройки", icon: <Settings size={17} strokeWidth={2.4} aria-hidden="true" /> },
+  const tabs: Array<{ id: ProfileTab; label: string; count?: number }> = [
+    { id: "overview", label: "Обзор" },
+    ...LIST_KEYS.map((list) => ({ id: LISTS[list].tab, label: LISTS[list].title, count: items[list].length })),
+    { id: "settings", label: "Настройки" },
   ];
 
   return (
@@ -1039,31 +1015,22 @@ export default function ProfilePage() {
       </header>
 
       <div className="klp-shell">
-        {/* Identity and list counts in one panel, like the production identity card; counts open their tab. */}
-        <section className="klp-identity kl-panel" aria-labelledby="klp-name">
+        <section className="klp-panel klp-identity" aria-labelledby="klp-name">
           <div className="klp-avatar" aria-hidden="true">
             {getInitials(currentUser.name)}
           </div>
           <div className="klp-user">
-            <p className="kl-eyebrow">Аккаунт</p>
-            <h1 id="klp-name" title={currentUser.name}>
+            <p className="klp-eyebrow">Профиль</p>
+            <h1 id="klp-name" className="klp-title" title={currentUser.name}>
               {currentUser.name}
             </h1>
-            <p>{totalSaved > 0 ? `${totalSaved} в ваших списках` : "Списки пока пусты — начните с каталога"}</p>
+            <p className="klp-count">
+              {totalSaved > 0 ? `${totalSaved} в ваших списках` : "Списки пока пусты — начните с каталога"}
+            </p>
           </div>
-          <ul className="klp-mini-stats" aria-label="Списки">
-            {LIST_KEYS.map((list) => (
-              <li key={list}>
-                <button type="button" onClick={() => selectTab(LISTS[list].tab)}>
-                  <strong>{items[list].length}</strong>
-                  <span>{LISTS[list].short}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
         </section>
 
-        <nav ref={tabsRef} className="klp-tabs" aria-label="Разделы профиля">
+        <nav ref={tabsRef} className="klp-panel klp-tabs" aria-label="Разделы профиля">
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -1073,183 +1040,123 @@ export default function ProfilePage() {
               aria-current={activeTab === tab.id ? "page" : undefined}
               onClick={() => selectTab(tab.id)}
             >
-              {tab.icon}
               {tab.label}
+              {typeof tab.count === "number" ? <span className="klp-tab-count">{tab.count}</span> : null}
             </button>
           ))}
         </nav>
 
-        <div className="klp-panel-stack" key={activeTab}>
+        <div className="klp-sections" key={activeTab}>
           {activeTab === "overview" ? (
             <>
-              <div className="klp-overview-grid">
-                {renderRailPanel("watch_later", "Мой список")}
-
-                <section className="kl-panel" aria-labelledby="klp-genres">
-                  <div className="kl-panel-head">
-                    <div>
-                      <p className="kl-eyebrow">Вкус</p>
-                      <h2 id="klp-genres">Ваши жанры</h2>
-                    </div>
-                  </div>
-                  {topGenres.length > 0 ? (
-                    <ul className="klp-genres">
-                      {topGenres.map(([genre, count]) => (
-                        <li key={genre}>
-                          <Link href={getHomeCatalogPath(genre, 1)}>
-                            <span className="klp-genre-row">
-                              <span>{genre}</span>
-                              <strong>{count}</strong>
-                            </span>
-                            <span className="klp-genre-track" aria-hidden="true">
-                              <span style={{ width: `${Math.round((count / topGenreMax) * 100)}%` }} />
-                            </span>
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <div className="kl-soft">
-                      <h3>Жанры появятся после отметок</h3>
-                      <p>Отметьте «Нравится» или «Смотрю» у нескольких фильмов — здесь соберутся ваши жанры.</p>
-                    </div>
-                  )}
-                  <p className="klp-note">По тайтлам из «Избранного» и «Смотрю».</p>
-                </section>
-              </div>
-
-              {items.watching.length > 0 ? renderRailPanel("watching", "Продолжить") : null}
-              {items.liked.length > 0 ? renderRailPanel("liked", "Реакции") : null}
-
-              {editorialItems.length > 0 ? (
-                <section className="kl-panel" aria-labelledby="klp-editorial">
-                  <div className="kl-panel-head">
-                    <div>
-                      <p className="kl-eyebrow">Подборка</p>
-                      <h2 id="klp-editorial">Можно начать с этого</h2>
-                    </div>
-                  </div>
-                  <div className="kl-rail" role="list" aria-label="Можно начать с этого">
-                    {editorialItems.map((item) => (
-                      <div role="listitem" key={item.id}>
-                        {renderCard(item)}
-                      </div>
-                    ))}
-                  </div>
-                  <p className="klp-note">Общая подборка KinoLuma, не персональные рекомендации.</p>
-                </section>
-              ) : null}
+              {renderOverviewSection("watching")}
+              {renderOverviewSection("watch_later")}
+              {renderOverviewSection("liked")}
             </>
           ) : null}
 
           {activeList ? (
-            <section className="kl-panel" aria-labelledby={`klp-list-${activeList}`}>
-              <div className="kl-panel-head">
-                <div>
-                  <p className="kl-eyebrow">Мой список</p>
-                  <h2 id={`klp-list-${activeList}`}>{LISTS[activeList].title}</h2>
-                </div>
-                <div className="kl-panel-tools">
-                  {items[activeList].length > 1 ? sortControl : null}
-                  <span className="kl-count">{items[activeList].length}</span>
-                </div>
-              </div>
-              {items[activeList].length === 0 ? (
-                <EmptyState
-                  icon={LISTS[activeList].icon(24)}
-                  title={LISTS[activeList].empty.title}
-                  text={LISTS[activeList].empty.text}
-                  action={{ href: "/", label: "Перейти в каталог" }}
-                />
-              ) : (
-                <div className="kl-grid">
-                  {sortCatalogItems(items[activeList], profileSort).map((item, index) =>
-                    renderCard(item, { list: activeList, priority: index < 6 }),
-                  )}
-                </div>
+            <section className="klp-section" aria-labelledby={`klp-list-${activeList}`}>
+              {renderSectionHead(
+                `klp-list-${activeList}`,
+                LISTS[activeList].title,
+                items[activeList].length,
+                items[activeList].length > 1 ? sortControl : null,
               )}
+              <div className="klp-panel">
+                {items[activeList].length === 0 ? (
+                  renderEmpty(activeList)
+                ) : (
+                  <div className="klp-grid">
+                    {sortCatalogItems(items[activeList], profileSort).map((item, index) =>
+                      renderCard(item, { list: activeList, priority: index < 8 }),
+                    )}
+                  </div>
+                )}
+              </div>
             </section>
           ) : null}
 
           {activeTab === "settings" ? (
-            <div className="klp-overview-grid">
-              <section className="kl-panel" aria-labelledby="klp-account">
-                <div className="kl-panel-head">
+            <>
+              <section className="klp-section" aria-labelledby="klp-account">
+                <div className="klp-section-head">
                   <div>
-                    <p className="kl-eyebrow">Аккаунт</p>
-                    <h2 id="klp-account">Данные профиля</h2>
+                    <p className="klp-eyebrow">Аккаунт</p>
+                    <h2 id="klp-account" className="klp-title">
+                      Данные профиля
+                    </h2>
                   </div>
                 </div>
-                <dl className="klp-dl">
-                  <div className="kl-soft">
-                    <dt>Имя</dt>
-                    <dd>{currentUser.name}</dd>
+                <div className="klp-panel klp-settings">
+                  <dl className="klp-dl">
+                    <div>
+                      <dt>Имя</dt>
+                      <dd>{currentUser.name}</dd>
+                    </div>
+                    <div>
+                      <dt>Email</dt>
+                      <dd>
+                        <span className="klp-email">
+                          {isEmailVisible ? currentUser.email : maskEmail(currentUser.email)}
+                        </span>
+                        <button
+                          type="button"
+                          className="kl-link-btn"
+                          onClick={() => setIsEmailVisible((value) => !value)}
+                          aria-pressed={isEmailVisible}
+                        >
+                          {isEmailVisible ? "Скрыть" : "Показать"}
+                        </button>
+                      </dd>
+                    </div>
+                  </dl>
+                  <div className="klp-actions">
+                    <button type="button" className="kl-btn" onClick={logout}>
+                      <LogOut size={18} strokeWidth={2.4} aria-hidden="true" />
+                      Выйти из аккаунта
+                    </button>
+                    {isAdmin ? (
+                      <Link href="/admin/import" className="kl-btn kl-btn--primary">
+                        <ShieldCheck size={18} strokeWidth={2.4} aria-hidden="true" />
+                        Управление фильмами
+                      </Link>
+                    ) : null}
                   </div>
-                  <div className="kl-soft">
-                    <dt>Email</dt>
-                    <dd>
-                      <span className="klp-email">
-                        {isEmailVisible ? currentUser.email : maskEmail(currentUser.email)}
-                      </span>
-                      <button
-                        type="button"
-                        className="kl-link-btn"
-                        onClick={() => setIsEmailVisible((value) => !value)}
-                        aria-pressed={isEmailVisible}
-                      >
-                        {isEmailVisible ? "Скрыть" : "Показать"}
-                      </button>
-                    </dd>
-                  </div>
-                </dl>
-                <div className="klp-actions">
-                  <button type="button" className="kl-btn" onClick={logout}>
-                    <LogOut size={18} strokeWidth={2.4} aria-hidden="true" />
-                    Выйти из аккаунта
-                  </button>
-                  {isAdmin ? (
-                    <Link href="/admin/import" className="kl-btn kl-btn--primary">
-                      <ShieldCheck size={18} strokeWidth={2.4} aria-hidden="true" />
-                      Управление фильмами
-                    </Link>
-                  ) : null}
                 </div>
               </section>
 
-              <section className="kl-panel" aria-labelledby="klp-danger">
-                <div className="kl-panel-head">
+              <section className="klp-section" aria-labelledby="klp-danger">
+                <div className="klp-section-head">
                   <div>
-                    <p className="kl-eyebrow">Списки</p>
-                    <h2 id="klp-danger">Очистка</h2>
+                    <p className="klp-eyebrow">Списки</p>
+                    <h2 id="klp-danger" className="klp-title">
+                      Очистка
+                    </h2>
                   </div>
                 </div>
-                <div className="kl-soft">
-                  <p>
+                <div className="klp-panel klp-settings">
+                  <p className="klp-settings-text">
                     Удалит «Смотрю», «Смотреть позже», избранное и отметки «Не понравилось» на всех ваших устройствах.
                     Отменить нельзя.
                   </p>
-                </div>
-                <div className="klp-actions">
-                  <button
-                    type="button"
-                    className="kl-btn kl-btn--danger"
-                    onClick={() => setIsClearDialogOpen(true)}
-                    disabled={totalSaved === 0}
-                  >
-                    <Trash2 size={18} strokeWidth={2.4} aria-hidden="true" />
-                    Очистить списки
-                  </button>
+                  <div className="klp-actions">
+                    <button
+                      type="button"
+                      className="kl-btn kl-btn--danger"
+                      onClick={() => setIsClearDialogOpen(true)}
+                      disabled={totalSaved === 0}
+                    >
+                      <Trash2 size={18} strokeWidth={2.4} aria-hidden="true" />
+                      Очистить списки
+                    </button>
+                  </div>
                 </div>
               </section>
-            </div>
+            </>
           ) : null}
         </div>
       </div>
-
-      <footer className="klp-footer">
-        <p>KinoLuma — Личный кабинет</p>
-        <Link href="/">← Вернуться на главную</Link>
-      </footer>
 
       {selectedItem ? (
         <MovieInfoDialog

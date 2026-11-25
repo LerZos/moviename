@@ -23,6 +23,29 @@
     radial-gradient(circle at 78% 12%, rgba(255, 255, 255, 0.1), transparent 30%),
     linear-gradient(145deg, rgba(30, 30, 30, 0.98), rgba(5, 5, 5, 0.98)); /* .details-modal */
   --kl-overlay: rgba(0, 0, 0, 0.78); /* .details-overlay */
+
+  /* Home page (HomeClient: main.kinoluma-home, .desktop-mock-home, ::before, .desktop-mock-panel). */
+  --kl-home-bg:
+    radial-gradient(circle at 18% 0%, rgba(255, 255, 255, 0.075), transparent 30%),
+    radial-gradient(circle at 86% 16%, rgba(140, 148, 170, 0.1), transparent 34%),
+    linear-gradient(#050505 0%, #000000 42%, #050505 100%);
+  --kl-home-glow:
+    radial-gradient(circle at 78% 18%, rgba(255, 255, 255, 0.16), transparent 25%),
+    radial-gradient(circle at 63% 72%, rgba(115, 115, 115, 0.16), transparent 34%),
+    radial-gradient(circle at 18% 22%, rgba(255, 255, 255, 0.08), transparent 24%),
+    linear-gradient(135deg, #020202 0%, #080808 34%, #121212 58%, #050505 100%);
+  --kl-home-texture:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.96) 0%, rgba(0, 0, 0, 0.84) 38%, rgba(0, 0, 0, 0.56) 68%, rgba(0, 0, 0, 0.82) 100%),
+    linear-gradient(rgba(0, 0, 0, 0.24) 0%, rgba(0, 0, 0, 0.08) 42%, rgba(0, 0, 0, 0.88) 100%),
+    repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.055) 0 1px, transparent 1px 84px);
+  --kl-home-panel:
+    radial-gradient(circle at 18% 0%, rgba(255, 255, 255, 0.086), transparent 38%),
+    linear-gradient(rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02)),
+    rgba(8, 8, 9, 0.88);
+  --kl-home-panel-shadow: 0 28px 86px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.086);
+  --kl-line-panel: rgba(255, 255, 255, 0.114);
+  --kl-radius-home-panel: 28px;
+  --kl-home-shell: 1194px; /* .desktop-mock-shell */
   --kl-topbar: rgba(0, 0, 0, 0.76); /* .topbar */
 
   /* Lines */

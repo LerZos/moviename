@@ -138,227 +138,65 @@
   color: #ffffff;
 }
 
-/* ---------------------------------------------------------------- Pills
- * .sort-button and .catalog-card-tags span. */
-
-.kl-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 38px;
-  padding: 0 14px;
-  border: 1px solid var(--kl-line-strong);
-  border-radius: var(--kl-radius-pill);
-  background: rgba(255, 255, 255, 0.035);
-  color: #b8b8b8;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 1000;
-  white-space: nowrap;
-  text-decoration: none;
-  cursor: pointer;
-  transition:
-    background var(--kl-fast) ease,
-    color var(--kl-fast) ease,
-    border-color var(--kl-fast) ease,
-    transform var(--kl-fast) ease;
-}
-
-.kl-chip:hover {
-  transform: translateY(-1px);
-  border-color: rgba(255, 255, 255, 0.28);
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.075);
-}
-
-.kl-chip[aria-pressed="true"],
-.kl-chip[aria-current="page"] {
-  border-color: #ffffff;
-  background: #ffffff;
-  color: #000000;
-  box-shadow: 0 12px 32px rgba(255, 255, 255, 0.1);
-}
+/* ---------------------------------------------------------------- Labels and panels
+ * Home page values (.desktop-mock-eyebrow, .desktop-mock-panel in HomeClient). */
 
 .kl-eyebrow {
   margin: 0;
-  color: var(--kl-eyebrow);
-  font-size: 12px;
-  font-weight: 1000;
-  letter-spacing: 0.36em;
+  color: rgba(255, 255, 255, 0.44);
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1.5;
+  letter-spacing: 0.32em;
   text-transform: uppercase;
 }
 
-/* .count-pill */
-.kl-count {
-  display: inline-grid;
-  place-items: center;
-  min-width: 42px;
-  height: 42px;
-  padding: 0 10px;
-  border: 1px solid var(--kl-line-strong);
-  border-radius: var(--kl-radius-pill);
-  background: rgba(0, 0, 0, 0.36);
-  color: #ffffff;
-  font-size: 14px;
-  font-weight: 1000;
-  font-variant-numeric: tabular-nums;
-}
-
-/* ---------------------------------------------------------------- Panels
- * .section-card / .section-head / .soft-card (profile). */
-
 .kl-panel {
   min-width: 0;
-  overflow: hidden;
-  padding: 24px;
-  border: 1px solid var(--kl-line);
-  border-radius: var(--kl-radius-panel);
-  background: var(--kl-panel);
-  box-shadow: var(--kl-panel-shadow);
-}
-
-.kl-panel-head {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 20px;
-}
-
-.kl-panel-head h2 {
-  margin: 8px 0 0;
-  font-size: 28px;
-  line-height: 1;
-  font-weight: 1000;
-  letter-spacing: -0.05em;
-}
-
-.kl-panel-tools {
-  display: flex;
-  flex: none;
-  align-items: center;
-  gap: 10px;
-}
-
-.kl-soft {
-  padding: 18px;
-  border: 1px solid var(--kl-line);
-  border-radius: var(--kl-radius-soft);
-  background: var(--kl-inset);
-}
-
-.kl-soft h3 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 1000;
-}
-
-.kl-soft p {
-  margin: 10px 0 0;
-  color: #8d8d8d;
-  font-size: 14px;
-  line-height: 1.65;
-  font-weight: 700;
-}
-
-@media (max-width: 760px) {
-  .kl-panel {
-    padding: 17px;
-    border-radius: 24px;
-    box-shadow: 0 18px 54px rgba(0, 0, 0, 0.45);
-  }
-
-  .kl-panel-head {
-    align-items: flex-start;
-    gap: 12px;
-    margin-bottom: 15px;
-  }
-
-  .kl-panel-head h2 {
-    font-size: 24px;
-    line-height: 0.98;
-  }
-
-  .kl-count {
-    min-width: 36px;
-    height: 36px;
-    font-size: 12px;
-  }
-}
-
-@media (max-width: 430px) {
-  .kl-panel {
-    padding: 15px;
-    border-radius: 22px;
-  }
+  border: 1px solid var(--kl-line-panel);
+  border-radius: var(--kl-radius-home-panel);
+  background: var(--kl-home-panel);
+  box-shadow: var(--kl-home-panel-shadow);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 }
 
 /* ---------------------------------------------------------------- Movie card
- * .catalog-card and children (catalog/[category]); same composition as the catalog grid. */
-
-.kl-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-  gap: 18px;
-}
-
-.kl-rail {
-  display: flex;
-  gap: 14px;
-  width: 100%;
-  min-width: 0;
-  padding: 2px 2px 12px;
-  overflow-x: auto;
-  scroll-snap-type: x proximity;
-  scrollbar-width: none;
-}
-
-.kl-rail::-webkit-scrollbar {
-  display: none;
-}
-
-.kl-rail > * {
-  flex: 0 0 200px;
-  min-width: 0;
-  scroll-snap-align: start;
-}
+ * .desktop-mock-rail-card (home "Сейчас смотрят"): 156px poster, 18px radius, title and meta over the artwork. */
 
 .kl-card {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  gap: 8px;
+  width: 156px;
   min-width: 0;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: var(--kl-radius-card);
-  background: var(--kl-card);
-  box-shadow: var(--kl-card-shadow);
-  transition:
-    transform var(--kl-med) ease,
-    border-color var(--kl-med) ease,
-    box-shadow var(--kl-med) ease;
 }
 
-.kl-card:hover {
-  transform: translateY(-5px);
-  border-color: rgba(255, 255, 255, 0.22);
-  box-shadow:
-    0 34px 110px rgba(0, 0, 0, 0.66),
-    0 0 38px rgba(255, 255, 255, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+.kl-card-frame {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  background: #0f1012;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.34);
+  transition:
+    transform var(--kl-med) ease,
+    border-color var(--kl-med) ease;
+}
+
+.kl-card:hover .kl-card-frame {
+  transform: translateY(-4px);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .kl-card-poster {
-  position: relative;
   display: block;
   width: 100%;
   aspect-ratio: 2 / 3;
-  overflow: hidden;
   padding: 0;
   border: 0;
-  background: #0f0f0f;
+  background: #101010;
   color: #ffffff;
-  text-align: left;
   cursor: pointer;
 }
 
@@ -367,93 +205,49 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: filter 500ms ease;
-}
-
-.kl-card:hover .kl-card-poster img {
-  filter: brightness(1.06);
 }
 
 .kl-card-poster:focus-visible {
   outline-offset: -3px;
 }
 
-.kl-card-shade {
-  position: absolute;
-  inset: auto 0 0;
-  height: 45%;
-  background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.78));
-  pointer-events: none;
-}
-
-.kl-card-type,
-.kl-card-rating {
-  position: absolute;
-  top: 12px;
-  display: inline-flex;
-  align-items: center;
-  min-height: 27px;
-  padding: 0 10px;
-  border-radius: var(--kl-radius-pill);
-  font-size: 11px;
-  font-weight: 1000;
-  line-height: 1;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.32);
-}
-
+/* Small dark pill like .catalog-card-type, scaled to the rail card. */
 .kl-card-type {
-  left: 12px;
-  max-width: calc(100% - 84px);
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  max-width: calc(100% - 16px);
   overflow: hidden;
+  padding: 4px 8px;
+  border-radius: var(--kl-radius-pill);
   background: rgba(0, 0, 0, 0.74);
   color: #ffffff;
+  font-size: 10px;
+  font-weight: 1000;
+  line-height: 1.2;
   text-overflow: ellipsis;
   white-space: nowrap;
   backdrop-filter: blur(12px);
-}
-
-.kl-card-rating {
-  right: 12px;
-  background: #ffffff;
-  color: #000000;
+  -webkit-backdrop-filter: blur(12px);
+  pointer-events: none;
 }
 
 .kl-card-body {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  padding: 14px 14px 14px;
-}
-
-.kl-card-meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin: 0;
-  color: var(--kl-text-4);
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.kl-card-meta span:last-child {
-  min-width: 0;
-  overflow: hidden;
-  text-align: right;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  position: absolute;
+  inset: auto 0 0;
+  padding: 54px 12px 12px;
+  background: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.94));
+  pointer-events: none;
 }
 
 .kl-card-title {
   display: -webkit-box;
-  min-height: 40px;
-  margin: 9px 0 0;
+  margin: 0;
   overflow: hidden;
   color: #ffffff;
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 1000;
-  letter-spacing: -0.03em;
-  line-height: 1.18;
+  line-height: 1.3;
   overflow-wrap: break-word;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -462,68 +256,49 @@
 .kl-card-title a {
   color: inherit;
   text-decoration: none;
-  transition: color var(--kl-fast) ease;
+  pointer-events: auto;
 }
 
 .kl-card-title a:hover {
-  color: #d4d4d4;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
-.kl-card-original {
-  margin: 5px 0 0;
+.kl-card-meta {
+  margin: 4px 0 0;
   overflow: hidden;
-  color: var(--kl-text-4);
-  font-size: 12px;
-  font-weight: 700;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1.5;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* .catalog-card-actions: one white and one dark button side by side. */
-.kl-card-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-top: auto;
-  padding-top: 14px;
-}
-
+/* Production profile .remove-button, slimmed to the card width. */
 .kl-card-actions > * {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  min-width: 0;
-  min-height: 40px;
-  padding: 0 8px;
-  border: 1px solid var(--kl-line-strong);
-  border-radius: 13px;
-  background: rgba(255, 255, 255, 0.035);
-  color: #ffffff;
+  width: 100%;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--kl-line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #d7d7d7;
   font: inherit;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 1000;
-  text-decoration: none;
-  white-space: nowrap;
   cursor: pointer;
   transition:
-    transform var(--kl-fast) ease,
     background var(--kl-fast) ease,
     color var(--kl-fast) ease,
     border-color var(--kl-fast) ease;
 }
 
-.kl-card-actions > :first-child {
-  border-color: #ffffff;
-  background: #ffffff;
-  color: #000000;
-}
-
 .kl-card-actions > :hover {
-  transform: translateY(-1px);
-}
-
-.kl-card-actions > :last-child:not(:first-child):hover {
   border-color: #ffffff;
   background: #ffffff;
   color: #000000;
@@ -532,93 +307,43 @@
 .kl-card-actions > :disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  transform: none;
 }
 
 @media (hover: none) and (pointer: coarse) {
-  .kl-card:hover,
-  .kl-card-actions > :hover,
-  .kl-btn:hover,
-  .kl-chip:hover {
+  .kl-card:hover .kl-card-frame,
+  .kl-btn:hover {
     transform: none;
   }
 }
 
+/* Mobile home cards (.mobile-v2-card): 22px radius, darker frame, 15px titles. */
 @media (max-width: 760px) {
-  .kl-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
-  }
-
-  .kl-rail {
-    gap: 10px;
-    margin-inline: -4px;
-    padding: 2px 4px 12px;
-    scroll-snap-type: x mandatory;
-  }
-
-  .kl-rail > * {
-    flex-basis: 158px;
-  }
-
   .kl-card {
-    border-radius: 20px;
+    width: auto;
   }
 
-  .kl-card-type,
-  .kl-card-rating {
-    top: 8px;
-    min-height: 23px;
-    padding: 0 8px;
-    font-size: 10px;
-  }
-
-  .kl-card-type {
-    left: 8px;
-  }
-
-  .kl-card-rating {
-    right: 8px;
+  .kl-card-frame {
+    border-color: rgba(255, 255, 255, 0.114);
+    border-radius: 22px;
+    background: rgba(10, 10, 11, 0.9);
+    box-shadow:
+      0 20px 58px rgba(0, 0, 0, 0.38),
+      inset 0 1px 0 rgba(255, 255, 255, 0.055);
   }
 
   .kl-card-body {
-    padding: 10px;
+    padding: 44px 11px 11px;
+  }
+
+  .kl-card-title {
+    font-size: 14px;
+    line-height: 1.08;
+    letter-spacing: -0.025em;
   }
 
   .kl-card-meta {
-    font-size: 11px;
-  }
-
-  .kl-card-title {
-    min-height: 34px;
-    margin-top: 7px;
-    font-size: 14px;
-  }
-
-  .kl-card-original {
-    font-size: 11px;
-  }
-
-  .kl-card-actions {
-    gap: 6px;
-    padding-top: 10px;
-  }
-
-  .kl-card-actions > * {
-    min-height: 38px;
-    padding: 0 6px;
-    border-radius: 12px;
-    font-size: 12px;
-  }
-}
-
-@media (max-width: 430px) {
-  .kl-rail > * {
-    flex-basis: 148px;
-  }
-
-  .kl-card-title {
-    font-size: 13px;
+    margin-top: 6px;
+    color: rgba(255, 255, 255, 0.5);
   }
 }
 
@@ -626,61 +351,61 @@
  * .empty-state / .empty-icon / .small-link-button (profile). */
 
 .kl-empty {
-  display: grid;
-  place-items: center;
-  align-content: center;
-  gap: 12px;
-  min-height: 220px;
-  padding: 28px;
-  border: 1px dashed rgba(255, 255, 255, 0.15);
-  border-radius: var(--kl-radius-tile);
-  background: rgba(0, 0, 0, 0.34);
-  text-align: center;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  padding: 6px 4px;
 }
 
 .kl-empty-icon {
   display: grid;
+  flex: none;
   place-items: center;
-  width: 54px;
-  height: 54px;
+  width: 44px;
+  height: 44px;
   border: 1px solid var(--kl-line-strong);
-  border-radius: 18px;
+  border-radius: 15px;
   background: rgba(255, 255, 255, 0.05);
   color: #ffffff;
 }
 
 .kl-empty h3 {
+  flex: 1 1 0;
+  min-width: 0;
   margin: 0;
-  font-size: 22px;
+  font-size: 15px;
   font-weight: 1000;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.02em;
 }
 
+/* Text sits on its own row under the title, aligned with it, so long copy never squeezes the action. */
 .kl-empty p {
-  max-width: 460px;
+  order: 3;
+  flex: 0 0 100%;
   margin: 0;
-  color: var(--kl-text-3);
-  font-size: 14px;
-  line-height: 1.7;
-  font-weight: 700;
-}
-
-.kl-empty .kl-btn {
-  min-height: 40px;
-  margin-top: 4px;
-  padding: 0 15px;
-  border-radius: var(--kl-radius-btn-sm);
+  padding-left: 60px;
+  color: rgba(255, 255, 255, 0.46);
+  font-size: 13px;
+  line-height: 1.6;
+  font-weight: 800;
 }
 
 @media (max-width: 760px) {
-  .kl-empty {
-    min-height: 180px;
-    padding: 22px 16px;
+  .kl-empty p {
+    padding-left: 0;
   }
 
-  .kl-empty h3 {
-    font-size: 19px;
+  .kl-empty .kl-btn {
+    order: 4;
   }
+}
+
+.kl-empty .kl-btn {
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: var(--kl-radius-btn-sm);
+  font-size: 12px;
 }
 
 .kl-skeleton {

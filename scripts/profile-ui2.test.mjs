@@ -222,9 +222,9 @@ test("media card keeps long titles readable and labels the poster action", () =>
   assert.match(html, /aria-label="Подробнее: Леди Баг[^"]*, 2023 · Мультфильм, рейтинг 8\.5"/);
   assert.match(html, /aria-haspopup="dialog"/);
   assert.match(html, /href="\/movie\/miraculous-world-paris-2023"/);
-  // Same pills as the catalog grid: content type on the left, white rating on the right.
+  // Home rail card: content type pill on the poster, "year · ★ rating" under the title.
   assert.match(html, /<span class="kl-card-type" aria-hidden="true">Мультфильм<\/span>/);
-  assert.match(html, /<span class="kl-card-rating" aria-hidden="true">★ 8\.5<\/span>/);
+  assert.match(html, /<span class="kl-card-rating">★ 8\.5<\/span>/);
   // Missing poster falls back to a generated SVG instead of an empty image.
   assert.match(html, /src="data:image\/svg\+xml/);
 });
