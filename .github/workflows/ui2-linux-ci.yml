@@ -1,9 +1,9 @@
-name: KinoLuma UI 2.0 final profile Linux CI
+name: KinoLuma UI 2.0 profile alignment Linux CI
 
 on:
   push:
     branches:
-      - work/claude-ui2-final-profile-20261125
+      - work/claude-ui2-profile-alignment-20261125
   workflow_dispatch:
 
 permissions:
@@ -49,7 +49,7 @@ jobs:
 
       - name: Verify approved ref
         shell: bash
-        run: test "$GITHUB_REF_NAME" = "work/claude-ui2-final-profile-20261125"
+        run: test "$GITHUB_REF_NAME" = "work/claude-ui2-profile-alignment-20261125"
 
       - name: Set up exact production Node.js version
         uses: actions/setup-node@v7.1.0
@@ -120,7 +120,7 @@ jobs:
       - name: Verify approved ref
         shell: bash
         run: |
-          test "$GITHUB_REF_NAME" = "work/claude-ui2-final-profile-20261125"
+          test "$GITHUB_REF_NAME" = "work/claude-ui2-profile-alignment-20261125"
           case "$GITHUB_EVENT_NAME" in
             push|workflow_dispatch) ;;
             *) echo "Unsupported event: $GITHUB_EVENT_NAME" >&2; exit 1 ;;

@@ -22,6 +22,7 @@ const APP_FILES = [
   "src/app/components/ui/posterFallback.ts",
   "src/app/globals.css",
   "src/app/lib/kinolumaSupabase.ts",
+  "src/app/profile/ProfileRail.tsx",
   "src/app/profile/page.tsx",
   "src/app/profile/profile.css",
   "src/app/styles/tokens.css",

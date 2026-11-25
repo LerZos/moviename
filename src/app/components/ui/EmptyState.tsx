@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-// Production profile empty state (.empty-state): icon tile, title, one line and a link back to the catalog.
+// Compact empty state: one row with an icon tile, a short title and line, and a link back to the catalog.
 export default function EmptyState({
   icon,
   title,
@@ -18,8 +18,10 @@ export default function EmptyState({
       <span className="kl-empty-icon" aria-hidden="true">
         {icon}
       </span>
-      <h3>{title}</h3>
-      <p>{text}</p>
+      <div className="kl-empty-text">
+        <h3>{title}</h3>
+        <p>{text}</p>
+      </div>
       {action && typeof action === "object" && "href" in action ? (
         <Link href={action.href} className="kl-btn kl-btn--sm">
           {action.label}

@@ -1,8 +1,8 @@
 /*
  * Profile layout (klp-*): one centred column built with the home page rules.
  * Values come from the production home page (HomeClient): .desktop-mock-home (background and texture),
- * .desktop-mock-shell (1194px column, 4.5vw side padding), .desktop-mock-section-head / -eyebrow / -title,
- * .desktop-mock-panel, .desktop-mock-genre (filter pills) and .desktop-mock-count.
+ * .desktop-mock-shell (1194px column, 4.5vw side padding), .desktop-mock-eyebrow, .desktop-mock-panel,
+ * .desktop-mock-genre (filter pills) and .desktop-mock-rail. Each collection is one panel: heading and posters together.
  * The topbar, auth and loading screens keep the production profile styles (profileStyles in 14f1dff).
  */
 
@@ -138,65 +138,116 @@
   text-transform: uppercase;
 }
 
-.klp-title {
-  margin: 7px 0 0;
-  font-size: 27px;
-  line-height: 1;
-  font-weight: 1000;
-  letter-spacing: -0.052em;
+.klp-count {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 0;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.4;
 }
 
-.klp-count {
-  margin: 8px 0 0;
-  color: rgba(255, 255, 255, 0.46);
-  font-size: 13px;
-  font-weight: 800;
-  line-height: 1.5;
+.klp-count svg {
+  flex: none;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Small counter pill used in the tabs and section headings. */
+.klp-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: var(--kl-radius-pill);
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ---------------------------------------------------------------- Profile header */
 
+/* Personal details only; the right side carries a soft graphite light and one thin curve. */
 .klp-identity {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 18px;
-  padding: 18px 22px;
+  gap: 22px;
+  overflow: hidden;
+  padding: 18px 24px;
+  background:
+    radial-gradient(ellipse 52% 120% at 100% 0%, rgba(255, 255, 255, 0.075), transparent 70%),
+    var(--kl-home-panel);
 }
 
-/* Production profile .avatar, scaled down for the compact header. */
+.klp-identity-curve {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 46%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.klp-identity-curve path {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.16);
+  stroke-width: 1.2;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Production profile .avatar. */
 .klp-avatar {
+  position: relative;
   display: grid;
   flex: none;
   place-items: center;
-  width: 64px;
-  height: 64px;
-  border-radius: 20px;
+  width: 84px;
+  height: 84px;
+  border-radius: 24px;
   background: linear-gradient(135deg, #ffffff 0%, #d8d8d8 100%);
   color: #000000;
-  font-size: 25px;
+  font-size: 30px;
   font-weight: 1000;
-  letter-spacing: -0.08em;
+  letter-spacing: -0.06em;
   box-shadow:
     0 18px 48px rgba(255, 255, 255, 0.1),
     inset 0 -10px 20px rgba(0, 0, 0, 0.12);
 }
 
 .klp-user {
+  position: relative;
   min-width: 0;
 }
 
-.klp-user .klp-title {
+.klp-name {
+  margin: 6px 0 0;
+  font-size: 30px;
+  line-height: 1.08;
+  font-weight: 1000;
+  letter-spacing: -0.04em;
   overflow-wrap: break-word;
   hyphens: auto;
 }
 
-/* ---------------------------------------------------------------- Navigation (.desktop-mock-genres) */
+/* Long names step down so single long words still fit on one line. */
+.klp-name--long {
+  font-size: 26px;
+}
+
+/* ---------------------------------------------------------------- Navigation (.desktop-mock-genre pills) */
 
 .klp-tabs {
   display: flex;
-  gap: 8px;
-  margin-top: 24px;
-  padding: 13px;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 2px;
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scrollbar-width: none;
@@ -209,17 +260,18 @@
 
 .klp-tab {
   display: inline-flex;
-  flex: none;
+  flex: 1 0 auto;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   min-height: 42px;
   padding: 0 18px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: var(--kl-radius-pill);
   background: linear-gradient(rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.78);
   font: inherit;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 950;
   line-height: 1.5;
   white-space: nowrap;
@@ -228,6 +280,10 @@
     background var(--kl-fast) ease,
     color var(--kl-fast) ease,
     border-color var(--kl-fast) ease;
+}
+
+.klp-tab svg {
+  flex: none;
 }
 
 .klp-tab:hover {
@@ -243,54 +299,53 @@
   box-shadow: 0 9px 24px rgba(255, 255, 255, 0.08);
 }
 
-.klp-tab-count {
-  color: rgba(255, 255, 255, 0.46);
-  font-size: 11px;
-  font-weight: 900;
-  font-variant-numeric: tabular-nums;
+.klp-tab[aria-current="page"] .klp-badge {
+  background: rgba(5, 5, 5, 0.1);
+  color: #050505;
 }
 
-.klp-tab[aria-current="page"] .klp-tab-count {
-  color: rgba(5, 5, 5, 0.5);
-}
-
-/* ---------------------------------------------------------------- Sections (.desktop-mock-section-head) */
+/* ---------------------------------------------------------------- Collections: one panel per section */
 
 .klp-sections {
   animation: kl-fade var(--kl-med) ease;
 }
 
 .klp-section {
-  margin-top: 24px;
+  margin-top: 14px;
+  padding: 14px 22px 18px;
 }
 
 .klp-section-head {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
-  gap: 22px;
-  margin-bottom: 13px;
+  gap: 16px;
+  min-height: 34px;
+  margin-bottom: 12px;
 }
 
-.klp-title-count {
-  margin-left: 10px;
-  color: rgba(255, 255, 255, 0.46);
-  font-size: 14px;
-  font-weight: 900;
-  letter-spacing: 0;
-  vertical-align: 4px;
-  font-variant-numeric: tabular-nums;
+.klp-section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.15;
+  font-weight: 1000;
+  letter-spacing: -0.035em;
 }
 
 .klp-more {
   display: inline-flex;
+  flex: none;
   align-items: center;
   gap: 2px;
   min-height: 34px;
   padding: 0 4px;
   border: 0;
   background: none;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.82);
   font: inherit;
   font-size: 13px;
   font-weight: 950;
@@ -302,14 +357,17 @@
   color: #ffffff;
 }
 
-.klp-section > .klp-panel {
-  padding: 16px 18px 24px;
+/* Rail of posters (.desktop-mock-rail). Height follows the posters; short lists leave the row open. */
+.klp-rail-wrap {
+  position: relative;
 }
 
-/* Rail of posters, like .desktop-mock-rail; short lists simply leave empty space. */
 .klp-rail {
   display: flex;
   gap: 12px;
+  /* Room for the hover lift and card shadow inside the scroll box. */
+  margin: -6px 0 -8px;
+  padding: 6px 0 8px;
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scroll-snap-type: x proximity;
@@ -325,10 +383,44 @@
   scroll-snap-align: start;
 }
 
+.klp-rail-arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 50%;
+  background: rgba(14, 14, 16, 0.92);
+  color: #ffffff;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  transform: translateY(-50%);
+  transition:
+    background var(--kl-fast) ease,
+    color var(--kl-fast) ease;
+}
+
+.klp-rail-arrow:hover {
+  background: #ffffff;
+  color: #050505;
+}
+
+.klp-rail-arrow--prev {
+  left: -14px;
+}
+
+.klp-rail-arrow--next {
+  right: -14px;
+}
+
 .klp-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, 156px);
-  gap: 20px 12px;
+  gap: 16px 12px;
 }
 
 .klp-sort {
@@ -336,10 +428,6 @@
 }
 
 /* ---------------------------------------------------------------- Settings */
-
-.klp-section > .klp-settings {
-  padding: 20px 22px 22px;
-}
 
 .klp-dl {
   display: grid;
@@ -538,49 +626,61 @@
     padding: 14px 16px;
   }
 
+  .klp-identity-curve {
+    display: none;
+  }
+
   .klp-avatar {
-    width: 52px;
-    height: 52px;
-    border-radius: 17px;
-    font-size: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: 18px;
+    font-size: 21px;
   }
 
-  .klp-title {
-    font-size: 23px;
-  }
-
-  /* Long names wrap instead of being cut. */
-  .klp-user .klp-title {
+  .klp-name {
+    margin-top: 4px;
     font-size: 22px;
-    line-height: 1.05;
+  }
+
+  .klp-name--long {
+    font-size: 18px;
   }
 
   .klp-count {
+    gap: 6px;
     margin-top: 6px;
     font-size: 12px;
   }
 
+  .klp-count svg {
+    width: 13px;
+    height: 13px;
+  }
+
   .klp-tabs {
-    margin-top: 14px;
-    padding: 10px;
+    gap: 8px;
+    margin-top: 12px;
   }
 
   .klp-tab {
+    flex: none;
     min-height: 40px;
-    padding: 0 15px;
+    padding: 0 14px;
+    font-size: 12px;
   }
 
   .klp-section {
-    margin-top: 20px;
+    margin-top: 12px;
+    padding: 12px 12px 14px;
   }
 
   .klp-section-head {
-    gap: 12px;
-    margin-bottom: 11px;
+    margin-bottom: 10px;
   }
 
-  .klp-section > .klp-panel {
-    padding: 12px;
+  .klp-section-title {
+    gap: 8px;
+    font-size: 18px;
   }
 
   .klp-rail {
@@ -588,16 +688,17 @@
   }
 
   .klp-rail > * {
-    width: 148px;
+    width: 132px;
+  }
+
+  /* Phones swipe the row; arrows are for pointer screens. */
+  .klp-rail-arrow {
+    display: none;
   }
 
   .klp-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 14px 10px;
-  }
-
-  .klp-section > .klp-settings {
-    padding: 16px;
+    gap: 12px 10px;
   }
 
   .klp-auth,
@@ -615,9 +716,20 @@
   }
 }
 
+/* Narrow phones keep the name in front: the count stays, the label goes. */
+@media (max-width: 420px) {
+  .klp-count-label {
+    display: none;
+  }
+}
+
 @media (max-width: 359px) {
-  .klp-user .klp-title {
+  .klp-name {
     font-size: 19px;
+  }
+
+  .klp-name--long {
+    font-size: 16px;
   }
 
   .klp-topbar-inner,
@@ -626,6 +738,6 @@
   }
 
   .klp-rail > * {
-    width: 136px;
+    width: 124px;
   }
 }

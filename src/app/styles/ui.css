@@ -275,19 +275,19 @@
   white-space: nowrap;
 }
 
-/* Production profile .remove-button, slimmed to the card width. */
+/* Secondary text action under the poster ("Убрать"); it lights up only on hover and focus. */
 .kl-card-actions > * {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
   width: 100%;
-  min-height: 34px;
+  min-height: 32px;
   padding: 0 10px;
-  border: 1px solid var(--kl-line);
+  border: 1px solid transparent;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.04);
-  color: #d7d7d7;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.52);
   font: inherit;
   font-size: 12px;
   font-weight: 1000;
@@ -299,9 +299,9 @@
 }
 
 .kl-card-actions > :hover {
-  border-color: #ffffff;
-  background: #ffffff;
-  color: #000000;
+  border-color: var(--kl-line);
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
 }
 
 .kl-card-actions > :disabled {
@@ -352,60 +352,63 @@
 
 .kl-empty {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 12px 16px;
-  padding: 6px 4px;
+  gap: 14px;
+  padding: 4px 0;
 }
 
 .kl-empty-icon {
   display: grid;
   flex: none;
   place-items: center;
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border: 1px solid var(--kl-line-strong);
-  border-radius: 15px;
+  border-radius: 14px;
   background: rgba(255, 255, 255, 0.05);
-  color: #ffffff;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.kl-empty-text {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .kl-empty h3 {
-  flex: 1 1 0;
-  min-width: 0;
   margin: 0;
   font-size: 15px;
   font-weight: 1000;
   letter-spacing: -0.02em;
 }
 
-/* Text sits on its own row under the title, aligned with it, so long copy never squeezes the action. */
 .kl-empty p {
-  order: 3;
-  flex: 0 0 100%;
-  margin: 0;
-  padding-left: 60px;
+  margin: 3px 0 0;
   color: rgba(255, 255, 255, 0.46);
   font-size: 13px;
-  line-height: 1.6;
+  line-height: 1.5;
   font-weight: 800;
 }
 
-@media (max-width: 760px) {
-  .kl-empty p {
-    padding-left: 0;
-  }
-
-  .kl-empty .kl-btn {
-    order: 4;
-  }
-}
-
 .kl-empty .kl-btn {
+  flex: none;
   min-height: 38px;
   padding: 0 14px;
   border-radius: var(--kl-radius-btn-sm);
   font-size: 12px;
+}
+
+@media (max-width: 420px) {
+  .kl-empty {
+    flex-wrap: wrap;
+  }
+
+  .kl-empty-text {
+    flex-basis: calc(100% - 54px);
+  }
+
+  .kl-empty .kl-btn {
+    margin-left: 54px;
+  }
 }
 
 .kl-skeleton {

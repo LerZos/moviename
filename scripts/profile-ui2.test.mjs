@@ -251,3 +251,38 @@ test("dialog markup provides one overlay, modal semantics and Escape handling", 
   assert.match(info, /className="kl-info-trailer-frame"/);
   assert.match(read("src/app/styles/ui.css"), /\.kl-info-trailer-frame \{[^}]*aspect-ratio: 16 \/ 9;/);
 });
+
+test("profile header holds personal details only and collections are single panels", () => {
+  const page = read("src/app/profile/page.tsx");
+  assert.match(page, /<span className="klp-count-label">Персональная кинотека · <\/span>\s+\{totalSaved > 0 \? `\$\{totalSaved\} в ваших списках`/);
+  assert.match(page, /className="klp-identity-curve"[\s\S]*?aria-hidden="true"/);
+  // No repeated eyebrow over every collection, and no analytics or gamification.
+  assert.doesNotMatch(page, /Мой список/);
+  assert.doesNotMatch(page, /\bLVL\b|\bXP\b|progress|achievement/i);
+  assert.match(page, /<section className="klp-panel klp-section" aria-labelledby=\{headingId\}>/);
+  // One compact empty state for every collection.
+  assert.match(page, /title="Список пока пуст"\s+text="Добавьте фильм из каталога\."/);
+  const empty = renderToStaticMarkup(
+    React.createElement(requireLocal("../../src/app/components/ui/EmptyState.tsx").default, {
+      icon: null,
+      title: "Список пока пуст",
+      text: "Добавьте фильм из каталога.",
+      action: { href: "/", label: "Открыть каталог" },
+    }),
+  );
+  assert.match(empty, /<div class="kl-empty-text"><h3>Список пока пуст<\/h3><p>Добавьте фильм из каталога\.<\/p><\/div><a class="kl-btn kl-btn--sm" href="\/">Открыть каталог<\/a>/);
+});
+
+test("poster rail shows scroll arrows only while posters are hidden", () => {
+  const rail = read("src/app/profile/ProfileRail.tsx");
+  assert.match(rail, /\{edges\.start \? \(/);
+  assert.match(rail, /\{edges\.end \? \(/);
+  assert.match(rail, /new ResizeObserver\(measure\)/);
+  assert.match(rail, /prefers-reduced-motion: reduce/);
+  // Server render has no measurements yet, so no arrow is shown before the row is measured.
+  const html = renderToStaticMarkup(
+    React.createElement(requireLocal("../../src/app/profile/ProfileRail.tsx").default, { label: "Смотреть позже" }, "x"),
+  );
+  assert.match(html, /<div class="klp-rail" role="list" aria-label="Смотреть позже">x<\/div>/);
+  assert.doesNotMatch(html, /klp-rail-arrow/);
+});

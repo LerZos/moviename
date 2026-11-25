@@ -13,7 +13,7 @@ Production is the visual source of truth. UI 2.0 adds functionality (profile lis
 
 Home, catalog, collections and the movie page keep their production markup, headers and styles. UI 2.0 only adds functional fixes there (catalog genre de-duplication, the mobile bottom navigation on catalog and collections, the home mobile header row). When a component is extracted later, copy its production values instead of inventing new ones.
 
-The profile (`profile/page.tsx`, `profile.css`) is one centred column built with the home page rules: compact identity panel (avatar, "ПРОФИЛЬ", name, list total), the tab row as home filter pills with small counters, and "МОЙ СПИСОК" sections with poster rails (overview) or grids (full lists). It has no analytics widgets, levels or progress bars.
+The profile (`profile/page.tsx`, `profile.css`) is one centred column built with the home page rules: compact identity panel with personal details only (avatar, "ПРОФИЛЬ", name, "Персональная кинотека · N в ваших списках") and one soft graphite curve on the right (hidden on phones), a single row of home filter pills with icons and small counters, then one panel per collection: heading with a counter and "Все ›" above a poster rail (overview; scroll arrows appear only when posters are hidden) or a grid with a secondary "Убрать" (full lists). Empty collections use one compact `EmptyState` row. It has no analytics widgets, levels or progress bars.
 
 The sections below describe the wider visual language and the legacy code.
 
