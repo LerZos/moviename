@@ -345,6 +345,20 @@
     margin-top: 6px;
     color: rgba(255, 255, 255, 0.5);
   }
+
+  /* Touch screens have no hover, so "Убрать" stays readable and gets a 40px target with a faint outline. */
+  .kl-card-actions > * {
+    min-height: 40px;
+    border-color: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.035);
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 13px;
+  }
+
+  .kl-card-actions svg {
+    width: 15px;
+    height: 15px;
+  }
 }
 
 /* ---------------------------------------------------------------- States

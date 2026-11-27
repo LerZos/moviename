@@ -995,8 +995,10 @@ export default function ProfilePage() {
           </Link>
 
           <div className="klp-top-actions">
-            <Link href="/" className="kl-btn kl-btn--ghost">
-              <Film size={17} strokeWidth={2.4} aria-hidden="true" />В каталог
+            {/* Narrow phones show the icon only, so the brand name keeps its room. */}
+            <Link href="/" className="kl-btn kl-btn--ghost" aria-label="В каталог">
+              <Film size={17} strokeWidth={2.4} aria-hidden="true" />
+              <span className="klp-hide-compact">В каталог</span>
             </Link>
             {isAdmin ? (
               <Link href="/admin/import" className="kl-btn kl-btn--ghost klp-hide-mobile">

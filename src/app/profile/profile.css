@@ -643,13 +643,23 @@
   }
 
   .klp-name--long {
-    font-size: 18px;
+    font-size: 17px;
   }
 
   .klp-count {
     gap: 6px;
     margin-top: 6px;
     font-size: 12px;
+  }
+
+  /* Phones show only "N в ваших списках"; the full label stays on wider screens. */
+  .klp-count-label {
+    display: none;
+  }
+
+  /* Without the label the line starts mid-phrase ("списки пока пусты"), so lift the first letter. */
+  .klp-count > span::first-letter {
+    text-transform: uppercase;
   }
 
   .klp-count svg {
@@ -674,13 +684,21 @@
     padding: 12px 12px 14px;
   }
 
+  /* Titles stay on one line; the sort control drops below them when both do not fit. */
   .klp-section-head {
+    flex-wrap: wrap;
+    row-gap: 8px;
     margin-bottom: 10px;
   }
 
   .klp-section-title {
     gap: 8px;
     font-size: 18px;
+    white-space: nowrap;
+  }
+
+  .klp-sort {
+    margin-left: auto;
   }
 
   .klp-rail {
@@ -717,18 +735,40 @@
 }
 
 /* Narrow phones keep the name in front: the count stays, the label goes. */
+/* Narrow phones: the brand name keeps its room, so the catalog link becomes an icon button. */
 @media (max-width: 420px) {
-  .klp-count-label {
+  .klp-hide-compact {
     display: none;
+  }
+
+  .klp-top-actions .kl-btn--ghost {
+    width: 38px;
+    padding: 0;
   }
 }
 
-@media (max-width: 359px) {
+@media (max-width: 374px) {
+  .klp-identity {
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .klp-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 15px;
+    font-size: 17px;
+  }
+
   .klp-name {
     font-size: 19px;
   }
 
   .klp-name--long {
+    font-size: 15px;
+  }
+
+  .klp-section-title {
     font-size: 16px;
   }
 

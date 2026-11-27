@@ -286,3 +286,29 @@ test("poster rail shows scroll arrows only while posters are hidden", () => {
   assert.match(html, /<div class="klp-rail" role="list" aria-label="Смотреть позже">x<\/div>/);
   assert.doesNotMatch(html, /klp-rail-arrow/);
 });
+
+test("phones keep the brand, a short count, one-line titles and a readable remove action", () => {
+  const page = read("src/app/profile/page.tsx");
+  const css = read("src/app/profile/profile.css");
+  const ui = read("src/app/styles/ui.css");
+  const block = (source, query) => {
+    const start = source.indexOf(`@media (max-width: ${query}) {`);
+    assert.ok(start >= 0, `missing ${query} block`);
+    return source.slice(start, source.indexOf("\n}\n", start));
+  };
+  // Catalog link keeps an accessible name when it shrinks to an icon on narrow phones.
+  assert.match(page, /<Link href="\/" className="kl-btn kl-btn--ghost" aria-label="В каталог">[\s\S]*?<span className="klp-hide-compact">В каталог<\/span>/);
+  assert.match(block(css, "420px"), /\.klp-hide-compact \{\s+display: none;/);
+  // The whole phone layout shows "N в ваших списках"; desktop keeps "Персональная кинотека · ".
+  const phone = block(css, "760px");
+  assert.match(phone, /\.klp-count-label \{\s+display: none;/);
+  assert.match(phone, /\.klp-section-title \{[^}]*white-space: nowrap;/);
+  assert.match(phone, /\.klp-section-head \{[^}]*flex-wrap: wrap;/);
+  // Very narrow phones shrink the avatar so long names wrap between words.
+  const narrow = block(css, "374px");
+  assert.match(narrow, /\.klp-avatar \{[^}]*width: 44px;/);
+  assert.match(narrow, /\.klp-name--long \{\s+font-size: 15px;/);
+  // "Убрать" on touch screens: readable text and a 40px target, still no overlay on the poster.
+  assert.match(block(ui, "760px"), /\.kl-card-actions > \* \{[^}]*min-height: 40px;[^}]*color: rgba\(255, 255, 255, 0\.82\);/);
+  assert.doesNotMatch(ui, /\.kl-card-actions \{[^}]*position: absolute/);
+});
